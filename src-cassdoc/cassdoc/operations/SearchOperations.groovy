@@ -1,0 +1,203 @@
+package cassdoc.operations
+
+import groovy.transform.CompileStatic
+import cassdoc.CommandExecServices
+import cassdoc.Detail
+import cassdoc.OperationContext
+
+import com.datastax.driver.core.*
+
+import drv.cassdriver.CQLException
+import drv.cassdriver.RowCallbackHandler
+import drv.cassdriver.St
+
+
+// TODO rewrite using CassandraPagedRowProcessors
+
+@CompileStatic
+class SearchOperations {
+
+  void searchTableIdListJSONArray(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, Writer w) {
+    w << "["
+    scanETable(svcs,opctx,detail,objectType,null,null,null,new IDListJSONArrayFromETableRCH(w:w))
+    w << "]"
+  }
+
+  // source: set or list iterator of ids...
+  // async iterator: http://stackoverflow.com/questions/21143996/asynchronous-iterator
+  // IN clauses are not token-aware from the java-driver :-( , the id set is sent to a coordinator node, parallel is better
+  void searchIdsIterator(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<String> ids, Writer w)
+  {
+    w << '['
+    boolean first = true
+    for (String id : ids) {
+      // TODO: type filters, etc
+      if (first) first = false; else w << ",";
+      RetrievalOperations.getSingleDoc(svcs, opctx, detail, id, w, true)
+      // TODO: parallelism
+    }
+    w << ']'
+  }
+
+
+
+  // one row == one entity/doc id, should be pretty simple
+  void scanETable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, List<String> fixedCols, String startToken, String stopToken, RowCallbackHandler rch)
+  {
+    String space = opctx.space
+    String suffix = svcs.typeSvc.getSuffixForType(objectType)
+    startToken = startToken ?: detail.searchStartToken
+    stopToken = stopToken ?: detail.searchStopToken
+
+    StringBuilder tableQuery = new StringBuilder("SELECT token(e),e")
+    if (fixedCols != null) {
+      for (String col : fixedCols) { tableQuery << "," << col  }
+    }
+    tableQuery <<  "FROM ${space}.e_${suffix}"
+    boolean hasWhere = false
+    Object[] tokenRangePrepArgs = null
+    if (startToken != null || stopToken != null) {
+      hasWhere = true
+      tableQuery << " WHERE "
+      if (startToken != null) {
+        tableQuery << "token(e) >= ? "
+        if (stopToken != null) {
+          tableQuery << " AND "
+          tokenRangePrepArgs = [
+            new Long(startToken),
+            new Long(stopToken)] as Object[]
+        } else {
+          tokenRangePrepArgs = [new Long(startToken)] as Object[]
+        }
+      }
+      if (stopToken != null) {
+        tableQuery << "token(e) <= ? "
+        if (tokenRangePrepArgs == null) {
+          tokenRangePrepArgs = [new Long(stopToken)] as Object[]
+        }
+      }
+    }
+
+    // TODO: allow filtering, cluster key subsets, etc
+
+    int fetchNextPageThreshold = detail?.fetchNextPageThreshold ?: 3000
+    int fetchPageSize = detail?.fetchPageSize ?: 30000
+
+    SimpleStatement stmt = new SimpleStatement(tableQuery.toString())
+    stmt.setFetchSize(fetchPageSize)
+    stmt.setConsistencyLevel(svcs.driver.getConsistencyLevel(detail.readConsistency))
+    St st = new St(stmt:stmt,cql:tableQuery.toString(),cqlargs:tokenRangePrepArgs,keyspace:space)
+    ResultSet cassRS = svcs.driver.executeStatementSync(svcs.driver.getSession(), st)
+
+    long rowCount = 0
+    long pageCount = 1
+    for (Row curDBRow : cassRS)
+    {
+      rch.processRow(curDBRow)
+      rowCount++
+      if (cassRS.getAvailableWithoutFetching() == fetchNextPageThreshold && !cassRS.isFullyFetched()) {
+        pageCount++;
+        cassRS.fetchMoreResults()
+      }
+    }
+  }
+
+  // PTabelBaseRCH has both per-row and processDoc event methods
+  void scanPTable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, String startToken, String stopToken, PTableBaseRCH rch)
+  {
+    String space = opctx.space
+    String suffix = svcs.typeSvc.getSuffixForType(objectType)
+    startToken = startToken ?: detail.searchStartToken
+    stopToken = stopToken ?: detail.searchStopToken
+
+    StringBuilder tableQuery = new StringBuilder("SELECT token(e),e,p,t,d FROM ${space}.p_${suffix}")
+    Object[] tokenRangePrepArgs = null
+    if (startToken != null || stopToken != null) {
+      tableQuery << " WHERE "
+      if (startToken != null) {
+        tableQuery << "token(e) >= ? "
+        if (stopToken != null) {
+          tableQuery << " AND "
+          tokenRangePrepArgs = [
+            new Long(startToken),
+            new Long(stopToken)] as Object[]
+        } else {
+          tokenRangePrepArgs = [new Long(startToken)] as Object[]
+        }
+      }
+      if (stopToken != null) {
+        tableQuery << "token(e) <= ? "
+        if (tokenRangePrepArgs == null) {
+          tokenRangePrepArgs = [new Long(stopToken)] as Object[]
+        }
+      }
+    }
+
+    // TODO: allow filtering, cluster key subsets, etc
+
+    int fetchNextPageThreshold = detail?.fetchNextPageThreshold ?: 3000
+    int fetchPageSize = detail?.fetchPageSize ?: 30000
+
+
+    SimpleStatement stmt = new SimpleStatement(tableQuery.toString())
+    stmt.setFetchSize(fetchPageSize)
+    stmt.setConsistencyLevel(svcs.driver.getConsistencyLevel(detail.readConsistency))
+    St st = new St(stmt:stmt,cql:tableQuery.toString(),cqlargs:tokenRangePrepArgs,keyspace:space)
+    ResultSet cassRS = svcs.driver.executeStatementSync(svcs.driver.getSession(), st)
+
+    long rowCount = 0
+    long pageCount = 1
+    for (Row curDBRow : cassRS)
+    {
+      rch.processRow(curDBRow)
+      rowCount++
+      if (cassRS.getAvailableWithoutFetching() == fetchNextPageThreshold && !cassRS.isFullyFetched()) {
+        pageCount++;
+        cassRS.fetchMoreResults()
+      }
+    }
+    // process the very last doc
+    rch.processDoc()
+  }
+
+}
+
+@CompileStatic
+abstract class PTableBaseRCH
+{
+  // called when the current doc is done being scanned
+  public abstract void processDoc()
+
+  // called on a per-attr basis
+  public abstract void processAttrRow(Row row)
+
+  String currentDocUUID = null
+  public void processRow(Row row) throws CQLException
+  {
+    String uuid = row.getString(1)
+
+    if (currentDocUUID != uuid) {
+      // I do it this way to try to avoid doing the null tests for every row
+      if (currentDocUUID != null) { processDoc() }
+      currentDocUUID = uuid
+    }
+    processAttrRow(row)
+  }
+}
+
+@CompileStatic
+class IDListJSONArrayFromETableRCH implements RowCallbackHandler
+{
+  Writer w
+  boolean first = true
+  public void processRow(Row row) throws CQLException
+  {
+    if (first) first = false; else w << ","
+    String id = row.getString(1)
+    w << '"' << id << '"'
+  }
+
+}
+
+
+

@@ -1,0 +1,118 @@
+package cassdoc.operations;
+
+import groovy.transform.CompileStatic
+import cassdoc.CommandExecServices
+import cassdoc.Detail
+import cassdoc.DocType
+import cassdoc.IDUtil
+import cassdoc.ManualIndex
+import cassdoc.OperationContext
+import cassdoc.Rel
+import cassdoc.commands.mutate.ClrIdxVal
+import cassdoc.commands.mutate.InsIdxValOnly
+import cassdoc.commands.mutate.NewAttr
+import cassdoc.commands.mutate.NewRel
+import cassdoc.commands.mutate.UpdFixedCol
+import cwdrg.lg.annotation.Log
+
+@CompileStatic
+@Log
+public class IndexOperations {
+
+  static final String DOC_HAS_IDX = "_I"
+
+  static final String IDX_TYPE_HAS_VALUE = "HAS_VALUE"
+
+  static void cleanupDocIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, List<Rel> docRels) {
+    DocType docType = svcs.typeSvc.getTypeForID(docUUID)
+
+    Set<ManualIndex> processedIndexes = [] as Set
+    for (Rel rel : docRels) {
+      if (rel.ty1 == DOC_HAS_IDX) {
+        String idxRef = rel.ty2
+        ManualIndex idx = docType.indexMap[idxRef]
+        if (idx in processedIndexes) {
+          // debug msg: already cleaned up indexName
+        } else {
+          if (idx.indexType == IDX_TYPE_HAS_VALUE) {
+            ClrIdxVal cmd = new ClrIdxVal(k1:rel.c1,k2:rel.c2,k3:rel.c3)
+            cmd.i1 = idx.indexCodes.size() > 0 ? idx.indexCodes[0] : ""
+            cmd.i2 = idx.indexCodes.size() > 1 ? idx.indexCodes[1] : ""
+            cmd.i3 = idx.indexCodes.size() > 2 ? idx.indexCodes[2] : ""
+            cmd.v1 = docUUID
+            opctx.addCommand(svcs, detail, cmd)
+          }
+        }
+      }
+    }
+  }
+
+  static void cleanupDocAttrIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, List<Rel> attrRels) {
+    DocType docType = svcs.typeSvc.getTypeForID(docUUID)
+
+    log.dbg("docUUID: "+docUUID+" docType: "+docType?.suffix+" attrName: "+attrName,null)
+    Set<ManualIndex> attrIndexes = docType.attrIndexMap[attrName]
+
+    Set<ManualIndex> processedIndexes = [] as Set
+    for (Rel rel : attrRels) {
+      if (rel.ty1 == DOC_HAS_IDX) {
+        String idxRef = rel.ty2
+        ManualIndex idx = docType.indexMap[idxRef]
+        if (idx in processedIndexes) {
+          // debug msg: already cleaned up indexName
+        } else {
+          if (idx.indexType == IDX_TYPE_HAS_VALUE) {
+            ClrIdxVal cmd = new ClrIdxVal(k1:rel.c1,k2:rel.c2,k3:rel.c3)
+            cmd.i1 = idx.indexCodes.size() > 0 ? idx.indexCodes[0] : ""
+            cmd.i2 = idx.indexCodes.size() > 1 ? idx.indexCodes[1] : ""
+            cmd.i3 = idx.indexCodes.size() > 2 ? idx.indexCodes[2] : ""
+            cmd.v1 = docUUID
+            opctx.addCommand(svcs, detail, cmd)
+          }
+        }
+      }
+    }
+  }
+
+  static void processNewAttrIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, NewAttr cmd) {
+
+    // fixed prop cols (basically these are indexes)
+    String suffix = IDUtil.idSuffix(cmd.docUUID)
+    DocType docType = svcs.typeSvc.getTypeForSuffix(suffix)
+    String col = docType.fixedAttrMap[cmd.attrName]?.colname
+    if (col != null) {
+      UpdFixedCol fixedcol = new UpdFixedCol(docUUID:cmd.docUUID,colName:col,value:cmd.attrValue?.value)
+      opctx.addCommand(svcs, detail, cmd)
+    }
+
+    Set<ManualIndex> attrIndexes = docType.attrIndexMap[cmd.attrName]
+    if (attrIndexes != null) {
+      for (ManualIndex idx : attrIndexes) {
+        if (idx.indexType == IDX_TYPE_HAS_VALUE) {
+          // TODO: handle value is null, ?which is a delete?
+
+          // add docUUID to the index for this value
+          InsIdxValOnly setHVIdx = new InsIdxValOnly(k1:cmd.attrValue?.value)
+          setHVIdx.i1 = idx.indexCodes.size() > 0 ? idx.indexCodes[0] : ""
+          setHVIdx.i2 = idx.indexCodes.size() > 1 ? idx.indexCodes[1] : ""
+          setHVIdx.i3 = idx.indexCodes.size() > 2 ? idx.indexCodes[2] : ""
+          setHVIdx.v1 = cmd.docUUID
+          opctx.addCommand(svcs, detail, setHVIdx)
+
+          // add "hasindex" to relations to avoid excessive reads on update/clear/delete
+          NewRel rel = new NewRel()
+          rel.p1 = cmd.docUUID
+          rel.ty1 = IndexOperations.DOC_HAS_IDX
+          rel.ty2 = idx.indexRef
+          rel.c1 = cmd.attrValue?.value
+          rel.c2 = cmd.attrName
+          opctx.addCommand(svcs, detail, rel)
+
+        }
+      }
+    }
+  }
+}
+
+
+
