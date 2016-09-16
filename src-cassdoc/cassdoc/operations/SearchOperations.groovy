@@ -1,12 +1,17 @@
 package cassdoc.operations
 
 import groovy.transform.CompileStatic
+
+import java.util.concurrent.LinkedBlockingQueue
+
 import cassdoc.CommandExecServices
 import cassdoc.Detail
 import cassdoc.OperationContext
+import cassdoc.commands.retrieve.CassandraPagedRowProcessor
 
 import com.datastax.driver.core.*
 
+import cwdrg.util.async.iterator.BlockingIterator
 import drv.cassdriver.CQLException
 import drv.cassdriver.RowCallbackHandler
 import drv.cassdriver.St
@@ -17,7 +22,7 @@ import drv.cassdriver.St
 @CompileStatic
 class SearchOperations {
 
-  void searchTableIdListJSONArray(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, Writer w) {
+  static void searchTableIdListJSONArray(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, Writer w) {
     w << "["
     scanETable(svcs,opctx,detail,objectType,null,null,null,new IDListJSONArrayFromETableRCH(w:w))
     w << "]"
@@ -26,7 +31,7 @@ class SearchOperations {
   // source: set or list iterator of ids...
   // async iterator: http://stackoverflow.com/questions/21143996/asynchronous-iterator
   // IN clauses are not token-aware from the java-driver :-( , the id set is sent to a coordinator node, parallel is better
-  void searchIdsIterator(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<String> ids, Writer w)
+  static void searchIdsIterator(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<String> ids, Writer w)
   {
     w << '['
     boolean first = true
@@ -42,7 +47,7 @@ class SearchOperations {
 
 
   // one row == one entity/doc id, should be pretty simple
-  void scanETable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, List<String> fixedCols, String startToken, String stopToken, RowCallbackHandler rch)
+  static void scanETable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, List<String> fixedCols, String startToken, String stopToken, RowCallbackHandler rch)
   {
     String space = opctx.space
     String suffix = svcs.typeSvc.getSuffixForType(objectType)
@@ -103,7 +108,7 @@ class SearchOperations {
   }
 
   // PTabelBaseRCH has both per-row and processDoc event methods
-  void scanPTable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, String startToken, String stopToken, PTableBaseRCH rch)
+  static void scanPTable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, String startToken, String stopToken, PTableBaseRCH rch)
   {
     String space = opctx.space
     String suffix = svcs.typeSvc.getSuffixForType(objectType)
@@ -160,7 +165,29 @@ class SearchOperations {
     rch.processDoc()
   }
 
+  // rp.processRow() should return token in 0th and id in 1st cell
+  public static Iterator<Map> pullIDResultSet(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final CassandraPagedRowProcessor rp)
+  {
+    final LinkedBlockingQueue docQ = new LinkedBlockingQueue(1000)
+    final BlockingIterator<Map> iterator = new BlockingIterator<Map>(queue:docQ)
+
+    new Thread() {
+          public void run() {
+            Object rowdata = null
+            while (rowdata = rp.nextRow()) {
+              String id = (String)rowdata[1]
+              Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, id, true)
+              docQ.put(doc)
+            }
+
+          }
+        }
+    return iterator
+  }
+
 }
+
+
 
 @CompileStatic
 abstract class PTableBaseRCH

@@ -536,7 +536,7 @@ class DelDoc_E extends MutationCmd {
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
     String suffix = IDUtil.idSuffix(docUUID)
-    cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ?"
+    cql = "DELETE FROM ${space}.e_${suffix} WHERE e = ?"
     cqlargs = [docUUID] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
@@ -562,7 +562,7 @@ class DelDoc_P extends MutationCmd {
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
     String suffix = IDUtil.idSuffix(docUUID)
-    cql = "DELETE FROM ${space}.e_${suffix} WHERE e = ?"
+    cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ?"
     cqlargs = [docUUID] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }

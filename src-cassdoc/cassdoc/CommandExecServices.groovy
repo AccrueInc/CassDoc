@@ -23,6 +23,9 @@ class CommandExecServices {
   TypeConfigurationService typeSvc
 
   @Autowired
+  IndexConfigurationService idxSvc
+
+  @Autowired
   DriverWrapper driver
 
   // TODO: service-ify and autowire
@@ -47,7 +50,9 @@ class CommandExecServices {
     String suffix = IDUtil.idSuffix(updDocFixedColCmd.docUUID)
     String colName = updDocFixedColCmd.colName
     String cql = "UPDATE ${space}.e_${suffix} SET ${colName} = ? WHERE e = ?"
-    Object args = [updDocFixedColCmd.value, updDocFixedColCmd.docUUID] as Object[]
+    Object args = [
+      updDocFixedColCmd.value,
+      updDocFixedColCmd.docUUID] as Object[]
     driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 
@@ -56,7 +61,10 @@ class CommandExecServices {
     String space = opctx.space
     String suffix = IDUtil.idSuffix(newDocCmd.docUUID)
     String cql = "INSERT INTO ${space}.e_${suffix} (e,zv,a0) VALUES (?,?,?) IF NOT EXISTS"
-    Object[] args = [newDocCmd.docUUID, opctx.updateUUID, newDocCmd.parentUUID] as Object[]
+    Object[] args = [
+      newDocCmd.docUUID,
+      opctx.updateUUID,
+      newDocCmd.parentUUID] as Object[]
     driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 
@@ -65,7 +73,12 @@ class CommandExecServices {
     String space = opctx.space
     String suffix = IDUtil.idSuffix(newPropCmd.docUUID)
     String cql = "INSERT INTO ${space}.p_${suffix} (e,p,zv,d,t) VALUES (?,?,?,?,?) IF NOT EXISTS"
-    Object[] args = [newPropCmd.docUUID, newPropCmd.attrName, opctx.updateUUID, newPropCmd.attrValue?.value, TypeConfigurationService.attrTypeCode(newPropCmd.attrValue?.type)] as Object[]
+    Object[] args = [
+      newPropCmd.docUUID,
+      newPropCmd.attrName,
+      opctx.updateUUID,
+      newPropCmd.attrValue?.value,
+      TypeConfigurationService.attrTypeCode(newPropCmd.attrValue?.type)] as Object[]
     driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 

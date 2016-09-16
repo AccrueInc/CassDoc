@@ -327,3 +327,54 @@ class QueryToListOfObjArr extends CassandraPagedRowProcessor
     return data
   }
 }
+
+@CompileStatic
+class IndexTableRP extends CassandraPagedRowProcessor
+{
+  String i1 = ""
+  String i2 = ""
+  String i3 = ""
+  String k1 = ""
+  String k2 = ""
+  String k3 = ""
+
+  void initiateQuery(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args)
+  {
+    String consistency = QueryCmd.resolveConsistency(detail,opctx)
+    String space = opctx.space
+    StringBuilder cql = new StringBuilder(32)
+    cql << "SELECT token(i1,i2,i3,k1,k2,k3),v1,v2,v3,d FROM ${space}.i WHERE i1 = ? AND i2 = ? AND i3 = ? AND k1 = ? AND k2 = ? AND k3 = ?"
+    rs = svcs.driver.initiateQuery(space, cql.toString(), [i1, i2, i3, k1, k2, k3] as Object[], consistency, detail?.fetchPageSize ?: 30000, detail?.fetchNextPageThreshold ?: 3000)
+  }
+
+  Object[] processRow(Row row) {
+    Object[] data = [
+      row.getString(1),
+      row.getString(2),
+      row.getString(3)] as Object[]
+    return data
+  }
+}
+
+@CompileStatic
+class EntityTableSecondaryIndexRP extends CassandraPagedRowProcessor
+{
+  String table
+  String column
+  String columnType
+  Object columnValue
+
+  void initiateQuery(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args)
+  {
+    String consistency = QueryCmd.resolveConsistency(detail,opctx)
+    String space = opctx.space
+    StringBuilder cql = new StringBuilder(32)
+    cql << "SELECT token(e),e FROM ${space}.${table} WHERE ${column} = ?"
+    rs = svcs.driver.initiateQuery(space, cql.toString(), [columnValue] as Object[], consistency, detail?.fetchPageSize ?: 30000, detail?.fetchNextPageThreshold ?: 3000)
+  }
+
+  Object[] processRow(Row row) {
+    Object[] data = [row.getString(1)] as Object[]
+    return data
+  }
+}

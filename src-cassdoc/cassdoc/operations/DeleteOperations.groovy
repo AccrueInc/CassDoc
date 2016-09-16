@@ -52,12 +52,15 @@ class DeleteOperations {
     analyzeDeleteAttrEvent(svcs,opctx,detail,delAttr,attrChildDocs.rels,clear)
 
 
+    // cascade the delete for child rels
     for (Rel childRel : attrChildDocs.rels) {
-      String childDocUUID = childRel.c1
-      // TODO: recurse detail
-      // TODO: recursive cleanup in a cleanup threadx
+      if (childRel.ty1 == 'CH') {
+        String childDocUUID = childRel.c1
+        // TODO: recurse/deletion cascade detail
+        // TODO: recursive cleanup in a cleanup threadx
 
-      deleteDoc(svcs,opctx,detail,childDocUUID)
+        deleteDoc(svcs,opctx,detail,childDocUUID)
+      }
     }
 
 

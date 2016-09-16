@@ -24,6 +24,12 @@ import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 
 
+// TODO:
+// - more paxos
+// - more graph + test graph
+// - search operations
+
+
 @Log
 @CompileStatic
 class API {
@@ -249,7 +255,7 @@ class API {
 
 
   // TODO: jsonpath - there appear to be mutation abilities as well
-  // TODO: jsonpath - avoid full serialization step.
+  // TODO: jsonpath - avoid full serialization step... would require a custom json
 
   /**
    * execute the provided jsonpath expression against the json representation of the requested document
@@ -611,21 +617,53 @@ class API {
    *
    *  Index types: secondary indexes (cassandra maintained), materialized views (cass maintained), manual value indexes, external indexes (B+ in relational store)
    *
+   *  TODO: sorter
+   *
    * @param indexName
    * @return
    */
-  public void searchIndex(OperationContext opctx, Detail detail, String indexName, Object searchCriteria, List filters, Object sorter, Writer searchResultsWriter)
+  public Iterator<Map> searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters)
   {
+    Index idx = svcs.idxSvc.getIndex(indexName)
+    Iterator<Map> iterator = idx.searchIndex(svcs, opctx, detail, searchCriteria)
+    return iterator
+  }
 
+
+  /**
+   * Searches for large distributed databases should be done via indexes, that are registered/known to the engine.
+   *
+   *  Index types: secondary indexes (cassandra maintained), materialized views (cass maintained), manual value indexes, external indexes (B+ in relational store)
+   *  
+   *  TODO: sorter
+   *
+   * @param indexName
+   * @return
+   */
+  public void searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters, Writer searchResultsWriter)
+  {
+    Iterator<Map> iterator = searchIndex(opctx,detail,indexName, searchCriteria, filters)
+    searchResultsWriter << "["
+    while (iterator.hasNext()) {
+      Map doc = iterator.next()
+      searchResultsWriter << "{" << '"_id":'
+      searchResultsWriter << doc._id
+      for (Map.Entry e : doc.entrySet()) {
+        if (e.key != "_id") {
+          searchResultsWriter << ',"' << StringEscapeUtils.escapeJson(e.key.toString()) << '":'
+          searchResultsWriter << JSONUtil.serialize(e.value)
+        }
+      }
+      searchResultsWriter << "}"
+    }
   }
 
 
 
 
 
+
 }
-
-
 
 // PAXOS...
 // - paxos updates can be batched if rowkey/table aka partition is shared:
