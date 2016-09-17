@@ -12,6 +12,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex
 import org.apache.tinkerpop.gremlin.structure.VertexProperty
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality
 
+import cassdoc.CassDocJsonUtil
 import cassdoc.Detail
 import cassdoc.OperationContext
 import cassdoc.Rel
@@ -30,12 +31,32 @@ class CassDocVertex implements Vertex {
 
   @Override
   public void remove() {
-    throw Vertex.Exceptions.vertexRemovalNotSupported();
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    cassDocGraph.cassDocAPI.delDoc(opctx, detail, docId)
   }
 
   @Override
   public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
-    throw Vertex.Exceptions.edgeAdditionsNotSupported();
+    Rel rel = new Rel()
+    rel.p1 = docId
+    rel.c1 = ((CassDocVertex)inVertex).docId
+    rel.ty1 = label
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    cassDocGraph.cassDocAPI.addRel(opctx, detail, rel)
+    CassDocEdge edge = new CassDocEdge(rel:rel,cassDocGraph:cassDocGraph)
+    if (keyValues != null ) {
+
+      String relMetaId = cassDocGraph.cassDocAPI.relMetadataUUID(opctx, detail, rel.relKey)
+      for (int i = 0; i < keyValues.length / 2; i++) {
+        String key = keyValues[i*2].toString()
+        Object val = keyValues[i*2+1]
+        StringWriter w = new StringWriter()
+        CassDocJsonUtil.specialSerialize(val,w)
+        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString())
+      }
+    }
   }
 
   @Override
@@ -75,9 +96,9 @@ class CassDocVertex implements Vertex {
 
     for (Rel rel : docRels) {
       if (labels == null && !StringUtils.startsWith(rel.ty1,"_")) {
-        edgeList.add(new CassDocEdge(cassDocGraph:cassDocGraph,Rel:rel))
+        edgeList.add(new CassDocEdge(cassDocGraph:cassDocGraph,rel:rel))
       } else if (!StringUtils.startsWith(rel.ty1,"_") && labels.contains(rel.ty1)) {
-        edgeList.add(new CassDocEdge(cassDocGraph:cassDocGraph,Rel:rel))
+        edgeList.add(new CassDocEdge(cassDocGraph:cassDocGraph,rel:rel))
       }
     }
     return edgeList.iterator()

@@ -96,12 +96,12 @@ public class CassDocVertexFeatures implements VertexFeatures {
 
   @Override
   boolean supportsAddVertices() {
-    false
+    true
   }
 
   @Override
   boolean supportsRemoveVertices() {
-    false
+    true
   }
 
   @Override

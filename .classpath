@@ -88,5 +88,6 @@
 	<classpathentry kind="lib" path="lib-tinkerpop3/gremlin-driver-3.2.1-sources.jar"/>
 	<classpathentry kind="lib" path="lib-tinkerpop3/gremlin-server-3.2.1-javadoc.jar"/>
 	<classpathentry kind="lib" path="lib-tinkerpop3/gremlin-server-3.2.1-sources.jar"/>
+	<classpathentry kind="lib" path="lib/commons-configuration-1.6.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

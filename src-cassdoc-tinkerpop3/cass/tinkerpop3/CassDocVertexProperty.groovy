@@ -4,6 +4,7 @@ import org.apache.tinkerpop.gremlin.structure.Element
 import org.apache.tinkerpop.gremlin.structure.Property
 import org.apache.tinkerpop.gremlin.structure.Vertex
 
+import cassdoc.CassDocJsonUtil
 import cassdoc.Detail
 import cassdoc.OperationContext
 
@@ -22,7 +23,13 @@ class CassDocVertexProperty<V> extends CassDocProperty<V> {
   }
 
   public <V> Property<V> property(String key, V value) {
-    throw Element.Exceptions.propertyAdditionNotSupported();
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    StringWriter w = new StringWriter()
+    CassDocJsonUtil.specialSerialize(value,w)
+    cassDocGraph.cassDocAPI.newAttr(opctx, detail, docId, key, w.toString())
+    CassDocProperty prop = new CassDocProperty(docId:docId,cassDocGraph:cassDocGraph,key:key,value:value)
+    return prop
   }
 
   @Override

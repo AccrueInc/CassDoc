@@ -2,11 +2,11 @@ package cass.tinkerpop3
 
 import org.apache.tinkerpop.gremlin.structure.Direction
 import org.apache.tinkerpop.gremlin.structure.Edge
-import org.apache.tinkerpop.gremlin.structure.Element
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.apache.tinkerpop.gremlin.structure.Property
 import org.apache.tinkerpop.gremlin.structure.Vertex
 
+import cassdoc.CassDocJsonUtil
 import cassdoc.Detail
 import cassdoc.OperationContext
 import cassdoc.Rel
@@ -17,11 +17,19 @@ class CassDocEdge implements Edge {
 
   @Override
   public <V> Property<V> property(String key, V value) {
-    throw Element.Exceptions.propertyAdditionNotSupported();
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    String relMetaId = cassDocGraph.cassDocAPI.relMetadataUUID(opctx, detail, rel.relKey)
+    StringWriter w = new StringWriter()
+    CassDocJsonUtil.specialSerialize(value,w)
+    cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString())
+    CassDocEdgeProperty prop = new CassDocEdgeProperty(docId:relMetaId,rel:rel,cassDocGraph:cassDocGraph,key:key,value:value)
+    return prop
   }
 
   @Override
   public void remove() {
+    // TODO: cassdoc API needs Rel cleanup
     throw Edge.Exceptions.edgeRemovalNotSupported();
   }
 
