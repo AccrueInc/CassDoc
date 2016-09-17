@@ -555,6 +555,7 @@ class API {
     return doc
   }
 
+
   public String docMetadataUUID(OperationContext opctx, Detail detail, String docUUID)
   {
     String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
@@ -597,6 +598,12 @@ class API {
     UpdRelMetadata upd = new UpdRelMetadata(relkey:rel, metadataUUID: metaid)
     upd.execMutationCassandra(svcs, opctx, detail)
     return metaid
+  }
+
+  public Rel deserializeRel(OperationContext opctx, Detail detail, RelKey relkey)
+  {
+    Rel rel = RetrievalOperations.getRel(svcs, opctx, detail, relkey)
+    return rel
   }
 
   public void addRel(OperationContext opctx, Detail detail, Rel rel)

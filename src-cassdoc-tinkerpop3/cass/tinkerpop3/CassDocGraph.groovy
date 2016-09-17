@@ -10,6 +10,10 @@ import org.apache.tinkerpop.gremlin.structure.Graph.Exceptions
 import org.apache.tinkerpop.gremlin.structure.Graph.Variables
 
 import cassdoc.API
+import cassdoc.Detail
+import cassdoc.OperationContext
+import cassdoc.Rel
+import cassdoc.RelKey
 import cwdrg.lg.annotation.Log
 
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
@@ -29,7 +33,7 @@ public class CassDocGraph implements Graph {
 
   @Override
   public Vertex addVertex(Object... keyValues) {
-    log.dbg("CassDoc: addVertex invoked")
+    log.dbg("CassDocGraph: addVertex invoked: NOT SUPPORTED: use CassDoc API methods to add a new document/vertex")
     throw Graph.Exceptions.vertexAdditionsNotSupported()
   }
 
@@ -67,10 +71,16 @@ public class CassDocGraph implements Graph {
 
   @Override
   public Iterator<Edge> edges(Object... edgeIds) {
-    // edgeId: space, RelKey tuple
-    cassDocAPI.getRels(edgeIds)
-    // construct Edge, and append to iterator...
-
+    OperationContext opctx = new OperationContext(space:space)
+    Detail detail = new Detail()
+    List edges = []
+    // TODO: spawn thread for streaming object iterator rather than do full list construction
+    for (Object o : edgeIds) {
+      Rel rel = cassDocAPI.deserializeRel(opctx, detail, (RelKey)o)
+      CassDocEdge edge = new CassDocEdge(rel:rel,cassDocGraph:this)
+      edges.add(edge)
+    }
+    return edges.iterator()
   }
 
 
@@ -91,7 +101,17 @@ public class CassDocGraph implements Graph {
   public Iterator<Vertex> vertices(Object... vertexIds) {
     // vertexID: space,id tuple
     log.dbg("CassDoc: get vertices for Ids "+vertexIds,null,null)
-    cassDocAPI.getDocIds(vertexIds)
+    OperationContext opctx = new OperationContext(space:space)
+    Detail detail = new Detail()
+    List<Vertex> vertices = []
+    // TODO: spawn thread for streaming object iterator rather than do full list construction
+    for (Object id : vertexIds) {
+      log.dbg("deserialize "+id)
+      Map<String,Object> doc = cassDocAPI.deserializeDoc(null, null, (String)id)
+      CassDocVertex vertex = new CassDocVertex(docId:id,cassDocGraph:this)
+      vertices.add(vertex)
+    }
+    return vertices.iterator()
   }
 }
 

@@ -757,6 +757,16 @@ class RetrievalOperations {
     throw new RuntimeException("RelKey not found during metadata id retrieval for "+JSONUtil.serialize(relKey))
   }
 
+  public static Rel getRel(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey)
+  {
+    GetRelKeyCmd relkeyCmd = new GetRelKeyCmd(relKey:relKey)
+    GetRelsRCH relCmd = relkeyCmd.queryCassandraRelKey(svcs, opctx, detail)
+    if (relCmd.rels.size() == 1) {
+      return relCmd.rels[0]
+    }
+    throw new RuntimeException("RelKey not found during relation retrieval for "+JSONUtil.serialize(relKey))
+  }
+
   public static List<Rel> deserializeDocRels(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID) {
     GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
     GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)

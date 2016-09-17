@@ -29,7 +29,17 @@ public class CassDocGraphFeatures implements GraphFeatures {
   }
 
   @Override
+  public boolean supportsPersistence() {
+    return false;
+  }
+
+  @Override
   public boolean supportsThreadedTransactions() {
+    return false;
+  }
+
+  @Override
+  public boolean supportsTransactions() {
     return false;
   }
 }
@@ -65,23 +75,33 @@ public class CassDocElementFeatures implements ElementFeatures {
 
 public class CassDocVertexFeatures implements VertexFeatures {
   @Override
-  public VertexPropertyFeatures properties() {
+  VertexPropertyFeatures properties() {
     return new CassDocVertexPropertyFeatures();
   }
 
   @Override
-  public boolean supportsMetaProperties() {
+  boolean supportsMetaProperties() {
+    return true
+  }
+
+  @Override
+  boolean supportsMultiProperties() {
     return false
   }
 
   @Override
-  public boolean supportsMultiProperties() {
-    return false
-  }
-
-  @Override
-  public boolean supportsUserSuppliedIds() {
+  boolean supportsUserSuppliedIds() {
     return false;
+  }
+
+  @Override
+  boolean supportsAddVertices() {
+    false
+  }
+
+  @Override
+  boolean supportsRemoveVertices() {
+    false
   }
 
   @Override
@@ -95,17 +115,98 @@ public class CassDocEdgeFeatures implements EdgeFeatures {
   public EdgePropertyFeatures properties() {
     return new CassDocEdgePropertyFeatures();
   }
+
+  @Override
+  boolean supportsAddEdges() {
+    false
+  }
+  @Override
+  boolean supportsRemoveEdges() {
+    false
+  }
 }
 
 public class CassDocEdgePropertyFeatures implements EdgePropertyFeatures {
+
+
+  @Override
+  public boolean supportsBooleanArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsBooleanValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsByteArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsByteValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsDoubleArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsDoubleValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsFloatArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsFloatValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsIntegerArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsIntegerValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsLongArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsLongValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsStringArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsStringValues() {
+    return true
+  }
+
   @Override
   public boolean supportsMapValues() {
-    return false;
+    return true
   }
 
   @Override
   public boolean supportsMixedListValues() {
-    return false;
+    return true
   }
 
   @Override
@@ -115,11 +216,21 @@ public class CassDocEdgePropertyFeatures implements EdgePropertyFeatures {
 
   @Override
   public boolean supportsUniformListValues() {
-    return false;
+    return true
+  }
+
+  @Override
+  public boolean supportsProperties() {
+    return true
   }
 }
 
 public class CassDocVariableFeatures implements Graph.Features.VariableFeatures {
+  @Override
+  public boolean supportsVariables() {
+    return false;
+  }
+
   @Override
   public boolean supportsBooleanValues() {
     return false;
@@ -222,7 +333,7 @@ public class CassDocVertexPropertyFeatures implements VertexPropertyFeatures {
 
   @Override
   public boolean supportsMixedListValues() {
-    return false;
+    return true;
   }
 
   @Override
@@ -232,7 +343,7 @@ public class CassDocVertexPropertyFeatures implements VertexPropertyFeatures {
 
   @Override
   public boolean supportsUniformListValues() {
-    return false;
+    return true;
   }
 
   @Override
@@ -244,4 +355,84 @@ public class CassDocVertexPropertyFeatures implements VertexPropertyFeatures {
   public boolean supportsAnyIds() {
     return false;
   }
+
+  @Override
+  public boolean supportsBooleanArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsBooleanValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsByteArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsByteValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsDoubleArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsDoubleValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsFloatArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsFloatValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsIntegerArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsIntegerValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsLongArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsLongValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsStringArrayValues() {
+    return true
+  }
+
+  @Override
+  public boolean supportsStringValues() {
+    return true
+  }
+
+  //  @Override
+  //  public boolean supportsAdd() {
+  //    return false;
+  //  }
+  //
+  //  @Override
+  //  public boolean supportsRemove() {
+  //    return false;
+  //  }
 }

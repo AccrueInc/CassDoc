@@ -6,30 +6,14 @@ import org.apache.tinkerpop.gremlin.structure.Element
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.apache.tinkerpop.gremlin.structure.Property
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils
 
+import cassdoc.Detail
+import cassdoc.OperationContext
 import cassdoc.Rel
 
 class CassDocEdge implements Edge {
   Rel rel
-  CassDocGraph cassDocGraph
-
-
-  @Override
-  public Graph graph() {
-    cassDocGraph
-  }
-
-  @Override
-  public Object id() {
-    relId
-  }
-
-  @Override
-  public String label() {
-    // get rel
-    // get ... href? nned to think
-  }
+  transient CassDocGraph cassDocGraph
 
   @Override
   public <V> Property<V> property(String key, V value) {
@@ -41,12 +25,50 @@ class CassDocEdge implements Edge {
     throw Edge.Exceptions.edgeRemovalNotSupported();
   }
 
+
+  @Override
+  public Graph graph() {
+    cassDocGraph
+  }
+
+  @Override
+  public Object id() {
+    rel.relKey
+  }
+
+  @Override
+  public String label() {
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    Map<String,Object> relMeta = cassDocGraph.cassDocAPI.deserializeRelMetadata(opctx, detail, rel.relKey)
+    String label = relMeta["label"]
+    return label
+  }
+
+
   @Override
   public <V> Iterator<Property<V>> properties(String... propertyKeys) {
-    // do we support edge / rel props?
-    // I think we have to... need to enhance the data model
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
 
-    return null;
+    if (propertyKeys != null) {
+      Set<String> propnames = [] as Set
+      propnames.addAll(propertyKeys)
+      if (propnames.size() > 0) {
+        detail.setAttrSubset(propnames)
+      }
+    }
+
+    List<Property> props = []
+    Map<String,Object> relMeta = cassDocGraph.cassDocAPI.deserializeRelMetadata(opctx, detail, rel.relKey)
+    String metadataId = relMeta["_id"]
+
+    for (Map.Entry<String,Object> entry : relMeta.entrySet()) {
+      CassDocProperty prop = new CassDocEdgeProperty(cassDocGraph:cassDocGraph,docId:metadataId,edge:this)
+      props.add(prop)
+    }
+
+    return props.iterator()
   }
 
   @Override
@@ -54,13 +76,23 @@ class CassDocEdge implements Edge {
     // get necessary Rels based on direction / label
     switch (direction) {
       case Direction.OUT:
-        return IteratorUtils.of(this.graph.vertices(getBaseEdge().vertices(Direction.OUT).next().id())).next();
+      // return the child
+        List<Vertex> childvertex = [
+          new CassDocVertex(docId:rel.c1,cassDocGraph:cassDocGraph)
+        ]
+        return childvertex.iterator()
       case Direction.IN:
-        return IteratorUtils.of(this.graph.vertices(getBaseEdge().vertices(Direction.IN).next().id())).next();
+        List<Vertex> parentvertex = [
+          new CassDocVertex(docId:rel.p1,cassDocGraph:cassDocGraph)
+        ]
+        return parentvertex.iterator()
       default:
-        final Iterator<Vertex> iterator = getBaseEdge().vertices(Direction.BOTH);
-        return IteratorUtils.of(this.graph.vertices(iterator.next().id()).next(), this.graph.vertices(iterator.next().id()).next());
-
+      // return both child and parent
+        List<Vertex> both = [
+          new CassDocVertex(docId:rel.p1,cassDocGraph:cassDocGraph),
+          new CassDocVertex(docId:rel.c1,cassDocGraph:cassDocGraph)
+        ]
+        return both.iterator()
     }
   }
 

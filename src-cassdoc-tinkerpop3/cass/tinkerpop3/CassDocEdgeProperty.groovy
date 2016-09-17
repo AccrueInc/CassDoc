@@ -1,33 +1,34 @@
 package cass.tinkerpop3
 
+import groovy.transform.CompileStatic
+
 import org.apache.tinkerpop.gremlin.structure.Element
 import org.apache.tinkerpop.gremlin.structure.Property
-import org.apache.tinkerpop.gremlin.structure.Vertex
 
 import cassdoc.Detail
 import cassdoc.OperationContext
 
-class CassDocVertexProperty<V> extends CassDocProperty<V> {
+@CompileStatic
+class CassDocEdgeProperty<V> extends CassDocProperty<V> {
 
-  CassDocVertex vertex
+  CassDocEdge edge
 
   @Override
   public boolean isPresent() {
-    // this doesn't exist unless it is true...
     true
   }
 
   public Object id() {
-    return [vertex.docId, key] as String[]
+    return [docId, key] as String[]
   }
 
   public <V> Property<V> property(String key, V value) {
-    throw Element.Exceptions.propertyAdditionNotSupported();
+    throw Element.Exceptions.propertyAdditionNotSupported()
   }
 
   @Override
-  public Vertex element() {
-    vertex
+  public Element element() {
+    edge
   }
 
   public <U> Iterator<Property<U>> properties(String... propertyKeys) {
@@ -43,11 +44,11 @@ class CassDocVertexProperty<V> extends CassDocProperty<V> {
     }
 
     List<Property> props = []
-    Map<String,Object> attrMeta = cassDocGraph.cassDocAPI.deserializeAttrMetadata(opctx, detail, vertex.docId, key)
-    String metadataId = attrMeta["_id"]
+    Map<String,Object> docMeta = cassDocGraph.cassDocAPI.deserializeDoc(opctx, detail, docId)
+    String metadataId = docMeta["_id"]
 
-    for (Map.Entry<String,Object> entry : attrMeta.entrySet()) {
-      CassDocProperty prop = new CassDocProperty(docId: metadataId,vertex:this)
+    for (Map.Entry<String,Object> entry : docMeta.entrySet()) {
+      CassDocProperty prop = new CassDocProperty(docId:metadataId, element:edge, key:entry.key, value:entry.value)
       props.add(prop)
     }
 
