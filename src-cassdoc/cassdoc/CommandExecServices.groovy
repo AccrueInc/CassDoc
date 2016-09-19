@@ -5,7 +5,6 @@ import groovy.transform.CompileStatic
 import org.springframework.beans.factory.annotation.Autowired
 
 import cassdoc.commands.mutate.NewAttr
-import cassdoc.commands.mutate.NewDoc
 import cassdoc.commands.mutate.UpdFixedCol
 
 import com.fasterxml.jackson.core.JsonFactory
@@ -34,7 +33,7 @@ class CommandExecServices {
 
 
 
-  void execUpdDocFixedColUNSAFE(OperationContext opctx, Detail detail, UpdFixedCol updDocFixedColCmd)
+  static void execUpdDocFixedColUNSAFE(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdFixedCol updDocFixedColCmd)
   {
     String space = opctx.space
     String suffix = IDUtil.idSuffix(updDocFixedColCmd.docUUID)
@@ -43,22 +42,10 @@ class CommandExecServices {
     Object args = [
       updDocFixedColCmd.value,
       updDocFixedColCmd.docUUID] as Object[]
-    driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
+    svcs.driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 
-  void execNewDocCmdPAXOS(OperationContext opctx, Detail detail, NewDoc newDocCmd)
-  {
-    String space = opctx.space
-    String suffix = IDUtil.idSuffix(newDocCmd.docUUID)
-    String cql = "INSERT INTO ${space}.e_${suffix} (e,zv,a0) VALUES (?,?,?) IF NOT EXISTS"
-    Object[] args = [
-      newDocCmd.docUUID,
-      opctx.updateUUID,
-      newDocCmd.parentUUID] as Object[]
-    driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
-  }
-
-  void execNewAttrCmdPAXOS(OperationContext opctx, Detail detail, NewAttr newAttrCmd)
+  static void execNewAttrCmdPAXOS(CommandExecServices svcs, OperationContext opctx, Detail detail, NewAttr newAttrCmd)
   {
     String space = opctx.space
     String suffix = IDUtil.idSuffix(newAttrCmd.docUUID)
@@ -69,7 +56,7 @@ class CommandExecServices {
       opctx.updateUUID,
       newAttrCmd.attrValue?.value,
       TypeConfigurationService.attrTypeCode(newAttrCmd.attrValue?.type)] as Object[]
-    driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
+    svcs.driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 
 
