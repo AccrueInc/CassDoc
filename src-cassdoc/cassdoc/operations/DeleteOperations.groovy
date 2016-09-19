@@ -28,7 +28,7 @@ class DeleteOperations {
   // 1) determine clear vs delete process (timestamp only??) ... clear should have a different UUID!
   // 2) determine cleanup:
   // ---- relations will have subentities to (possibly) delete
-  // ---- config will have custom indexes and fixed property cleanup
+  // ---- config will have custom indexes and fixed attribute cleanup
   // ---- detail can have special information (don't delete children of a certain type, etc)
   // ---- rels themselves
 

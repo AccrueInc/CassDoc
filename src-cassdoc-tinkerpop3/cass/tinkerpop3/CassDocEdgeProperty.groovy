@@ -46,7 +46,7 @@ class CassDocEdgeProperty<V> extends CassDocProperty<V> {
       Set<String> propnames = [] as Set
       propnames.addAll(propertyKeys)
       if (propnames.size() > 0) {
-        detail.setAttrSubset(propnames)
+        detail.attrSubset = propnames
       }
     }
 

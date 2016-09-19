@@ -21,7 +21,7 @@ class Detail {
   Detail childDocDetail = null
   Map<String,Detail> childDocSuffixDetail = null
 
-  // meta properties
+  // meta attributes
   boolean docIDTimestampMeta = false // y
   boolean docIDDateMeta = false // y
   String docWritetimeMeta = null // y

@@ -86,7 +86,7 @@ public class IndexOperations {
 
   static void processNewAttrIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, NewAttr cmd) {
 
-    // fixed prop cols (basically these are indexes)
+    // fixed attr cols (basically these are indexes)
     String suffix = IDUtil.idSuffix(cmd.docUUID)
     DocType docType = svcs.typeSvc.getTypeForSuffix(suffix)
     String col = docType.fixedAttrMap[cmd.attrName]?.colname

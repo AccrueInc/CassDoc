@@ -13,6 +13,7 @@ import javax.jcr.LoginException
 import javax.jcr.NamespaceException
 import javax.jcr.Node
 import javax.jcr.PathNotFoundException
+import javax.jcr.Property
 import javax.jcr.ReferentialIntegrityException
 import javax.jcr.Repository
 import javax.jcr.RepositoryException
@@ -33,6 +34,10 @@ import org.xml.sax.SAXException
 class CassDocJcrSession implements Session {
 
   CassDocJcrRepository repo;
+
+  @Override
+  public Property getProperty(String propName) {
+  }
 
   @Override
   public void addLockToken(String arg0) {

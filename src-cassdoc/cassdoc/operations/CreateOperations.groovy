@@ -123,10 +123,10 @@ class CreateOperations {
         break;
       } else if (nextField == JsonToken.FIELD_NAME) {
         String fieldName = parser.getCurrentName();
-        NewAttr newPropCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
-        newPropCmd.attrValue = parseField(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser);
-        newPropCmd.isComplete = true;
-        analyzeNewAttrEvent(svcs,opctx,detail,newPropCmd)
+        NewAttr newAttrCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
+        newAttrCmd.attrValue = parseField(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser);
+        newAttrCmd.isComplete = true;
+        analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
       } else {
         throw new Exception ("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT "+nextField);
       }

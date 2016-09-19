@@ -29,19 +29,9 @@ class CommandExecServices {
   DriverWrapper driver
 
   // TODO: service-ify and autowire
-  /*
-   RetrievalOperations retrieve;
-   CreateOperations create;
-   MergeOperations merge;
-   UpdateOperations update;
-   SearchOperations search;
-   IndexOperations index;
-   */
-
 
   // ---- COMMANDS
 
-  // TODO: immediate vs batch mode where driver.executeDirectUpdate is performed...
 
 
   void execUpdDocFixedColUNSAFE(OperationContext opctx, Detail detail, UpdFixedCol updDocFixedColCmd)
@@ -68,17 +58,17 @@ class CommandExecServices {
     driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 
-  void execNewPropCmdPAXOS(OperationContext opctx, Detail detail, NewAttr newPropCmd)
+  void execNewAttrCmdPAXOS(OperationContext opctx, Detail detail, NewAttr newAttrCmd)
   {
     String space = opctx.space
-    String suffix = IDUtil.idSuffix(newPropCmd.docUUID)
+    String suffix = IDUtil.idSuffix(newAttrCmd.docUUID)
     String cql = "INSERT INTO ${space}.p_${suffix} (e,p,zv,d,t) VALUES (?,?,?,?,?) IF NOT EXISTS"
     Object[] args = [
-      newPropCmd.docUUID,
-      newPropCmd.attrName,
+      newAttrCmd.docUUID,
+      newAttrCmd.attrName,
       opctx.updateUUID,
-      newPropCmd.attrValue?.value,
-      TypeConfigurationService.attrTypeCode(newPropCmd.attrValue?.type)] as Object[]
+      newAttrCmd.attrValue?.value,
+      TypeConfigurationService.attrTypeCode(newAttrCmd.attrValue?.type)] as Object[]
     driver.executeDirectUpdate(space,cql,args,detail.writeConsistency,opctx.operationTimestamp)
   }
 

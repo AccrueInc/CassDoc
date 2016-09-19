@@ -79,7 +79,7 @@ CREATE TABLE ${keyspace}.i (
 
 for (String entSuff : entityTypes.keySet()) {
   println gen.entityTable(keyspace,entSuff,entityTypes[entSuff])
-  println gen.propTable(keyspace,entSuff)
+  println gen.attrTable(keyspace,entSuff)
 }
 
 println """

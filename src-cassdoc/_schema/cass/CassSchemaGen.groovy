@@ -21,7 +21,7 @@ CREATE TABLE ${keyspace}.e_${entityTypeSuffix} (
     return sb.toString()
   }
 
-  def propTable(String keyspace, String entityTypeSuffix) {
+  def attrTable(String keyspace, String entityTypeSuffix) {
     """
 CREATE TABLE ${keyspace}.p_${entityTypeSuffix} (
   e text,
