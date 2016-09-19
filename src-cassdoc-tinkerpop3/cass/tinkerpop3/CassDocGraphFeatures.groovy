@@ -101,7 +101,7 @@ public class CassDocVertexFeatures implements VertexFeatures {
 
   @Override
   boolean supportsRemoveVertices() {
-    true
+    false
   }
 
   @Override
@@ -118,7 +118,7 @@ public class CassDocEdgeFeatures implements EdgeFeatures {
 
   @Override
   boolean supportsAddEdges() {
-    false
+    true
   }
   @Override
   boolean supportsRemoveEdges() {

@@ -5,9 +5,11 @@ import cassdoc.CommandExecServices
 import cassdoc.Detail
 import cassdoc.DocType
 import cassdoc.IDUtil
+import cassdoc.IndexTypes
 import cassdoc.ManualIndex
 import cassdoc.OperationContext
 import cassdoc.Rel
+import cassdoc.RelTypes
 import cassdoc.commands.mutate.ClrIdxVal
 import cassdoc.commands.mutate.InsIdxValOnly
 import cassdoc.commands.mutate.NewAttr
@@ -20,22 +22,20 @@ import cwdrg.util.json.JSONUtil
 @Log
 public class IndexOperations {
 
-  static final String DOC_HAS_IDX = "_I"
 
-  static final String IDX_TYPE_HAS_VALUE = "HAS_VALUE"
 
   static void cleanupDocIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, List<Rel> docRels) {
     DocType docType = svcs.typeSvc.getTypeForID(docUUID)
 
     Set<ManualIndex> processedIndexes = [] as Set
     for (Rel rel : docRels) {
-      if (rel.ty1 == DOC_HAS_IDX) {
+      if (rel.ty1 == RelTypes.SYS_INDEX) {
         String idxRef = rel.c1
         ManualIndex idx = docType.indexMap[idxRef]
         if (idx in processedIndexes) {
           // debug msg: already cleaned up indexName
         } else {
-          if (idx.indexType == IDX_TYPE_HAS_VALUE) {
+          if (idx.indexType == IndexTypes.HAS_VALUE) {
             ClrIdxVal cmd = new ClrIdxVal()
             cmd.i1 = idx.indexCodes.size() > 0 ? idx.indexCodes[0] : ""
             cmd.i2 = idx.indexCodes.size() > 1 ? idx.indexCodes[1] : ""
@@ -60,14 +60,14 @@ public class IndexOperations {
 
     Set<ManualIndex> processedIndexes = [] as Set
     for (Rel rel : attrRels) {
-      if (rel.ty1 == DOC_HAS_IDX) {
+      if (rel.ty1 == RelTypes.SYS_INDEX) {
         log.dbg("clean idx rel: "+JSONUtil.serialize(rel),null)
         String idxRef = rel.c1
         ManualIndex idx = docType.indexMap[idxRef]
         if (idx in processedIndexes) {
           // debug msg: already cleaned up indexName
         } else {
-          if (idx.indexType == IDX_TYPE_HAS_VALUE) {
+          if (idx.indexType == IndexTypes.HAS_VALUE) {
             ClrIdxVal cmd = new ClrIdxVal()
             cmd.i1 = idx.indexCodes.size() > 0 ? idx.indexCodes[0] : ""
             cmd.i2 = idx.indexCodes.size() > 1 ? idx.indexCodes[1] : ""
@@ -99,7 +99,7 @@ public class IndexOperations {
     if (attrIndexes != null) {
       for (ManualIndex idx : attrIndexes) {
         // switch on implementing index type
-        if (idx.indexType == IDX_TYPE_HAS_VALUE) {
+        if (idx.indexType == IndexTypes.HAS_VALUE) {
           // TODO: handle value is null, ?which is a delete?
 
           // add docUUID to the index for this value
@@ -115,7 +115,7 @@ public class IndexOperations {
           // add "hasindex" to relations to avoid excessive reads on update/clear/delete
           NewRel rel = new NewRel()
           rel.p1 = cmd.docUUID
-          rel.ty1 = IndexOperations.DOC_HAS_IDX
+          rel.ty1 = RelTypes.SYS_INDEX
           rel.p2 = cmd.attrName
           rel.c1 = idx.indexRef
           rel.c2 = cmd.attrValue?.value

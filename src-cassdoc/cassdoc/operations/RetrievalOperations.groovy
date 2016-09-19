@@ -6,7 +6,9 @@ import java.util.concurrent.LinkedBlockingQueue
 
 import org.apache.commons.lang3.StringEscapeUtils
 
+import cassdoc.AttrNames
 import cassdoc.CommandExecServices
+import cassdoc.DBCodes
 import cassdoc.Detail
 import cassdoc.DocField
 import cassdoc.FieldValue
@@ -14,6 +16,7 @@ import cassdoc.IDUtil
 import cassdoc.OperationContext
 import cassdoc.Rel
 import cassdoc.RelKey
+import cassdoc.RelTypes
 import cassdoc.TypeConfigurationService
 import cassdoc.commands.retrieve.GetAttrCmd
 import cassdoc.commands.retrieve.GetAttrMetaCmd
@@ -49,9 +52,6 @@ import cwdrg.util.json.JSONUtil
 @CompileStatic
 class RetrievalOperations {
 
-
-  // these all suck because the database rows are not stream-processed
-
   /**
    * Deserialize the provided docUUID's document as a Map
    * 
@@ -64,36 +64,36 @@ class RetrievalOperations {
    */
   public static Map<String,Object> deserializeSingleDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, boolean root) {
     Map<String,Object> map = [:]
-    map["_id"] = docUUID
-    if (detail.docIDTimestampMeta) {map["@[IDTIME]"] = IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
-    if (detail.docIDDateMeta) {map["@[IDDATE]"] = new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))}
+    map[AttrNames.SYS_DOCID] = docUUID
+    if (detail.docIDTimestampMeta) {map[AttrNames.META_IDTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
+    if (detail.docIDDateMeta) {map[AttrNames.META_IDDATE] = new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))}
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
       GetDoc eCmd = new GetDoc(docUUID:docUUID)
       GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-      if (detail.docTokenMeta) { map["@[TOKEN]"] = eRCH.token  }
-      if (detail.docPaxosMeta) { map["@[PAXOS]"] = eRCH.paxosVer.toString() }
-      if (detail.docPaxosTimestampMeta) { map["@[PAXOSTIME]"] = IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
-      if (detail.docPaxosDateMeta) { map["@[PAXOSDATE]"]=IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
-      if (detail.docMetaIDMeta) { map["@[DOCMETAID]"] = eRCH.metadata_id }
+      if (detail.docTokenMeta) { map[AttrNames.META_TOKEN] = eRCH.token  }
+      if (detail.docPaxosMeta) { map[AttrNames.META_PAXOS] = eRCH.paxosVer.toString() }
+      if (detail.docPaxosTimestampMeta) { map[AttrNames.META_PAXOSTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
+      if (detail.docPaxosDateMeta) { map[AttrNames.META_PAXOSDATE]=IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
+      if (detail.docMetaIDMeta) { map[AttrNames.META_DOCMETAID] = eRCH.metadata_id }
       if (detail.docMetaDataMeta) {
         if (eRCH.metadata_id != null) {
           Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
-          map["@[DOCMETADATA]"] = deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
+          map[AttrNames.META_DOCMETADATA] = deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
         }
       }
-      if (detail.parentMeta) { map["@[PARENT]"] = eRCH.a0 }
-      if (detail.docWritetimeMeta) { map["@[WT_"+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] =  eRCH.writetime  }
-      if (detail.docWritetimeDateMeta) { map["@[WTDT_"+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] = eRCH.writetime.intdiv(1000) }
+      if (detail.parentMeta) { map[AttrNames.META_PARENT] = eRCH.a0 }
+      if (detail.docWritetimeMeta) { map[AttrNames.META_WT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] =  eRCH.writetime  }
+      if (detail.docWritetimeDateMeta) { map[AttrNames.META_WTDT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] = eRCH.writetime.intdiv(1000) }
     }
     if (detail.docRelationsMeta) {
       GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
       GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-      map["@[RELS]"] = relRCH.rels
+      map[AttrNames.META_RELS] = relRCH.rels
     }
     if (detail.docChildrenMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:"CH")
+      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
       GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-      map["@[CHILDREN]"] = relRCH.rels
+      map[AttrNames.META_CHILDREN] = relRCH.rels
     }
     // nonstreaming
     //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
@@ -121,15 +121,15 @@ class RetrievalOperations {
         Object value = null
         if (attr[1] == null) {
           value = null
-        } else if (attr[1] == 'S') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_STRING) {
           value = attr[2]
-        } else if (attr[1] == 'I') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_INTEGER) {
           value = new BigInteger((String)attr[2])
-        } else if (attr[1] == 'B') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_BOOLEAN) {
           value = Boolean.parseBoolean((String)attr[2])
-        } else if (attr[1] == 'D') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_DECIMAL) {
           value = new BigDecimal((String)attr[2])
-        } else if (attr[1] == 'A') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
           JsonParser arrayParser = svcs.jsonFactory.createParser((String)attr[2])
           JsonToken arrayStartToken = arrayParser.nextToken();
           if (arrayStartToken == JsonToken.START_ARRAY) {
@@ -137,7 +137,7 @@ class RetrievalOperations {
           } else {
             // array type but not array? check for empty string or null
           }
-        } else if (attr[1] == 'O') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
           JsonParser objParser = svcs.jsonFactory.createParser((String)attr[2])
           JsonToken objStartToken = objParser.nextToken();
           if (objStartToken == JsonToken.START_OBJECT) {
@@ -152,17 +152,17 @@ class RetrievalOperations {
         if (keyname != null) {
           map[keyname] = value
         }
-        if (attrDetail.attrWritetimeMeta != null) { map[((String)attr[0]) +'@[WT_'+ detail.attrWritetimeMeta + ']'] =  attr[4] }
-        if (attrDetail.attrWritetimeDateMeta) { map[ ((String)attr[0]) + '@[WTDT_'+attrDetail.attrWritetimeMeta+']'] = new Date(((Long)attr[4]).intdiv(1000)) }
-        if (attrDetail.attrTokenMeta) { map[((String)attr[0]) + '@[TOKEN]'] = attr[5] }
-        if (attrDetail.attrPaxosMeta) { map[((String)attr[0]) + '@[PAXOS]'] = attr[3] }
-        if (attrDetail.attrPaxosTimestampMeta) { map[((String)attr[0]) + '@[PAXOSTIME]'] = IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()) }
-        if (attrDetail.attrPaxosDateMeta) { map[((String)attr[0]) + '@[PAXOSDATE]'] =  new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())).toGMTString()}
-        if (attrDetail.attrMetaIDMeta) { map[((String)attr[0]) + '@[ATTRMETAID]'] = attr[6] }
+        if (attrDetail.attrWritetimeMeta != null) { map[((String)attr[0]) +AttrNames.META_WT_PRE+ detail.attrWritetimeMeta + ']'] =  attr[4] }
+        if (attrDetail.attrWritetimeDateMeta) { map[ ((String)attr[0]) + AttrNames.META_WTDT_PRE+attrDetail.attrWritetimeMeta+']'] = new Date(((Long)attr[4]).intdiv(1000)) }
+        if (attrDetail.attrTokenMeta) { map[((String)attr[0]) + AttrNames.META_TOKEN] = attr[5] }
+        if (attrDetail.attrPaxosMeta) { map[((String)attr[0]) + AttrNames.META_PAXOS] = attr[3] }
+        if (attrDetail.attrPaxosTimestampMeta) { map[((String)attr[0]) + AttrNames.META_PAXOSTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()) }
+        if (attrDetail.attrPaxosDateMeta) { map[((String)attr[0]) + AttrNames.META_PAXOSDATE] =  new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())).toGMTString()}
+        if (attrDetail.attrMetaIDMeta) { map[((String)attr[0]) + AttrNames.META_ATTRMETAID] = attr[6] }
         if (attrDetail.attrMetaDataMeta) {
           if (attr[6] != null) {
             Detail metaDetail = detail.resolveAttrDetail((String)attr[6])
-            map[((String)attr[0]) + "@[ATTRMETADATA]"] = deserializeSingleDoc(svcs,opctx,metaDetail,(String)attr[6],false)
+            map[((String)attr[0]) + AttrNames.META_ATTRMETADATA] = deserializeSingleDoc(svcs,opctx,metaDetail,(String)attr[6],false)
           }
         }
 
@@ -171,43 +171,43 @@ class RetrievalOperations {
       }
     }
     if (root && opctx.cqlTraceEnabled) {
-      map["@[CQLTRACE]"] = opctx.cqlTrace
+      map[AttrNames.META_CQLTRACE] = opctx.cqlTrace
     }
     return map
   }
 
   public static void getSingleDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Writer writer, boolean root) {
-    writer << '{"_id":"' << docUUID << '"'
-    if (detail.docIDTimestampMeta) {writer << ',"@[IDTIME]":' << IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
-    if (detail.docIDDateMeta) {writer << ',"@[IDDATE]":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID)).toGMTString() << '"'}
+    writer << '{"' << AttrNames.SYS_DOCID <<'":"' << docUUID << '"'
+    if (detail.docIDTimestampMeta) {writer << ',"' << AttrNames.META_IDTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
+    if (detail.docIDDateMeta) {writer << ',"' << AttrNames.META_IDDATE << '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID)).toGMTString() << '"'}
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
       GetDoc eCmd = new GetDoc(docUUID:docUUID)
       GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-      if (detail.docTokenMeta) { writer << ',"@[TOKEN]":' << eRCH.token  }
-      if (detail.docPaxosMeta) { writer << ',"@[PAXOS]":"' << eRCH.paxosVer.toString() << '"' }
-      if (detail.docPaxosTimestampMeta) { writer << ',"@[PAXOSTIME]":' << IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
-      if (detail.docPaxosDateMeta) { writer << ',"@[PAXOSDATE]":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString())).toGMTString() << '"' }
-      if (detail.docMetaIDMeta) { writer << ',"@[DOCMETAID]":"' << JSONUtil.serialize(eRCH.metadata_id) << '"'}
+      if (detail.docTokenMeta) { writer << ',"' << AttrNames.META_TOKEN << '":' << eRCH.token  }
+      if (detail.docPaxosMeta) { writer << ',"' << AttrNames.META_PAXOS << '":"' << eRCH.paxosVer.toString() << '"' }
+      if (detail.docPaxosTimestampMeta) { writer << ',"' << AttrNames.META_PAXOSTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
+      if (detail.docPaxosDateMeta) { writer << ',"' << AttrNames.META_PAXOSDATE << '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString())).toGMTString() << '"' }
+      if (detail.docMetaIDMeta) { writer << ',"' << AttrNames.META_DOCMETAID << '":"' << JSONUtil.serialize(eRCH.metadata_id) << '"'}
       if (detail.docMetaDataMeta) {
         if (eRCH.metadata_id != null) {
           Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
-          writer << ',"@[DOCMETADATA]":'
+          writer << ',"' << AttrNames.META_DOCMETADATA << '":'
           getSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,writer,false)
         }
       }
-      if (detail.parentMeta) { writer << ',"@[PARENT]":"' << eRCH.a0 << '"' }
-      if (detail.docWritetimeMeta) { writer << ',"@[WT_'+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":' << eRCH.writetime  }
-      if (detail.docWritetimeDateMeta) { writer << ',"@[WTDT_'+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":"' << new Date(eRCH.writetime.intdiv(1000)).toGMTString() << '"' }
+      if (detail.parentMeta) { writer << ',"' << AttrNames.META_PARENT << '":"' << eRCH.a0 << '"' }
+      if (detail.docWritetimeMeta) { writer << ',"' << AttrNames.META_WT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":' << eRCH.writetime  }
+      if (detail.docWritetimeDateMeta) { writer << ',"' << AttrNames.META_WTDT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":"' << new Date(eRCH.writetime.intdiv(1000)).toGMTString() << '"' }
     }
     if (detail.docRelationsMeta) {
       GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
       GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-      writer << ',"@[RELS]":' << JSONUtil.serialize(relRCH.rels)
+      writer << ',"' << AttrNames.META_RELS << '":' << JSONUtil.serialize(relRCH.rels)
     }
     if (detail.docChildrenMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:"CH")
+      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
       GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-      writer << ',"@[CHILDREN]":' << JSONUtil.serialize(relRCH.rels)
+      writer << ',"' << AttrNames.META_CHILDREN << '":' << JSONUtil.serialize(relRCH.rels)
     }
     // nonstreaming
     //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
@@ -232,11 +232,11 @@ class RetrievalOperations {
           attr[6] = metaRCH.attrMetaID
         }
         writer << ',"'<< StringEscapeUtils.escapeJson((String)attr[0]) << '":'
-        if (attr[1] == 'S') {
+        if (attr[1] == DBCodes.TYPE_CODE_STRING) {
           writer << '"' << StringEscapeUtils.escapeJson((String)attr[2]) << '"'
-        } else if (attr[1] == null || attr[1] == 'I' || attr[1] == 'D' || attr[1] == 'B') {
+        } else if (attr[1] == null || attr[1] == DBCodes.TYPE_CODE_INTEGER || attr[1] == DBCodes.TYPE_CODE_DECIMAL || attr[1] == DBCodes.TYPE_CODE_BOOLEAN) {
           writer << attr[2]
-        } else if (attr[1] == 'A') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
           JsonParser arrayParser = svcs.jsonFactory.createParser((String)attr[2])
           JsonToken arrayStartToken = arrayParser.nextToken();
           if (arrayStartToken == JsonToken.START_ARRAY) {
@@ -244,7 +244,7 @@ class RetrievalOperations {
           } else {
             // array type but not array? check for empty string or null
           }
-        } else if (attr[1] == 'O') {
+        } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
           JsonParser objParser = svcs.jsonFactory.createParser((String)attr[2])
           JsonToken objStartToken = objParser.nextToken();
           if (objStartToken == JsonToken.START_OBJECT) {
@@ -255,17 +255,17 @@ class RetrievalOperations {
         } else {
           throw log.err(opctx,null,new RetrievalException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
         }
-        if (attrDetail.attrWritetimeMeta != null) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << '@[WT_'<< detail.attrWritetimeMeta << ']":' << attr[4] }
-        if (attrDetail.attrWritetimeDateMeta) { writer << ',"' << StringEscapeUtils.escapeJson((String)attr[0]) << '@[WTDT_'+StringEscapeUtils.escapeJson(attrDetail.attrWritetimeMeta)+']":"' << new Date(((Long)attr[4]).intdiv(1000)).toGMTString() << '"' }
-        if (attrDetail.attrTokenMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << '@[TOKEN]":' << attr[5] }
-        if (attrDetail.attrPaxosMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << '@[PAXOS]":"' << attr[3] << '"'}
-        if (attrDetail.attrPaxosTimestampMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << '@[PAXOSTIME]":' << IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()) }
-        if (attrDetail.attrPaxosDateMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << '@[PAXOSDATE]":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())).toGMTString() << '"'}
-        if (attrDetail.attrMetaIDMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << '@[ATTRMETAID]":"' << attr[6] << '"'}
+        if (attrDetail.attrWritetimeMeta != null) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << AttrNames.META_WT_PRE<< detail.attrWritetimeMeta << ']":' << attr[4] }
+        if (attrDetail.attrWritetimeDateMeta) { writer << ',"' << StringEscapeUtils.escapeJson((String)attr[0]) << AttrNames.META_WTDT_PRE+StringEscapeUtils.escapeJson(attrDetail.attrWritetimeMeta)+']":"' << new Date(((Long)attr[4]).intdiv(1000)).toGMTString() << '"' }
+        if (attrDetail.attrTokenMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) <<  AttrNames.META_TOKEN << '":' << attr[5] }
+        if (attrDetail.attrPaxosMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) <<  AttrNames.META_PAXOS << '":"' << attr[3] << '"'}
+        if (attrDetail.attrPaxosTimestampMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << AttrNames.META_PAXOSTIME<< '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()) }
+        if (attrDetail.attrPaxosDateMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << AttrNames.META_PAXOSDATE<< '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())).toGMTString() << '"'}
+        if (attrDetail.attrMetaIDMeta) { writer << ',"' <<  StringEscapeUtils.escapeJson((String)attr[0]) << AttrNames.META_ATTRMETAID<< '":"' << attr[6] << '"'}
         if (attrDetail.attrMetaDataMeta) {
           if (attr[6] != null) {
             Detail metaDetail = detail.resolveAttrDetail((String)attr[6])
-            writer << ',"' << StringEscapeUtils.escapeJson((String)attr[0]) << '@[ATTRMETADATA]":'
+            writer << ',"' << StringEscapeUtils.escapeJson((String)attr[0]) << AttrNames.META_ATTRMETADATA<< '":'
             getSingleDoc(svcs,opctx,metaDetail,(String)attr[0],writer,false)
           }
         }
@@ -274,7 +274,7 @@ class RetrievalOperations {
       }
     }
     if (root && opctx.cqlTraceEnabled) {
-      writer << ',"@[CQLTRACE]":' << JSONUtil.serialize(opctx.cqlTrace)
+      writer << ',"' <<  AttrNames.META_CQLTRACE << '":' << JSONUtil.serialize(opctx.cqlTrace)
     }
     writer << "}"
   }
@@ -283,11 +283,11 @@ class RetrievalOperations {
     // writer << '"' << StringEscapeUtils.escapeJson(attr) << '":' // retiring...
     GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
     GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    if (rch.valType == 'S') {
+    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
       writer <<  '"'<< StringEscapeUtils.escapeJson(rch.data) << '"'
-    } else if (rch.valType == null || rch.valType == 'D' || rch.valType == 'B'|| rch.valType == 'I') {
+    } else if (rch.valType == null || rch.valType == DBCodes.TYPE_CODE_DECIMAL || rch.valType == DBCodes.TYPE_CODE_BOOLEAN|| rch.valType == DBCodes.TYPE_CODE_INTEGER) {
       writer << rch.data
-    } else if (rch.valType == 'A') {
+    } else if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
       JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
       JsonToken arrayStartToken = arrayParser.nextToken();
       if (arrayStartToken == JsonToken.START_ARRAY) {
@@ -295,7 +295,7 @@ class RetrievalOperations {
       } else {
         // array type but not array? check for empty string or null
       }
-    } else if (rch.valType == 'O') {
+    } else if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
       JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
       JsonToken objStartToken = objParser.nextToken();
       if (objStartToken == JsonToken.START_OBJECT) {
@@ -314,26 +314,26 @@ class RetrievalOperations {
     if (rch.data == null) {
       return null
     }
-    if (rch.valType == 'S') {
+    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
       return rch.data
     }
-    if (rch.valType == 'D') {
+    if (rch.valType == DBCodes.TYPE_CODE_DECIMAL) {
       return new BigDecimal(rch.data)
     }
-    if (rch.valType == 'B') {
+    if (rch.valType == DBCodes.TYPE_CODE_BOOLEAN) {
       return Boolean.parseBoolean(rch.data)
     }
-    if (rch.valType == 'I') {
+    if (rch.valType == DBCodes.TYPE_CODE_INTEGER) {
       return new BigInteger(rch.data)
     }
-    if (rch.valType == 'A') {
+    if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
       JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
       JsonToken arrayStartToken = arrayParser.nextToken();
       if (arrayStartToken == JsonToken.START_ARRAY) {
         return deserializeRetrievedChildArray(svcs,opctx,detail,docUUID, attr, arrayParser)
       }
     }
-    if (rch.valType == 'O') {
+    if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
       JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
       JsonToken objStartToken = objParser.nextToken();
       if (objStartToken == JsonToken.START_OBJECT) {
@@ -348,11 +348,11 @@ class RetrievalOperations {
     StringWriter writer = new StringWriter()
     GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
     GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    if (rch.valType == 'S') {
+    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
       writer <<  '"'<< StringEscapeUtils.escapeJson(rch.data) << '"'
-    } else if (rch.valType == null || rch.valType == 'D' || rch.valType == 'B'|| rch.valType == 'I') {
+    } else if (rch.valType == null || rch.valType == DBCodes.TYPE_CODE_DECIMAL || rch.valType == DBCodes.TYPE_CODE_BOOLEAN|| rch.valType == DBCodes.TYPE_CODE_INTEGER) {
       writer << rch.data
-    } else if (rch.valType == 'A') {
+    } else if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
       JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
       JsonToken arrayStartToken = arrayParser.nextToken();
       if (arrayStartToken == JsonToken.START_ARRAY) {
@@ -360,7 +360,7 @@ class RetrievalOperations {
       } else {
         // array type but not array? check for empty string or null
       }
-    } else if (rch.valType == 'O') {
+    } else if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
       JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
       JsonToken objStartToken = objParser.nextToken();
       if (objStartToken == JsonToken.START_OBJECT) {
@@ -484,7 +484,7 @@ class RetrievalOperations {
               }
               return;
             } else {
-              writer << '{"_id":"' << StringEscapeUtils.escapeJson(childUUID) << '"}'
+              writer << '{"' << AttrNames.SYS_DOCID << '":"' << StringEscapeUtils.escapeJson(childUUID) << '"}'
               JsonToken excessEndObjectToken = objParser.nextToken()
               if (excessEndObjectToken != JsonToken.END_OBJECT) {
                 throw new Exception ("ERROR in parse: wrong excess token after stub: "+excessEndObjectToken)
@@ -543,7 +543,7 @@ class RetrievalOperations {
               }
               return map;
             } else {
-              map["_id"] = childUUID
+              map[AttrNames.SYS_DOCID] = childUUID
               JsonToken excessEndObjectToken = objParser.nextToken()
               if (excessEndObjectToken != JsonToken.END_OBJECT) {
                 throw new Exception ("ERROR in parse: wrong excess token after stub: "+excessEndObjectToken)
@@ -606,41 +606,41 @@ class RetrievalOperations {
     final LinkedBlockingQueue attrQ = new LinkedBlockingQueue(1000)
     final BlockingIterator<Map.Entry<String,Object>> iterator = new BlockingIterator<Map.Entry<String,Object>>(queue:attrQ)
     // fire off a thread?
-    Map.Entry<String,Object> docUUIDField = new AbstractMap.SimpleEntry<String,Object> ("_id",docUUID)
+    Map.Entry<String,Object> docUUIDField = new AbstractMap.SimpleEntry<String,Object> (AttrNames.SYS_DOCID,docUUID)
     attrQ.put(docUUIDField)
 
     new Thread(){
           public void run() {
-            if (detail.docIDTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[IDTIME]",IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
-            if (detail.docIDDateMeta) {  attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[IDDATE]",IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
+            if (detail.docIDTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
+            if (detail.docIDDateMeta) {  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
             if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
               GetDoc eCmd = new GetDoc(docUUID:docUUID)
               GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-              if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[TOKEN]",eRCH.token)) }
-              if (detail.docPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[PAXOS]",eRCH.paxosVer)) }
-              if (detail.docPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[PAXOSTIME]",IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
-              if (detail.docPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[PAXOSDATE]",IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
-              if (detail.docMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[DOCMETAID]",eRCH.metadata_id)) }
+              if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_TOKEN,eRCH.token)) }
+              if (detail.docPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOS,eRCH.paxosVer)) }
+              if (detail.docPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
+              if (detail.docPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
+              if (detail.docMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETAID,eRCH.metadata_id)) }
               if (detail.docMetaDataMeta) {
                 if (eRCH.metadata_id != null) {
                   Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
                   Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
-                  attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[DOCMETADATA]",metadatadoc))
+                  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETADATA,metadatadoc))
                 }
               }
-              if (detail.parentMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[PARENT]",eRCH.a0)) }
-              if (detail.docWritetimeMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[WT_"+detail.docWritetimeMeta+"]",eRCH.writetime)) }
-              if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[WTDT_"+detail.docWritetimeMeta+"]",eRCH.writetime.intdiv(1000))) }
+              if (detail.parentMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PARENT,eRCH.a0)) }
+              if (detail.docWritetimeMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime)) }
+              if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WTDT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime.intdiv(1000))) }
             }
             if (detail.docRelationsMeta) {
               GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
               GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-              attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[RELS]",relRCH.rels))
+              attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,relRCH.rels))
             }
             if (detail.docChildrenMeta) {
-              GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:"CH")
+              GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
               GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-              attrQ.put(new AbstractMap.SimpleEntry<String,Object> ("@[CHILDREN]",relRCH.rels))
+              attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,relRCH.rels))
             }
 
             // non-streaming
@@ -669,15 +669,15 @@ class RetrievalOperations {
                 Object value = null
                 if (attr[2] == null) {
                   value = null
-                } else { if (attr[1] == 'S') {
+                } else { if (attr[1] == DBCodes.TYPE_CODE_STRING) {
                     value = (String)attr[2]
-                  } else if (attr[1] == 'I' ) {
+                  } else if (attr[1] == DBCodes.TYPE_CODE_INTEGER ) {
                     value = new BigInteger((String)attr[2])
-                  } else if (attr[1] == 'D') {
+                  } else if (attr[1] == DBCodes.TYPE_CODE_DECIMAL) {
                     value = new BigDecimal((String)attr[2])
-                  } else if (attr[1] == 'B') {
+                  } else if (attr[1] == DBCodes.TYPE_CODE_BOOLEAN) {
                     value = Boolean.parseBoolean((String)attr[2])
-                  } else if (attr[1] == 'A') {
+                  } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
                     JsonParser arrayParser = svcs.jsonFactory.createParser((String)attr[2])
                     JsonToken arrayStartToken = arrayParser.nextToken();
                     if (arrayStartToken == JsonToken.START_ARRAY) {
@@ -686,7 +686,7 @@ class RetrievalOperations {
                     } else {
                       // array type but not array? check for empty string or null
                     }
-                  } else if (attr[1] == 'O') {
+                  } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
                     JsonParser objParser = svcs.jsonFactory.createParser((String)attr[2])
                     JsonToken objStartToken = objParser.nextToken();
                     if (objStartToken == JsonToken.START_OBJECT) {
@@ -701,18 +701,18 @@ class RetrievalOperations {
                   attrQ.put(new AbstractMap.SimpleEntry<String,Object>((String)attr[0],value))
 
                   // attr-specific meta-attrs
-                  if (attrDetail.attrWritetimeMeta != null) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + '@[WT_' + detail.attrWritetimeMeta + ']',attr[4])) }
-                  if (attrDetail.attrWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + '@[WTDT_'+attrDetail.attrWritetimeMeta+']',((Long)attr[4]).intdiv(1000)))}
-                  if (attrDetail.attrTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+'@[TOKEN]' ,attr[5])) }
-                  if (attrDetail.attrPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+'@[PAXOS]' ,attr[3])) }
-                  if (attrDetail.attrPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+'@[PAXOSTIME]' ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()))) }
-                  if (attrDetail.attrPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+'@[PAXOSDATE]' ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())))}
-                  if (attrDetail.attrMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+'@[ATTRMETAID]' ,attr[6])) }
+                  if (attrDetail.attrWritetimeMeta != null) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + AttrNames.META_WT_PRE + detail.attrWritetimeMeta + ']',attr[4])) }
+                  if (attrDetail.attrWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + AttrNames.META_WTDT_PRE+attrDetail.attrWritetimeMeta+']',((Long)attr[4]).intdiv(1000)))}
+                  if (attrDetail.attrTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_TOKEN ,attr[5])) }
+                  if (attrDetail.attrPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOS ,attr[3])) }
+                  if (attrDetail.attrPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOSTIME ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()))) }
+                  if (attrDetail.attrPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOSDATE ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())))}
+                  if (attrDetail.attrMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_ATTRMETAID ,attr[6])) }
                   if (attrDetail.attrMetaDataMeta) {
                     if (attr[6] != null) {
                       Detail metaDetail = detail.resolveAttrDetail((String)attr[6])
                       Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,(String)attr[6],false)
-                      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (""+(String)attr[0]+"@[ATTRMETADATA]",metadatadoc))
+                      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (""+(String)attr[0]+AttrNames.META_ATTRMETADATA,metadatadoc))
                     }
                   }
 
@@ -722,7 +722,7 @@ class RetrievalOperations {
               }
             }
             if (root && opctx.cqlTraceEnabled) {
-              attrQ.put(new AbstractMap.SimpleEntry<String,Object>("@[CQLTRACE]" ,opctx.cqlTrace))
+              attrQ.put(new AbstractMap.SimpleEntry<String,Object>(AttrNames.META_CQLTRACE ,opctx.cqlTrace))
             }
           }
         }.start();

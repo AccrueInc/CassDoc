@@ -34,6 +34,10 @@ import cwdrg.util.json.JSONUtil
 @CompileStatic
 class API {
 
+  //TODO:
+  // - delete rel, upsert rel, new rel
+  // - newDoc/newAttr without serialization for Maps/Lists (see specialSerialize)
+
   @Autowired
   CommandExecServices svcs;
 
@@ -79,7 +83,7 @@ class API {
     GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
     GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
 
-    if (rch.valType == 'S') {
+    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
       writer << '"' << StringEscapeUtils.escapeJson(rch.data) << '"'
     } else {
       writer << rch.data
@@ -94,22 +98,22 @@ class API {
     if (rch.data == null) {
       return null
     }
-    if (rch.valType == 'O') {
+    if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
       return JSONUtil.deserializeMap(rch.data)
     }
-    if (rch.valType == 'A') {
+    if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
       return JSONUtil.deserializeList(rch.data)
     }
-    if (rch.valType == 'S') {
+    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
       return rch.data
     }
-    if (rch.valType == 'B') {
+    if (rch.valType == DBCodes.TYPE_CODE_BOOLEAN) {
       return Boolean.parseBoolean(rch.data)
     }
-    if (rch.valType == 'I') {
+    if (rch.valType == DBCodes.TYPE_CODE_INTEGER) {
       return new BigInteger(rch.data)
     }
-    if (rch.valType == 'D') {
+    if (rch.valType == DBCodes.TYPE_CODE_DECIMAL) {
       return new BigDecimal(rch.data)
     }
     return null
@@ -151,7 +155,7 @@ class API {
     GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
     for (Object[] attr : rch.attrs) {
       writer << ',"'<< StringEscapeUtils.escapeJson((String)attr[0]) << '":'
-      if (attr[1] == 'S') {
+      if (attr[1] == DBCodes.TYPE_CODE_STRING) {
         writer << '"' << StringEscapeUtils.escapeJson((String)attr[2]) << '"'
       } else {
         writer << attr[2]

@@ -7,6 +7,7 @@ import cassdoc.DocType
 import cassdoc.FixedAttr
 import cassdoc.OperationContext
 import cassdoc.Rel
+import cassdoc.RelTypes
 import cassdoc.commands.mutate.ClrAttr
 import cassdoc.commands.mutate.ClrAttrRels
 import cassdoc.commands.mutate.DelAttr
@@ -45,7 +46,9 @@ class DeleteOperations {
 
   static void deleteAttr(CommandExecServices svcs,OperationContext opctx, Detail detail, String docUUID, String attr, boolean clear)
   {
-    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:docUUID,ty1s:["_I", "CH"] as HashSet,p2:attr)
+    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:docUUID,ty1s:[
+      RelTypes.SYS_INDEX,
+      RelTypes.TO_CHILD] as HashSet,p2:attr)
     GetRelsRCH attrChildDocs = getRels.queryCassandraAttrRels(svcs, opctx, detail, null)
 
     DelAttr delAttr = new DelAttr(docUUID:docUUID,attrName:attr)
@@ -54,7 +57,7 @@ class DeleteOperations {
 
     // cascade the delete for child rels
     for (Rel childRel : attrChildDocs.rels) {
-      if (childRel.ty1 == 'CH') {
+      if (childRel.ty1 == RelTypes.TO_CHILD) {
         String childDocUUID = childRel.c1
         // TODO: recurse/deletion cascade detail
         // TODO: recursive cleanup in a cleanup threadx
@@ -82,7 +85,7 @@ class DeleteOperations {
 
 
     for (Rel childRel : docRels) {
-      if (childRel.ty1 == 'CH') {
+      if (childRel.ty1 == RelTypes.TO_CHILD) {
         String childDocUUID = childRel.c1
         //TODO: recurse detail
         deleteDoc(svcs,opctx,detail,childDocUUID)
@@ -107,16 +110,16 @@ class DeleteOperations {
     }
 
     if (clear) {
-      ClrAttrRels clrSubDocRels = new ClrAttrRels(p1:cmd.docUUID,ty1:"CH",p2:cmd.attrName)
+      ClrAttrRels clrSubDocRels = new ClrAttrRels(p1:cmd.docUUID,ty1:RelTypes.TO_CHILD,p2:cmd.attrName)
       opctx.addCommand(svcs, detail, clrSubDocRels)
-      ClrAttrRels clrRelsIdx = new ClrAttrRels(p1:cmd.docUUID,ty1:"_I",p2:cmd.attrName)
+      ClrAttrRels clrRelsIdx = new ClrAttrRels(p1:cmd.docUUID,ty1:RelTypes.SYS_INDEX,p2:cmd.attrName)
       opctx.addCommand(svcs, detail, clrRelsIdx)
       ClrAttr clrAttr = new ClrAttr(docUUID:cmd.docUUID,attrName:cmd.attrName)
       opctx.addCommand(svcs, detail, clrAttr)
     } else {
-      DelAttrRels delRels = new DelAttrRels(p1:cmd.docUUID,ty1:"CH",p2:cmd.attrName)
+      DelAttrRels delRels = new DelAttrRels(p1:cmd.docUUID,ty1:RelTypes.TO_CHILD,p2:cmd.attrName)
       opctx.addCommand(svcs, detail, delRels)
-      DelAttrRels delRelsIdx = new DelAttrRels(p1:cmd.docUUID,ty1:"_I",p2:cmd.attrName)
+      DelAttrRels delRelsIdx = new DelAttrRels(p1:cmd.docUUID,ty1:RelTypes.SYS_INDEX,p2:cmd.attrName)
       opctx.addCommand(svcs, detail, delRelsIdx)
       opctx.addCommand(svcs, detail, cmd)
     }

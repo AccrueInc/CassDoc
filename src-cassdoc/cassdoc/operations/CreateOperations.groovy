@@ -283,7 +283,7 @@ class CreateOperations {
       // child-to-parent rel
       NewRel newBackrefRelCmd = new NewRel()
       newBackrefRelCmd.p1 = newDocCmd.docUUID
-      newBackrefRelCmd.ty1 = "up"
+      newBackrefRelCmd.ty1 = "-CH"
       newBackrefRelCmd.c1 = newDocCmd.parentUUID
       newBackrefRelCmd.c2 = newDocCmd.parentAttr
       opctx.addCommand(svcs, detail, newBackrefRelCmd)
