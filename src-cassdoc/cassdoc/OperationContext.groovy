@@ -1,11 +1,6 @@
 package cassdoc
 
 import groovy.transform.CompileStatic
-
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.Future
-import java.util.concurrent.atomic.AtomicBoolean
-
 import cassdoc.commands.mutate.MutationCmd
 import cassdoc.exceptions.PersistenceConflictException
 import cassdoc.exceptions.UnexpectedPersistenceStateException
@@ -63,10 +58,6 @@ class OperationContext {
 
   String executionMode = "immediate"  // immediate async, immediate sync, batch/spray async/sync
   boolean updateAsyncMode  // sync vs async version of executionMode... ?may be influenced by detail?
-
-  // aaron work queue: TODO: need to decide if we will depend on @Async support or not
-  Queue<Future> workQ = new ConcurrentLinkedQueue()
-  AtomicBoolean workTracker = new AtomicBoolean(true)
 
   void setExecutionMode(String mode) {
     if (mode == "batch") {

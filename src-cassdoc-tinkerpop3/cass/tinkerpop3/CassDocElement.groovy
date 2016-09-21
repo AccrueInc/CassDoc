@@ -13,7 +13,7 @@ import cwdrg.lg.annotation.Log
 @CompileStatic
 @Log
 abstract class CassDocElement implements Element {
-  CassDocGraph cassDocGraph
+  transient CassDocGraph cassDocGraph
 
   @Override
   public Graph graph() {

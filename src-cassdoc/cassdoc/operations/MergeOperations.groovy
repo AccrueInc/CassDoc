@@ -21,6 +21,8 @@ class MergeOperations {
   }
 }
 
+// TODO: These do complicated merge operations on single properties, subdocs, docs, etc. Think set operations with nuances...
+
 
 /* recursive update structure?
  array operations: replace all, empty, append, update entries(), expand, apply groovy closure, find, findAll, etc

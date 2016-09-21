@@ -323,6 +323,7 @@ class NewAttr extends MutationCmd {
   String docUUID
   String attrName
   FieldValue attrValue
+  boolean paxos = false
 
   void batch(OperationContext opctx)
   {
@@ -339,7 +340,7 @@ class NewAttr extends MutationCmd {
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
     String suffix = IDUtil.idSuffix(docUUID)
-    cql = "INSERT INTO ${space}.p_${suffix} (e,p,zv,d,t) VALUES (?,?,?,?,?)"
+    cql = "INSERT INTO ${space}.p_${suffix} (e,p,zv,d,t) VALUES (?,?,?,?,?)" + (paxos ? " IF NOT EXIST" : "")
     cqlargs = [
       docUUID,
       attrName,
@@ -536,7 +537,7 @@ class DelDoc_E extends MutationCmd {
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
     String suffix = IDUtil.idSuffix(docUUID)
-    cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ?"
+    cql = "DELETE FROM ${space}.e_${suffix} WHERE e = ?"
     cqlargs = [docUUID] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
@@ -562,7 +563,7 @@ class DelDoc_P extends MutationCmd {
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
     String suffix = IDUtil.idSuffix(docUUID)
-    cql = "DELETE FROM ${space}.e_${suffix} WHERE e = ?"
+    cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ?"
     cqlargs = [docUUID] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
@@ -702,6 +703,41 @@ class DelAttrRels extends MutationCmd {
     cqlargs = [p1, ty1, p2] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
+}
+
+class DelRel extends MutationCmd {
+  RelKey relKey
+
+  void batch(OperationContext opctx)
+  {
+    ListMap.put(opctx.batches,"R"+relKey.p1,this)
+  }
+
+  boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail)
+  {
+    if (opctx.deletedIds.contains(relKey.p1)) { log.dbg("DelAttrRels filtered "+JSONUtil.serialize(this), null); return false }
+    return true
+  }
+
+  Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
+    space = opctx.space
+    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and ty2 = ?  and ty3 = ? and ty4 = ? and p2 = ? and p3 = ? and p4 = ? and c1 = ? and c2 = ? and c3 = ? and c4 = ?"
+    cqlargs = [
+      relKey.p1,
+      relKey.ty1,
+      relKey.ty2,
+      relKey.ty3,
+      relKey.ty4,
+      relKey.p2,
+      relKey.p3,
+      relKey.p4,
+      relKey.c1,
+      relKey.c2,
+      relKey.c3,
+      relKey.c4 ] as Object[]
+    return execOrPrep(svcs,opctx,detail)
+  }
+
 }
 
 

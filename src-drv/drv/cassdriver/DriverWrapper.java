@@ -37,6 +37,8 @@ import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.policies.ConstantReconnectionPolicy;
 import com.datastax.driver.core.policies.DowngradingConsistencyRetryPolicy;
 
+import cwdrg.util.json.JSONUtil;
+
 public class DriverWrapper
 {
   private static final Logger           log                                       = LoggerFactory.getLogger(DriverWrapper.class);
@@ -319,6 +321,7 @@ public class DriverWrapper
 
   public void executeDirectUpdate(final String keyspace, final String cql, final Object[] prepArgsIn, final String consistency, Long usingTimestamp)
   {
+    log.debug(log.isDebugEnabled() ? "execDirectUpdate: {} {} " + JSONUtil.serialize(prepArgsIn) + " {} {}" : "", keyspace, cql, consistency, usingTimestamp);
     Session session = getSession();
 
     Statement prepstmt = prepare(keyspace, cql, prepArgsIn, consistency, usingTimestamp);
@@ -345,6 +348,7 @@ public class DriverWrapper
       long now = System.currentTimeMillis();
 
       log.debug("execution ended after {} milliseconds; keyspace: {}; cql: {}; args: {}", now - start, stmt.getKeyspace(), stmt.getCql(), stmt.getCqlargs());
+      log.debug(log.isDebugEnabled() ? " args JSON_: " + JSONUtil.serialize(stmt.getCqlargs()) : "");
 
       return rs;
     } catch (TimeoutException e) {
@@ -373,6 +377,7 @@ public class DriverWrapper
     long now = System.currentTimeMillis();
 
     log.debug("execution ended after {} milliseconds; keyspace: {}; cql: {}; args: {}", now - start, stmt.getKeyspace(), stmt.getCql(), stmt.getCqlargs());
+    log.debug(log.isDebugEnabled() ? " args JSON-: " + JSONUtil.serialize(stmt.getCqlargs()) : "");
 
     return rs;
   }

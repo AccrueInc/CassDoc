@@ -17,8 +17,8 @@ class FixedAttr {
   String colname
   String coltype
   Object jsonExtractor
-  String prepStmt_UPDATE_PROPERTY
-  String prepStmt_UPDATE_PROPERTY_PAXOS
+  String prepStmt_UPDATE_ATTR
+  String prepStmt_UPDATE_ATTR_PAXOS
   transient DocType docType
 }
 
@@ -30,9 +30,9 @@ class DocType {
   Map<String,ManualIndex> indexMap = [:]
   Map<String,Set<ManualIndex>> attrIndexMap = [:]
   Object aliasPolicy
-  Object generalPropertyPolicy
+  Object generalAttributePolicy
 
-  // virtual init property for fixed Attrs
+  // virtual init attr for fixed Attrs
   List<FixedAttr> getFixedAttrList() {
     fixedAttrMap.values().asList()
   }
@@ -67,7 +67,7 @@ class ManualIndex {
   String indexType  // low-card hash lookup, hashbucket b+ for LIKE support, time buckets, history (zero-pad the time by a couple 0s), tags, functional
   Map indexConfig   // index-type specific configuration infomation
   List<String> indexCodes = [] // i1,i2,i3
-  List<String> keyAttrs = [] // properties that form the k1 / k2 / k3 fields
+  List<String> keyAttrs = [] // attributes that form the k1 / k2 / k3 fields
   transient DocType docType
 }
 

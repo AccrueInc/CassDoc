@@ -4,7 +4,10 @@ import groovy.transform.CompileStatic
 
 import java.util.regex.Pattern
 
+import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.commons.lang3.StringUtils
+
+import cwdrg.util.json.JSONUtil
 
 
 @CompileStatic
@@ -75,6 +78,51 @@ class IDUtil {
 
 
 @CompileStatic
+class CassDocJsonUtil {
+  static void specialSerialize(Object o, Writer w) {
+    if (o instanceof Map) {
+      Map map = (Map)o
+      // _id must go first in serialization
+      if (map.containsKey("_id")) {
+        w.write('{"_id":')
+        w.write(StringEscapeUtils.escapeJson(map._id.toString()))
+      }
+      map.entrySet().each {
+        if (it.key != "_id") {
+          w << ',"' << StringEscapeUtils.escapeJson(it.key.toString()) << '":'
+          specialSerialize(it.value,w)
+        }
+      }
+      w << "}"
+    } else if (o instanceof List){
+      List list = (List)o
+      boolean first = true
+      w << "["
+      for (Object oo : list) {
+        if (first) first = false else w << ","
+        specialSerialize(oo,w)
+      }
+      w << "]"
+    } else if (o instanceof String) {
+      w << '"' << StringEscapeUtils.escapeJson(o.toString()) << '"'
+    } else if (o instanceof Number || o instanceof BigInteger || o instanceof BigDecimal) {
+      w << o.toString()
+    } else if (o instanceof Date) {
+      Date d = (Date)o
+      w << d.time
+    } else {
+      w << JSONUtil.serialize(o)
+    }
+  }
+}
+
+/**
+ * A utility class that makes sure the keys referenced in a map are backed by Lists.
+ * 
+ * @author cowardlydragon
+ *
+ */
+@CompileStatic
 class ListMap {
   static List get(Map map, Object key) {
     List l = (List)map.get(key)
@@ -96,6 +144,12 @@ class ListMap {
 }
 
 
+/**
+ * A utility class that makes sure the keys referenced in a map are backed by Sets.
+ * 
+ * @author cowardlydragon
+ *
+ */
 @CompileStatic
 class SetMap {
   static Set get(Map map, Object key) {

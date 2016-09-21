@@ -10,6 +10,7 @@ import cassdoc.Detail
 import cassdoc.FieldValue
 import cassdoc.IDUtil
 import cassdoc.OperationContext
+import cassdoc.RelTypes
 import cassdoc.commands.mutate.DelAttr
 import cassdoc.commands.mutate.NewAttr
 import cassdoc.commands.mutate.NewDoc
@@ -43,6 +44,15 @@ class UpdateOperations {
     opctx.addCommand(svcs, detail, cmd)
     analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
   }
+
+  static void updateAttrEntry(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Map.Entry<String,Object> attr) {
+    UpdAttr cmd = new UpdAttr(docUUID:docUUID, attrName:attr.key)
+    cmd.attrValue = CreateOperations.serializeAttr(svcs,opctx,detail,attr,docUUID,null,null)
+    cmd.isComplete = true;
+    opctx.addCommand(svcs, detail, cmd)
+    analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
+  }
+
 
 
   static void analyzeUpdateAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdAttr cmd) {
@@ -83,7 +93,9 @@ class UpdateOperations {
 
     opctx.addCommand(svcs, detail, cmd)
 
-    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:cmd.docUUID,ty1s:["_I", "CH"] as HashSet,p2:cmd.attrName)
+    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:cmd.docUUID,ty1s:[
+      RelTypes.SYS_INDEX,
+      RelTypes.TO_CHILD] as HashSet,p2:cmd.attrName)
     GetRelsRCH attrRels = getRels.queryCassandraAttrRels(svcs, opctx, detail, null)
 
     // cleanup (TODO: separate thread?)
@@ -126,7 +138,9 @@ class UpdateOperations {
     if (token == JsonToken.VALUE_STRING) {
       String idString = parser.getText();
       if (svcs.typeSvc.isKnownSuffix(idString)) {
-        return ["NEW", IDUtil.timeUUID() + "-" + idString] as String[]
+        return [
+          "NEW",
+          IDUtil.timeUUID() + "-" + idString] as String[]
       } else {
         if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
           return ["EXTANT", idString] as String[]
@@ -160,10 +174,10 @@ class UpdateOperations {
           break;
         } else if (nextField == JsonToken.FIELD_NAME) {
           String fieldName = parser.getCurrentName();
-          NewAttr newPropCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
-          newPropCmd.attrValue = parseFieldOverlay(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser, overlayTracker);
-          newPropCmd.isComplete = true;
-          CreateOperations.analyzeNewAttrEvent(svcs,opctx,detail,newPropCmd)
+          NewAttr newAttrCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
+          newAttrCmd.attrValue = parseFieldOverlay(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser, overlayTracker);
+          newAttrCmd.isComplete = true;
+          CreateOperations.analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
         } else {
           throw new Exception ("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT "+nextField);
         }
@@ -175,7 +189,7 @@ class UpdateOperations {
       // parent-to-child rel
       NewRel newSubdocRelCmd = new NewRel()
       newSubdocRelCmd.p1 = parentUUID
-      newSubdocRelCmd.ty1 = "CH"
+      newSubdocRelCmd.ty1 = RelTypes.TO_CHILD
       newSubdocRelCmd.p2 = parentAttr
       newSubdocRelCmd.c1 = analyzeID[1]
       opctx.addCommand(svcs, detail, newSubdocRelCmd)
@@ -183,7 +197,7 @@ class UpdateOperations {
       // child-to-parent rel
       NewRel newBackrefRelCmd = new NewRel()
       newBackrefRelCmd.p1 = analyzeID[1]
-      newBackrefRelCmd.ty1 = "up"
+      newBackrefRelCmd.ty1 = RelTypes.TO_PARENT
       newBackrefRelCmd.c1 = parentUUID
       newBackrefRelCmd.c2 = parentAttr
       opctx.addCommand(svcs, detail, newBackrefRelCmd)

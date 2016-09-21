@@ -2,17 +2,36 @@ package cass.tinkerpop3
 
 import org.apache.tinkerpop.gremlin.structure.Direction
 import org.apache.tinkerpop.gremlin.structure.Edge
-import org.apache.tinkerpop.gremlin.structure.Element
 import org.apache.tinkerpop.gremlin.structure.Graph
 import org.apache.tinkerpop.gremlin.structure.Property
 import org.apache.tinkerpop.gremlin.structure.Vertex
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils
 
+import cassdoc.CassDocJsonUtil
+import cassdoc.Detail
+import cassdoc.OperationContext
 import cassdoc.Rel
 
 class CassDocEdge implements Edge {
   Rel rel
-  CassDocGraph cassDocGraph
+  transient CassDocGraph cassDocGraph
+
+  @Override
+  public <V> Property<V> property(String key, V value) {
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    String relMetaId = cassDocGraph.cassDocAPI.relMetadataUUID(opctx, detail, rel.relKey)
+    StringWriter w = new StringWriter()
+    CassDocJsonUtil.specialSerialize(value,w)
+    cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString())
+    CassDocEdgeProperty prop = new CassDocEdgeProperty(docId:relMetaId,rel:rel,cassDocGraph:cassDocGraph,key:key,value:value)
+    return prop
+  }
+
+  @Override
+  public void remove() {
+    // TODO: cassdoc API needs Rel cleanup
+    throw Edge.Exceptions.edgeRemovalNotSupported();
+  }
 
 
   @Override
@@ -22,31 +41,42 @@ class CassDocEdge implements Edge {
 
   @Override
   public Object id() {
-    relId
+    rel.relKey
   }
 
   @Override
   public String label() {
-    // get rel
-    // get ... href? nned to think
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
+    Map<String,Object> relMeta = cassDocGraph.cassDocAPI.deserializeRelMetadata(opctx, detail, rel.relKey)
+    String label = relMeta["label"]
+    return label
   }
 
-  @Override
-  public <V> Property<V> property(String key, V value) {
-    throw Element.Exceptions.propertyAdditionNotSupported();
-  }
-
-  @Override
-  public void remove() {
-    throw Edge.Exceptions.edgeRemovalNotSupported();
-  }
 
   @Override
   public <V> Iterator<Property<V>> properties(String... propertyKeys) {
-    // do we support edge / rel props?
-    // I think we have to... need to enhance the data model
+    OperationContext opctx = new OperationContext(space:cassDocGraph.space)
+    Detail detail = new Detail()
 
-    return null;
+    if (propertyKeys != null) {
+      Set<String> propnames = [] as Set
+      propnames.addAll(propertyKeys)
+      if (propnames.size() > 0) {
+        detail.setAttrSubset(propnames)
+      }
+    }
+
+    List<Property> props = []
+    Map<String,Object> relMeta = cassDocGraph.cassDocAPI.deserializeRelMetadata(opctx, detail, rel.relKey)
+    String metadataId = relMeta["_id"]
+
+    for (Map.Entry<String,Object> entry : relMeta.entrySet()) {
+      CassDocProperty prop = new CassDocEdgeProperty(cassDocGraph:cassDocGraph,docId:metadataId,edge:this)
+      props.add(prop)
+    }
+
+    return props.iterator()
   }
 
   @Override
@@ -54,13 +84,23 @@ class CassDocEdge implements Edge {
     // get necessary Rels based on direction / label
     switch (direction) {
       case Direction.OUT:
-        return IteratorUtils.of(this.graph.vertices(getBaseEdge().vertices(Direction.OUT).next().id())).next();
+      // return the child
+        List<Vertex> childvertex = [
+          new CassDocVertex(docId:rel.c1,cassDocGraph:cassDocGraph)
+        ]
+        return childvertex.iterator()
       case Direction.IN:
-        return IteratorUtils.of(this.graph.vertices(getBaseEdge().vertices(Direction.IN).next().id())).next();
+        List<Vertex> parentvertex = [
+          new CassDocVertex(docId:rel.p1,cassDocGraph:cassDocGraph)
+        ]
+        return parentvertex.iterator()
       default:
-        final Iterator<Vertex> iterator = getBaseEdge().vertices(Direction.BOTH);
-        return IteratorUtils.of(this.graph.vertices(iterator.next().id()).next(), this.graph.vertices(iterator.next().id()).next());
-
+      // return both child and parent
+        List<Vertex> both = [
+          new CassDocVertex(docId:rel.p1,cassDocGraph:cassDocGraph),
+          new CassDocVertex(docId:rel.c1,cassDocGraph:cassDocGraph)
+        ]
+        return both.iterator()
     }
   }
 

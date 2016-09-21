@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.commons.lang3.StringUtils
 
 import cassdoc.CommandExecServices
+import cassdoc.DBCodes
 import cassdoc.Detail
 import cassdoc.FieldValue
 import cassdoc.FixedAttr
@@ -60,7 +61,7 @@ class CreateOperations {
               outputListOfIDs << ']'
               throw log.err("",new Exception ("newDocStream:ID FIELD IS NOT FIRST FIELD"))
             } else {
-              String newEntityUUID = newChildDoc(svcs,opctx,detail,parser,null,null)
+              String newEntityUUID = newChildDoc(svcs,opctx,detail,parser,null,null,false)
               if (firstid) {firstid = false; outputListOfIDs << '"' << newEntityUUID << '"'}
               else {outputListOfIDs << ',"' << newEntityUUID << '"'}
             }
@@ -70,11 +71,29 @@ class CreateOperations {
     }
   }
 
-  public static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String json) {
 
-    // TODO: or input stream, or byte[], or others....
+  public static String newMap(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final Map<String,Object> docMap, final boolean threaded) {
+
+    final String docUUID = newChildDocMap(svcs,opctx,detail,docMap,null,null,threaded)
+    return docUUID
+  }
+
+  public static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, Reader json, boolean threaded) {
     JsonParser parser = svcs.jsonFactory.createParser(json)
 
+    return newDoc(svcs,opctx,detail,parser, threaded)
+  }
+
+
+  public static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String json, boolean threaded) {
+
+    JsonParser parser = svcs.jsonFactory.createParser(json)
+
+    return newDoc(svcs,opctx,detail,parser,threaded)
+
+  }
+
+  public static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, boolean threaded) {
     JsonToken firsttoken = parser.nextToken();
     if (firsttoken == JsonToken.START_OBJECT) {
 
@@ -86,31 +105,58 @@ class CreateOperations {
         if (!svcs.idField.equals(firstField)) {
           throw new Exception("ID FIELD IS NOT FIRST FIELD");
         } else {
-          String newEntityUUID = newChildDoc(svcs,opctx,detail,parser,null,null)
+          String newEntityUUID = newChildDoc(svcs,opctx,detail,parser,null,null,threaded)
           return newEntityUUID
         }
       }
     } else {
       throw new Exception("Invalid Parser state")
     }
+
   }
 
-  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json)
+  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json , boolean paxos)
   {
     JsonParser parser = svcs.jsonFactory.createParser(json)
+    newAttr(svcs,opctx,detail,docUUID,attr,parser,paxos)
+  }
+
+  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, Reader json , boolean paxos)
+  {
+    JsonParser parser = svcs.jsonFactory.createParser(json)
+    newAttr(svcs,opctx,detail,docUUID,attr,parser,paxos)
+  }
+
+  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, JsonParser parser , boolean paxos)
+  {
     NewAttr cmd = new NewAttr(docUUID:docUUID, attrName:attr)
     cmd.attrValue = parseField(svcs,opctx,detail,docUUID,attr,parser)
     cmd.isComplete = true;
+    cmd.paxos = paxos
     analyzeNewAttrEvent(svcs,opctx,detail,cmd)
   }
 
   // ---- parsing helper methods
 
-  public static String newChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String parentUUID, String parentAttr) {
+  public static String newChildDoc(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final JsonParser parser, final String parentUUID, final String parentAttr, final boolean threaded) {
+    final String docId = parseIDAttr(svcs,opctx,detail,parser);
+    if (threaded) {
+      new Thread() {
+            public void run() {
+              CreateOperations.performNewChildDoc(svcs,opctx,detail,parser,docId, parentUUID,parentAttr)
+            }
+          }.start()
+    } else {
+      performNewChildDoc(svcs,opctx,detail,parser,docId, parentUUID,parentAttr)
+    }
+    return docId
+  }
 
+  public static void performNewChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String docId, String parentUUID, String parentAttr)
+  {
     // parser should be pointing at the idKey field right now
     NewDoc newDocCmd = new NewDoc();
-    newDocCmd.docUUID = parseIDAttr(svcs,opctx,detail,parser);
+    newDocCmd.docUUID = docId
     newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
     newDocCmd.parentAttr = parentAttr
     newDocCmd.isComplete = true
@@ -123,15 +169,14 @@ class CreateOperations {
         break;
       } else if (nextField == JsonToken.FIELD_NAME) {
         String fieldName = parser.getCurrentName();
-        NewAttr newPropCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
-        newPropCmd.attrValue = parseField(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser);
-        newPropCmd.isComplete = true;
-        analyzeNewAttrEvent(svcs,opctx,detail,newPropCmd)
+        NewAttr newAttrCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
+        newAttrCmd.attrValue = parseField(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser);
+        newAttrCmd.isComplete = true;
+        analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
       } else {
         throw new Exception ("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT "+nextField);
       }
     }
-    return newDocCmd.docUUID
 
   }
 
@@ -154,6 +199,23 @@ class CreateOperations {
     // TODO: more complicated stuff? DFRef object or something similar?
     throw new Exception("ID information not provided")
   }
+
+  // for newDoc with maps rather than JSON tokens
+  public static String checkIDAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String idString)
+  {
+    if (svcs.typeSvc.isKnownSuffix(idString)) {
+      return IDUtil.timeUUID() + "-" + idString
+    } else {
+      if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
+        return idString
+      } else {
+        throw new Exception ("Unknown type suffix for provided UUID: "+idString)
+      }
+    }
+    // TODO: more complicated stuff? DFRef object or something similar?
+    throw new Exception("ID information not provided")
+  }
+
 
   public static FieldValue parseField(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String fieldName, JsonParser parser)
   {
@@ -194,7 +256,7 @@ class CreateOperations {
         if (firstField) {
           if (svcs.idField.equals(currentField)) {
 
-            String childUUID = newChildDoc(svcs,opctx,detail,jsonParser,parentUUID,parentAttr)
+            String childUUID = newChildDoc(svcs,opctx,detail,jsonParser,parentUUID,parentAttr,false)
             sb << '"' << svcs.idField << '":"' << childUUID << '"}'
             return;
           } else {
@@ -283,7 +345,7 @@ class CreateOperations {
       // child-to-parent rel
       NewRel newBackrefRelCmd = new NewRel()
       newBackrefRelCmd.p1 = newDocCmd.docUUID
-      newBackrefRelCmd.ty1 = "up"
+      newBackrefRelCmd.ty1 = "-CH"
       newBackrefRelCmd.c1 = newDocCmd.parentUUID
       newBackrefRelCmd.c2 = newDocCmd.parentAttr
       opctx.addCommand(svcs, detail, newBackrefRelCmd)
@@ -375,5 +437,126 @@ class CreateOperations {
     // metadata isn't allowed. Must use other metadata APIs for that. to avoid the user making their own ids
     newRelCmd.execMutationCassandra(svcs, opctx, detail)
   }
+
+  public static String newChildDocMap(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final Map<String,Object> docMap, final String parentUUID, final String parentAttr, final boolean threaded)
+  {
+    final String docUUID = checkIDAttr(svcs,opctx,detail,(String)docMap[svcs.idField])
+
+    if (docUUID == null) throw new Exception("New document map must have id field")
+    if (threaded) {
+      new Thread() {
+            public void run() {
+              CreateOperations.performNewChildDocMap(svcs,opctx,detail,docMap.entrySet().iterator(),docUUID,parentUUID,parentAttr)
+            }
+          }.start()
+    } else {
+      CreateOperations.performNewChildDocMap(svcs,opctx,detail,docMap.entrySet().iterator(),docUUID,parentUUID,parentAttr)
+    }
+    return docUUID
+
+  }
+
+  public static String performNewChildDocMap(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<Map.Entry<String,Object>> fields, String docId, String parentUUID, String parentAttr)
+  {
+    // parser should be pointing at the idKey field right now
+    NewDoc newDocCmd = new NewDoc();
+    newDocCmd.docUUID = docId
+    newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
+    newDocCmd.parentAttr = parentAttr
+    newDocCmd.isComplete = true
+
+    analyzeNewDocEvent(svcs,opctx,detail, newDocCmd)
+
+    while (fields.hasNext()) {
+      Map.Entry<String,Object> field = fields.next()
+      if (field.key != svcs.idField) {
+        FieldValue fv = serializeAttr(svcs,opctx,detail,field,docId,parentUUID,parentAttr)
+        NewAttr newAttrCmd = new NewAttr(docUUID:docId, attrName:field.key)
+        newAttrCmd.attrValue = fv
+        newAttrCmd.isComplete = true;
+        analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
+      }
+
+    }
+
+  }
+
+  public static FieldValue serializeAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, Map.Entry<String,Object> field, String docId, String parentUUID, String parentAttr)
+  {
+    FieldValue fv = new FieldValue()
+
+    if (field.value == null) {
+      fv.value = null
+      fv.type = null
+    } else if (field.value instanceof CharSequence) {
+      fv.value = field.value.toString()
+      fv.type = DBCodes.TYPE_CODE_STRING
+    } else if (field.value instanceof float || field.value instanceof double || field.value instanceof BigDecimal) {
+      fv.value = field.value.toString()
+      fv.type = DBCodes.TYPE_CODE_DECIMAL
+    } else if (field.value instanceof byte || field.value instanceof int || field.value instanceof long || field.value instanceof BigInteger) {
+      fv.value = field.value.toString()
+      fv.type = DBCodes.TYPE_CODE_INTEGER
+    } else if (field.value instanceof List) {
+      fv.value = serializeList(svcs,opctx,detail,docId,field.key,(List)field.value)
+      fv.type = DBCodes.TYPE_CODE_ARRAY
+    } else if (field.value instanceof Map) {
+      fv.value = serializeMap(svcs,opctx,detail,docId,field.key,(Map)field.value)
+      fv.type = DBCodes.TYPE_CODE_OBJECT
+    }
+
+    return fv
+
+  }
+
+  public static String serializeList(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, List list)
+  {
+    StringWriter sw = new StringWriter()
+    sw << "["
+    boolean first = true
+    for (Object o : list) {
+      if (first) first = false; else sw << ",";
+      if (o == null)
+        sw << "null"
+      if (o instanceof CharSequence || o instanceof float || o instanceof double || o instanceof BigDecimal || o instanceof int || o instanceof byte || o instanceof long || o instanceof BigDecimal) {
+        sw << '"' << StringEscapeUtils.escapeJson(o.toString()) << '"'
+      } else if (o instanceof List) {
+        sw << serializeList(svcs,opctx,detail,docId,curAttr,(List)o)
+      } else if (o instanceof Map) {
+        sw << serializeMap(svcs,opctx,detail,docId,curAttr,(Map)o)
+      }
+    }
+    sw << "]"
+    return sw.toString()
+  }
+
+  public static String serializeMap(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, Map map)
+  {
+    StringWriter sw = new StringWriter()
+    // determine if this is a new child document, or just a map value
+    if (map.containsKey(svcs.idField)) {
+      final String childDocUUID = newChildDocMap(svcs,opctx,detail,map,docId,curAttr,false)
+      sw << '{"_id":"' << childDocUUID << '"}'
+    } else {
+      Iterator<Map.Entry<String,Object>> fields = map.entrySet().iterator()
+      boolean first = true
+      while (fields.hasNext()) {
+        Map.Entry<String,Object> field = fields.next()
+        if (first) first = false; else sw << ","
+        sw << '"' <<StringEscapeUtils.escapeJson(field.key) << '":'
+        Object o = field.value
+        if (o == null)
+          sw << "null"
+        if (o instanceof CharSequence || o instanceof float || o instanceof double || o instanceof BigDecimal || o instanceof int || o instanceof byte || o instanceof long || o instanceof BigDecimal) {
+          sw << '"' << StringEscapeUtils.escapeJson(o.toString()) << '"'
+        } else if (o instanceof List) {
+          sw << serializeList(svcs,opctx,detail,docId,curAttr,(List)o)
+        } else if (o instanceof Map) {
+          sw << serializeMap(svcs,opctx,detail,docId,curAttr,(Map)o)
+        }
+      }
+    }
+  }
+
 
 }
