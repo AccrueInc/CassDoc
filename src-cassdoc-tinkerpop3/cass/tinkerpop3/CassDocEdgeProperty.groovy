@@ -28,7 +28,7 @@ class CassDocEdgeProperty<V> extends CassDocProperty<V> {
     Detail detail = new Detail()
     StringWriter w = new StringWriter()
     CassDocJsonUtil.specialSerialize(value,w)
-    cassDocGraph.cassDocAPI.newAttr(opctx, detail, docId, key, w.toString())
+    cassDocGraph.cassDocAPI.newAttr(opctx, detail, docId, key, w.toString(),false)
     CassDocProperty prop = new CassDocProperty(docId:docId,cassDocGraph:cassDocGraph,key:key,value:value)
     return prop
   }

@@ -54,7 +54,7 @@ class CassDocVertex implements Vertex {
         Object val = keyValues[i*2+1]
         StringWriter w = new StringWriter()
         CassDocJsonUtil.specialSerialize(val,w)
-        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString())
+        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString(),false)
       }
     }
   }
