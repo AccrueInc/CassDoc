@@ -36,50 +36,7 @@ class CassDocJcrSession implements Session {
   CassDocJcrRepository repo;
 
   @Override
-  public Property getProperty(String propName) {
-  }
-
-  @Override
-  public void addLockToken(String arg0) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void checkPermission(String arg0, String arg1) throws AccessControlException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void exportDocumentView(String absPath, ContentHandler arg1, boolean skipBinary, boolean noRecurse) throws PathNotFoundException, SAXException, RepositoryException {
-    // XML sucks
-    throw new UnsupportedOperationException("XML sucks")
-  }
-
-  @Override
-  public void exportDocumentView(String absPath, OutputStream out, boolean skipBinary, boolean noRecurse) throws IOException, PathNotFoundException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void exportSystemView(String absPath, ContentHandler arg1, boolean skipBinary, boolean noRecurse) throws PathNotFoundException, SAXException, RepositoryException {
-    // XML sucks
-    throw new UnsupportedOperationException("XML sucks")
-
-  }
-
-  @Override
-  public void exportSystemView(String absPath, OutputStream out, boolean skipBinary, boolean noRecurse) throws IOException, PathNotFoundException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public AccessControlManager getAccessControlManager() throws UnsupportedRepositoryOperationException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+  public Property getProperty(String absolutePath) {
   }
 
   @Override
@@ -95,11 +52,6 @@ class CassDocJcrSession implements Session {
   }
 
   @Override
-  public ContentHandler getImportContentHandler(String arg0, int arg1) throws PathNotFoundException, ConstraintViolationException, VersionException, LockException, RepositoryException {
-    throw new UnsupportedOperationException("XML sucks")
-  }
-
-  @Override
   public Item getItem(String absPath) throws PathNotFoundException, RepositoryException {
     // TODO Auto-generated method stub
     return null;
@@ -112,22 +64,13 @@ class CassDocJcrSession implements Session {
   }
 
   @Override
-  public Node getNodeByIdentifier(String arg0) throws ItemNotFoundException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+  public Node getNodeByIdentifier(String docId) throws ItemNotFoundException, RepositoryException {
+    repo.cassDocAPI.deseria
   }
 
   @Override
   public Node getNodeByUUID(String docId) throws ItemNotFoundException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-
-  @Override
-  public String[] getLockTokens() {
-    // TODO Auto-generated method stub
-    return null;
+    getNodeByIdentifier(docId)
   }
 
   @Override
@@ -208,20 +151,14 @@ class CassDocJcrSession implements Session {
     return null;
   }
 
-  @Override
-  public void importXML(String arg0, InputStream arg1, int arg2) throws IOException, PathNotFoundException, ItemExistsException, ConstraintViolationException, VersionException, InvalidSerializedDataException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
 
   @Override
   public boolean isLive() {
-    // TODO Auto-generated method stub
-    return false;
+    return repo != null;
   }
 
   @Override
-  public boolean itemExists(String arg0) throws RepositoryException {
+  public boolean itemExists(String absPath) throws RepositoryException {
     // TODO Auto-generated method stub
     return false;
   }
@@ -233,19 +170,18 @@ class CassDocJcrSession implements Session {
   }
 
   @Override
-  public void move(String arg0, String arg1) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
+  public void move(String srcAbsPath, String destAbsPath) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
   }
 
   @Override
-  public boolean nodeExists(String arg0) throws RepositoryException {
+  public boolean nodeExists(String absolutePath) throws RepositoryException {
     // TODO Auto-generated method stub
     return false;
   }
 
   @Override
-  public boolean propertyExists(String arg0) throws RepositoryException {
+  public boolean propertyExists(String absolutePath) throws RepositoryException {
     // TODO Auto-generated method stub
     return false;
   }
@@ -270,13 +206,64 @@ class CassDocJcrSession implements Session {
 
   @Override
   public void save() throws AccessDeniedException, ItemExistsException, ReferentialIntegrityException, ConstraintViolationException, InvalidItemStateException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    throw new UnsupportedOperationException("save should be performed at the document level")
   }
 
   @Override
   public void setNamespacePrefix(String arg0, String arg1) throws NamespaceException, RepositoryException {
     // TODO Auto-generated method stub
 
+  }
+
+  @Override
+  public void addLockToken(String lt) {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void checkPermission(String arg0, String arg1) throws AccessControlException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public ContentHandler getImportContentHandler(String arg0, int arg1) throws PathNotFoundException, ConstraintViolationException, VersionException, LockException, RepositoryException {
+    throw new UnsupportedOperationException("XML sucks")
+  }
+
+  @Override
+  public void exportDocumentView(String absPath, ContentHandler arg1, boolean skipBinary, boolean noRecurse) throws PathNotFoundException, SAXException, RepositoryException {
+    // XML sucks
+    throw new UnsupportedOperationException("XML sucks")
+  }
+
+  @Override
+  public void exportSystemView(String absPath, ContentHandler arg1, boolean skipBinary, boolean noRecurse) throws PathNotFoundException, SAXException, RepositoryException {
+    // XML sucks
+    throw new UnsupportedOperationException("XML sucks")
+  }
+
+  @Override
+  public void exportDocumentView(String absPath, OutputStream out, boolean skipBinary, boolean noRecurse) throws IOException, PathNotFoundException, RepositoryException {
+    throw new UnsupportedOperationException("XML sucks")
+  }
+
+  @Override
+  public void exportSystemView(String absPath, OutputStream out, boolean skipBinary, boolean noRecurse) throws IOException, PathNotFoundException, RepositoryException {
+    throw new UnsupportedOperationException("XML sucks")
+  }
+
+  @Override
+  public AccessControlManager getAccessControlManager() throws UnsupportedRepositoryOperationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public String[] getLockTokens() {
+    throw new UnsupportedOperationException("XML sucks")
+  }
+
+  @Override
+  public void importXML(String arg0, InputStream arg1, int arg2) throws IOException, PathNotFoundException, ItemExistsException, ConstraintViolationException, VersionException, InvalidSerializedDataException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
   }
 }

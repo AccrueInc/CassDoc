@@ -180,7 +180,7 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_DECIMAL
     value.value = arg0
     isModified = true
-
+    node.propertyChanges[propName] = this
   }
 
   @Override
@@ -194,6 +194,7 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_BOOLEAN
     value.value = arg0
     isModified = true
+    node.propertyChanges[propName] = this
   }
 
   @Override
@@ -202,6 +203,7 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_INTEGER
     value.value = BigInteger.valueOf(arg0.getTimeInMillis())
     isModified = true
+    node.propertyChanges[propName] = this
   }
 
   @Override
@@ -210,6 +212,7 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_DECIMAL
     value.value = new BigDecimal(arg0)
     isModified = true
+    node.propertyChanges[propName] = this
   }
 
   @Override
@@ -223,7 +226,7 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_INTEGER
     value.value = BigInteger.valueOf(arg0)
     isModified = true
-
+    node.propertyChanges[propName] = this
   }
 
   /**
@@ -237,19 +240,30 @@ class CassDocJcrProperty implements Property {
    */
   @Override
   public void setValue(Node nodeValueType) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+    if (nodeValueType instanceof CassDocJcrNewChildDoc) {
+      node.propertyChanges[propName] = this
+
+    }
+    if (nodeValueType instanceof CassDocJcrOverlay) {
+      node.propertyChanges[propName] = this
+
+    }
+    if (nodeValueType instanceof CassDocJcrAddRel) {
+      node.propertyChanges[propName] = this
+
+    }
+    if (nodeValueType instanceof CassDocJcrDelRel) {
+      node.propertyChanges[propName] = this
+
+    }
+    if (nodeValueType instanceof CassDocJcrObjectValue) {
+      node.propertyChanges[propName] = this
+
+    }
     if (nodeValueType instanceof CassDocJcrNode) {
       // what is the default value if a JCR Node is passed? ... must be a new child doc node with the -type _id?
     }
-    if (nodeValueType instanceof CassDocJcrNewChildDoc) {
-    }
-    if (nodeValueType instanceof CassDocJcrOverlay) {
-    }
-    if (nodeValueType instanceof CassDocJcrNewRelationship) {
-    }
-    if (nodeValueType instanceof CassDocJcrRemoveRelationship) {
-    }
-    if (nodeValueType instanceof CassDocJcrObjectValue) {
-    }
+
   }
 
   @Override
@@ -258,6 +272,8 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_STRING
     value.value = arg0
     isModified = true
+    node.propertyChanges[propName] = this
+
   }
 
   @Override
@@ -265,17 +281,19 @@ class CassDocJcrProperty implements Property {
     value.typeCode = DBCodes.TYPE_CODE_ARRAY
     value = Arrays.asList(arg0)
     isModified = true
+    node.propertyChanges[propName] = this
   }
 
   @Override
-  public void setValue(Value arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+  public void setValue(Value singleVal) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
     CassDocJcrValue value = (CassDocJcrValue) arg0
-
-
+    value = value.value
+    isModified = true
+    node.propertyChanges[propName] = this
   }
 
   @Override
-  public void setValue(Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+  public void setValue(Value[] valList) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
     value = new CassDocJcrValue()
     value.typeCode = DBCodes.TYPE_CODE_ARRAY
     List list = []
@@ -285,6 +303,7 @@ class CassDocJcrProperty implements Property {
     }
     value.value = list
     isModified = true
+    node.propertyChanges[propName] = this
   }
 
   @Override

@@ -35,22 +35,24 @@ import javax.jcr.version.VersionHistory
 import cassdoc.Detail
 import cassdoc.OperationContext
 
-
-
-
+/**
+ * All we are implementing is basic property and relationship interactions for now. 
+ * 
+ * No versioning, typing / schema enforcement, life cycling, locking, or merging operations are supported
+ * 
+ * @author cowardlydragon
+ *
+ */
 class CassDocJcrNode implements Node {
 
   boolean isNew
   boolean isModified
   String docId
 
-  Map<String,CassDocJcrProperty> newProperties = [:]
+  Map<String,CassDocJcrProperty> propertyChanges = [:]
 
   transient CassDocJcrSession session
   transient CassDocJcrRepository repo
-
-
-
 
   @Override
   public Property getProperty(String propName) {
@@ -66,7 +68,13 @@ class CassDocJcrNode implements Node {
   }
 
   @Override
-  public Node getNode(String arg0) throws PathNotFoundException, RepositoryException {
+  public String getName() throws RepositoryException {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public Node getNode(String relativePath) throws PathNotFoundException, RepositoryException {
     // TODO Auto-generated method stub
     return null;
   }
@@ -87,16 +95,6 @@ class CassDocJcrNode implements Node {
   public NodeIterator getNodes(String[] arg0) throws RepositoryException {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  @Override
-  public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
-    throw new UnsupportedOperationException()
-  }
-
-  @Override
-  public NodeType getPrimaryNodeType() throws RepositoryException {
-    throw new UnsupportedOperationException()
   }
 
   @Override
@@ -151,6 +149,7 @@ class CassDocJcrNode implements Node {
     return null;
   }
 
+  // weak refs are not CH.. no cascading? is that a good standard?
   @Override
   public PropertyIterator getWeakReferences() throws RepositoryException {
     // TODO Auto-generated method stub
@@ -177,16 +176,14 @@ class CassDocJcrNode implements Node {
 
   @Override
   public boolean hasProperties() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
+    // it CAN so return true
+    true
   }
 
   @Override
-  public boolean hasProperty(String arg0) throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
+  public boolean hasProperty(String propName) throws RepositoryException {
+    boolean resp =  repo.cassDocAPI.attrExists(new OperationContext(space:repo.space), new Detail(), docId, propName);
   }
-
 
   @Override
   public Property setProperty(String arg0, BigDecimal arg1) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -309,11 +306,6 @@ class CassDocJcrNode implements Node {
     throw new UnsupportedOperationException()
   }
 
-  @Override
-  public String getName() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
 
   @Override
   public Node getParent() throws ItemNotFoundException, AccessDeniedException, RepositoryException {
@@ -375,6 +367,7 @@ class CassDocJcrNode implements Node {
     // TODO Auto-generated method stub
   }
 
+
   @Override
   public void orderBefore(String arg0, String arg1) throws UnsupportedRepositoryOperationException, VersionException, ConstraintViolationException, ItemNotFoundException, LockException, RepositoryException {
     throw new UnsupportedOperationException()
@@ -405,7 +398,10 @@ class CassDocJcrNode implements Node {
     throw new UnsupportedOperationException()
   }
 
-
+  @Override
+  public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
 
   @Override
   public void restore(String path, boolean removeExisting) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
@@ -435,6 +431,11 @@ class CassDocJcrNode implements Node {
 
   @Override
   public NodeDefinition getDefinition() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public NodeType getPrimaryNodeType() throws RepositoryException {
     throw new UnsupportedOperationException()
   }
 

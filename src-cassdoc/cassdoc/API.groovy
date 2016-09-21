@@ -34,10 +34,26 @@ import cwdrg.util.json.JSONUtil
 @CompileStatic
 class API {
 
+  // TODO: cross-space registry (id : space)
 
   @Autowired
   CommandExecServices svcs;
 
+
+  boolean docExists(OperationContext opctx, Detail detail, String uuid)
+  {
+    // token would work too, at least on cass 3.5
+    String typeSuffix = IDUtil.idSuffix(uuid)
+    List<Object[]> rows = query(opctx,detail,"SELECT zv from ${opctx.space}.e_${typeSuffix} WHERE e = ?",uuid)
+    return (rows.size() > 0)
+  }
+
+  boolean attrExists(OperationContext opctx, Detail detail, String uuid, String attr)
+  {
+    String typeSuffix = IDUtil.idSuffix(uuid)
+    List<Object[]> rows = query(opctx,detail,"SELECT zv from ${opctx.space}.p_${typeSuffix} WHERE e = ? and p = ?",uuid,attr)
+    return (rows.size() > 0)
+  }
 
   // ---- Streaming Parse Read Operations
 
