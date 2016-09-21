@@ -10,11 +10,22 @@ import cassdoc.DBCodes
 
 class CassDocJcrValue implements Value {
 
-  String typeCode
   Object value
 
   transient Property prop
   transient CassDocJcrRepository
+
+
+  public String getTypeCode() {
+    if (value == null) return null
+    if (value instanceof CharSequence) return DBCodes.TYPE_CODE_STRING
+    if (value instanceof Map) return DBCodes.TYPE_CODE_OBJECT
+    if (value instanceof List) return DBCodes.TYPE_CODE_ARRAY
+    if (value instanceof BigInteger) return DBCodes.TYPE_CODE_INTEGER
+    if (value instanceof BigDecimal) return DBCodes.TYPE_CODE_DECIMAL
+    if (value instanceof Boolean) return DBCodes.TYPE_CODE_BOOLEAN
+    return null
+  }
 
 
   @Override

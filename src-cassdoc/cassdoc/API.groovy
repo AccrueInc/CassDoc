@@ -23,7 +23,13 @@ import com.jayway.jsonpath.JsonPath
 import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 
-
+/**
+ * This is the primary API class. It has API methods for both JSON interactions and Map/List/Map.Entry interactions. 
+ * 
+ * 
+ * @author cowardlydragon
+ *
+ */
 @Log
 @CompileStatic
 class API {
@@ -291,8 +297,13 @@ class API {
   }
 
   // TODO: jsonpath for getAttr
-  void getAttrJsonPath(OperationContext opctx, Detail detail, String docUUID, String attr, String jsonpath, Writer writer) {
-    // TODO streaming version
+  void getAttrJsonPath(OperationContext opctx, Detail detail, String docUUID, String attr, String jsonpath, Writer w) {
+    // TODO fully streaming version
+    StringWriter writer = new StringWriter()
+    RetrievalOperations.getAttr(svcs,opctx,detail,docUUID,attr,writer)
+    String json =  writer.toString()
+    JsonPath pathexpr = JsonPath.compile(jsonpath)
+    w << JsonPath.parse(json).read(pathexpr).toString()
   }
 
   /**
@@ -718,11 +729,6 @@ class API {
       searchResultsWriter << "}"
     }
   }
-
-
-
-
-
 
 }
 

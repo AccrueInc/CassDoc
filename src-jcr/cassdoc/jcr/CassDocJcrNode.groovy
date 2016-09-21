@@ -32,118 +32,37 @@ import javax.jcr.version.Version
 import javax.jcr.version.VersionException
 import javax.jcr.version.VersionHistory
 
+import cassdoc.Detail
+import cassdoc.OperationContext
+
 
 
 
 class CassDocJcrNode implements Node {
 
+  boolean isNew
+  boolean isModified
+  String docId
+
+  Map<String,CassDocJcrProperty> newProperties = [:]
+
+  transient CassDocJcrSession session
+  transient CassDocJcrRepository repo
+
+
+
 
   @Override
-  public Property getProperty(String arg0) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void addMixin(String arg0) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public Node addNode(String arg0, String arg1) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public Node addNode(String arg0) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public boolean canAddMixin(String arg0) throws NoSuchNodeTypeException, RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public void cancelMerge(Version arg0) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public Version checkin() throws VersionException, UnsupportedRepositoryOperationException, InvalidItemStateException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public void checkout() throws UnsupportedRepositoryOperationException, LockException, ActivityViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void doneMerge(Version arg0) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void followLifecycleTransition(String arg0) throws UnsupportedRepositoryOperationException, InvalidLifecycleTransitionException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public Version getBaseVersion() throws UnsupportedRepositoryOperationException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public String getCorrespondingNodePath(String arg0) throws ItemNotFoundException, NoSuchWorkspaceException, AccessDeniedException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public NodeDefinition getDefinition() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+  public Property getProperty(String propName) {
+    CassDocJcrProperty p = new CassDocJcrProperty()
+    CassDocJcrValue v = new CassDocJcrValue()
+    v.value = repo.cassDocAPI.deserializeSimpleAttr(new OperationContext(space:repo.space), new Detail(), docId, propName)
+    p.value = v
   }
 
   @Override
   public String getIdentifier() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public int getIndex() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return 0;
-  }
-
-  @Override
-  public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public NodeType[] getMixinNodeTypes() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    docId
   }
 
   @Override
@@ -172,14 +91,12 @@ class CassDocJcrNode implements Node {
 
   @Override
   public Item getPrimaryItem() throws ItemNotFoundException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    throw new UnsupportedOperationException()
   }
 
   @Override
   public NodeType getPrimaryNodeType() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    throw new UnsupportedOperationException()
   }
 
   @Override
@@ -200,6 +117,10 @@ class CassDocJcrNode implements Node {
     return null;
   }
 
+  /**
+   * get relations (references, etc)
+   * 
+   */
   @Override
   public PropertyIterator getReferences() throws RepositoryException {
     // TODO Auto-generated method stub
@@ -266,96 +187,6 @@ class CassDocJcrNode implements Node {
     return false;
   }
 
-  @Override
-  public boolean holdsLock() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public boolean isCheckedOut() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public boolean isLocked() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public boolean isNodeType(String arg0) throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public Lock lock(boolean arg0, boolean arg1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public NodeIterator merge(String arg0, boolean arg1) throws NoSuchWorkspaceException, AccessDeniedException, MergeException, LockException, InvalidItemStateException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public void orderBefore(String arg0, String arg1) throws UnsupportedRepositoryOperationException, VersionException, ConstraintViolationException, ItemNotFoundException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void removeMixin(String arg0) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void removeShare() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void removeSharedSet() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void restore(String arg0, boolean arg1) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void restore(Version arg0, boolean arg1) throws VersionException, ItemExistsException, InvalidItemStateException, UnsupportedRepositoryOperationException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void restore(Version arg0, String arg1, boolean arg2) throws PathNotFoundException, ItemExistsException, VersionException, ConstraintViolationException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException,
-  RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void restoreByLabel(String arg0, boolean arg1) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void setPrimaryType(String arg0) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
-    // TODO Auto-generated method stub
-
-  }
 
   @Override
   public Property setProperty(String arg0, BigDecimal arg1) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
@@ -431,12 +262,14 @@ class CassDocJcrNode implements Node {
 
   @Override
   public Property setProperty(String arg0, Value arg1, int arg2) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    isModified = true
+    null
   }
 
   @Override
   public Property setProperty(String arg0, Value arg1) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+    isModified = true
+
     // TODO Auto-generated method stub
     return null;
   }
@@ -451,12 +284,6 @@ class CassDocJcrNode implements Node {
   public Property setProperty(String arg0, Value[] arg1) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  @Override
-  public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
-    // TODO Auto-generated method stub
-
   }
 
   @Override
@@ -479,8 +306,7 @@ class CassDocJcrNode implements Node {
 
   @Override
   public int getDepth() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return 0;
+    throw new UnsupportedOperationException()
   }
 
   @Override
@@ -497,32 +323,27 @@ class CassDocJcrNode implements Node {
 
   @Override
   public String getPath() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    throw new UnsupportedOperationException()
   }
 
   @Override
   public Session getSession() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    session
   }
 
   @Override
   public boolean isModified() {
-    // TODO Auto-generated method stub
-    return false;
+    isModified
   }
 
   @Override
   public boolean isNew() {
-    // TODO Auto-generated method stub
-    return false;
+    isNew
   }
 
   @Override
   public boolean isNode() {
-    // TODO Auto-generated method stub
-    return false;
+    true
   }
 
   @Override
@@ -552,6 +373,173 @@ class CassDocJcrNode implements Node {
   @Override
   public void setProperty(String arg0, Object arg1) {
     // TODO Auto-generated method stub
+  }
 
+  @Override
+  public void orderBefore(String arg0, String arg1) throws UnsupportedRepositoryOperationException, VersionException, ConstraintViolationException, ItemNotFoundException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public int getIndex() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+
+  @Override
+  public String getCorrespondingNodePath(String arg0) throws ItemNotFoundException, NoSuchWorkspaceException, AccessDeniedException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  /**
+   * use for relationship creation? child doc creation? encode relationship type in relPath like a url?
+   *
+   */
+  @Override
+  public Node addNode(String relPath, String primaryNodeTypeName) throws ItemExistsException, PathNotFoundException, NoSuchNodeTypeException, LockException, VersionException, ConstraintViolationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public Node addNode(String relPath) throws ItemExistsException, PathNotFoundException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+
+
+  @Override
+  public void restore(String path, boolean removeExisting) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void restore(Version ver, boolean removeExisting) throws VersionException, ItemExistsException, InvalidItemStateException, UnsupportedRepositoryOperationException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void restore(Version ver, String verName, boolean removeExisting) throws PathNotFoundException, ItemExistsException, VersionException, ConstraintViolationException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException,
+  RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void restoreByLabel(String arg0, boolean arg1) throws VersionException, ItemExistsException, UnsupportedRepositoryOperationException, LockException, InvalidItemStateException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public boolean isNodeType(String arg0) throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public NodeDefinition getDefinition() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void setPrimaryType(String arg0) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public NodeType[] getMixinNodeTypes() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public boolean canAddMixin(String arg0) throws NoSuchNodeTypeException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void addMixin(String arg0) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void removeMixin(String arg0) throws NoSuchNodeTypeException, VersionException, ConstraintViolationException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void removeShare() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void removeSharedSet() throws VersionException, LockException, ConstraintViolationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public NodeIterator merge(String arg0, boolean arg1) throws NoSuchWorkspaceException, AccessDeniedException, MergeException, LockException, InvalidItemStateException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void doneMerge(Version arg0) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void cancelMerge(Version arg0) throws VersionException, InvalidItemStateException, UnsupportedRepositoryOperationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void followLifecycleTransition(String arg0) throws UnsupportedRepositoryOperationException, InvalidLifecycleTransitionException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public String[] getAllowedLifecycleTransistions() throws UnsupportedRepositoryOperationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public boolean isCheckedOut() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public Version checkin() throws VersionException, UnsupportedRepositoryOperationException, InvalidItemStateException, LockException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void checkout() throws UnsupportedRepositoryOperationException, LockException, ActivityViolationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public Version getBaseVersion() throws UnsupportedRepositoryOperationException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public boolean holdsLock() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public boolean isLocked() throws RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public Lock getLock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public Lock lock(boolean arg0, boolean arg1) throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
+    throw new UnsupportedOperationException()
+  }
+
+  @Override
+  public void unlock() throws UnsupportedRepositoryOperationException, LockException, AccessDeniedException, InvalidItemStateException, RepositoryException {
+    throw new UnsupportedOperationException()
   }
 }

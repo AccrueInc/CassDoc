@@ -29,8 +29,7 @@ import cassdoc.OperationContext
 class CassDocJcrProperty implements Property {
   String docId
   String propName
-  String typeCode
-  Object value
+  CassDocJcrValue value
   transient CassDocJcrNode node
   transient CassDocJcrRepository repo
 
@@ -49,7 +48,7 @@ class CassDocJcrProperty implements Property {
   public boolean getBoolean() throws ValueFormatException, RepositoryException {
     if (value instanceof boolean)
       return (boolean) value
-    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $typeCode")
+    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $value.typeCode")
   }
 
   @Override
@@ -60,7 +59,7 @@ class CassDocJcrProperty implements Property {
       cal.setTime(date)
       return cal
     }
-    throw new ValueFormatException("CassDoc JCR property does not support dates $docId $propName $typeCode")
+    throw new ValueFormatException("CassDoc JCR property does not support dates $docId $propName $value.typeCode")
   }
 
   @Override
@@ -68,7 +67,7 @@ class CassDocJcrProperty implements Property {
     if (value instanceof BigDecimal) {
       return (BigDecimal) value
     }
-    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $typeCode")
+    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $value.typeCode")
   }
 
   @Override
@@ -82,7 +81,7 @@ class CassDocJcrProperty implements Property {
     if (value instanceof BigDecimal) {
       return ((BigDecimal)value).doubleValue
     }
-    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $typeCode")
+    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $value.typeCode")
   }
 
   @Override
@@ -99,10 +98,10 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public long getLong() throws ValueFormatException, RepositoryException {
-    if (typeCode == DBCodes.TYPE_CODE_INTEGER) {
+    if (value.typeCode == DBCodes.TYPE_CODE_INTEGER) {
       return ((BigInteger)value).longValue()
     }
-    throw new ValueFormatException("CassDoc JCR property is not a integer $docId $propName $typeCode")
+    throw new ValueFormatException("CassDoc JCR property is not a integer $docId $propName $value.typeCode")
   }
 
   @Override
@@ -127,7 +126,7 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public String getString() throws ValueFormatException, RepositoryException {
-    if (typeCode == DBCodes.TYPE_CODE_OBJECT) {
+    if (value.typeCode == DBCodes.TYPE_CODE_OBJECT) {
       StringWriter sw = new StringWriter()
       CassDocJsonUtil.specialSerialize(value,sw)
       return sw.toString()
@@ -144,14 +143,14 @@ class CassDocJcrProperty implements Property {
    */
   @Override
   public int getType() throws RepositoryException {
-    if (typeCode == DBCodes.TYPE_CODE_STRING) return PropertyType.STRING
-    if (typeCode == DBCodes.TYPE_CODE_DECIMAL) return PropertyType.DOUBLE
-    if (typeCode == DBCodes.TYPE_CODE_INTEGER) return PropertyType.LONG
-    if (typeCode == DBCodes.TYPE_CODE_BOOLEAN) return PropertyType.BOOLEAN
-    if (typeCode == DBCodes.TYPE_CODE_ARRAY) return PropertyType.WEAKREFERENCE
-    if (typeCode == DBCodes.TYPE_CODE_OBJECT) return PropertyType.WEAKREFERENCE
-    if (typeCode == null && value == null) return 0
-    throw new RepositoryException("CassDoc JCR property has no type $docId $propName $typeCode")
+    if (value.typeCode == DBCodes.TYPE_CODE_STRING) return PropertyType.STRING
+    if (value.typeCode == DBCodes.TYPE_CODE_DECIMAL) return PropertyType.DOUBLE
+    if (value.typeCode == DBCodes.TYPE_CODE_INTEGER) return PropertyType.LONG
+    if (value.typeCode == DBCodes.TYPE_CODE_BOOLEAN) return PropertyType.BOOLEAN
+    if (value.typeCode == DBCodes.TYPE_CODE_ARRAY) return PropertyType.WEAKREFERENCE
+    if (value.typeCode == DBCodes.TYPE_CODE_OBJECT) return PropertyType.WEAKREFERENCE
+    if (value.typeCode == null && value == null) return 0
+    throw new RepositoryException("CassDoc JCR property has no type $docId $propName $value.typeCode")
   }
 
   @Override
@@ -169,7 +168,7 @@ class CassDocJcrProperty implements Property {
   @Override
   public boolean isMultiple() throws RepositoryException {
     // List/objects are considered "multiple". All else is not
-    if (typeCode == DBCodes.TYPE_CODE_ARRAY || typeCode == DBCodes.TYPE_CODE_OBJECT) {
+    if (value.typeCode == DBCodes.TYPE_CODE_ARRAY || value.typeCode == DBCodes.TYPE_CODE_OBJECT) {
       return true
     }
     return false
@@ -177,87 +176,114 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public void setValue(BigDecimal arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_DECIMAL
-    value = arg0
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_DECIMAL
+    value.value = arg0
     isModified = true
 
   }
 
   @Override
   public void setValue(Binary arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    throw new UnsupportedOperationException("TODO: blobs/clobs")
   }
 
   @Override
   public void setValue(boolean arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_BOOLEAN
-    value = arg0
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_BOOLEAN
+    value.value = arg0
     isModified = true
   }
 
   @Override
   public void setValue(Calendar arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_INTEGER
-    value = BigInteger.valueOf(arg0.getTimeInMillis())
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_INTEGER
+    value.value = BigInteger.valueOf(arg0.getTimeInMillis())
     isModified = true
   }
 
   @Override
   public void setValue(double arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_DECIMAL
-    value = new BigDecimal(arg0)
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_DECIMAL
+    value.value = new BigDecimal(arg0)
     isModified = true
   }
 
   @Override
   public void setValue(InputStream arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    throw new UnsupportedOperationException("TODO: blobs/clobs")
   }
 
   @Override
   public void setValue(long arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_INTEGER
-    value = BigInteger.valueOf(arg0)
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_INTEGER
+    value.value = BigInteger.valueOf(arg0)
     isModified = true
 
   }
 
+  /**
+   * The setValue(Node) will be our means of doing complicated attribute operations such as:
+   * 
+   * - set the attribute/property to a JSON object (could be a simple JSON object or one with child documents)
+   * - perform an attribute/property overlay
+   * - add a relationship
+   * - delete a relationship
+   * 
+   */
   @Override
-  public void setValue(Node arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+  public void setValue(Node nodeValueType) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+    if (nodeValueType instanceof CassDocJcrNode) {
+      // what is the default value if a JCR Node is passed? ... must be a new child doc node with the -type _id?
+    }
+    if (nodeValueType instanceof CassDocJcrNewChildDoc) {
+    }
+    if (nodeValueType instanceof CassDocJcrOverlay) {
+    }
+    if (nodeValueType instanceof CassDocJcrNewRelationship) {
+    }
+    if (nodeValueType instanceof CassDocJcrRemoveRelationship) {
+    }
+    if (nodeValueType instanceof CassDocJcrObjectValue) {
+    }
   }
 
   @Override
   public void setValue(String arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_STRING
+    value.value = arg0
+    isModified = true
   }
 
   @Override
   public void setValue(String[] arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_ARRAY
+    value.typeCode = DBCodes.TYPE_CODE_ARRAY
     value = Arrays.asList(arg0)
     isModified = true
   }
 
   @Override
   public void setValue(Value arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
+    CassDocJcrValue value = (CassDocJcrValue) arg0
+
 
   }
 
   @Override
   public void setValue(Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    typeCode = DBCodes.TYPE_CODE_ARRAY
+    value = new CassDocJcrValue()
+    value.typeCode = DBCodes.TYPE_CODE_ARRAY
     List list = []
     for (Value v : values) {
       CassDocJcrValue val = (CassDocJcrValue)v
       list.add(val.value)
     }
-    value = list
+    value.value = list
     isModified = true
   }
 
@@ -341,7 +367,10 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public void save() throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, ReferentialIntegrityException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
-    // use overlay???
+    // the
+    if (isNew) {
+      repo.cassDocAPI.updateAttrEntry(new OperationContext(space:repo.space), new Detail(), docId, new AbstractMap.SimpleEntry<String,Object>(key:propName,value:value))
+    }
 
 
   }
