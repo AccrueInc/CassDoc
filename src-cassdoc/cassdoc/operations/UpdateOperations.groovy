@@ -45,6 +45,15 @@ class UpdateOperations {
     analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
   }
 
+  static void updateAttrEntry(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Map.Entry<String,Object> attr) {
+    UpdAttr cmd = new UpdAttr(docUUID:docUUID, attrName:attr.key)
+    cmd.attrValue = CreateOperations.serializeAttr(svcs,opctx,detail,attr,docUUID,null,null)
+    cmd.isComplete = true;
+    opctx.addCommand(svcs, detail, cmd)
+    analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
+  }
+
+
 
   static void analyzeUpdateAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdAttr cmd) {
     // PAXOS updates: prepare the clears and new-writes, but the other writes must only be executed if the initial PAXOS update succeeds

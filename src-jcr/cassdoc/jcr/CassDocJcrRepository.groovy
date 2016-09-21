@@ -12,6 +12,7 @@ import cassdoc.API
 
 class CassDocJcrRepository implements Repository {
 
+  String space
   API cassDocAPI
 
   // zero-arg cons required

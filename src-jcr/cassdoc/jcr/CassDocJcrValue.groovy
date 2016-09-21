@@ -6,8 +6,12 @@ import javax.jcr.RepositoryException
 import javax.jcr.Value
 import javax.jcr.ValueFormatException
 
+import cassdoc.DBCodes
+
 class CassDocJcrValue implements Value {
-  String jsonType
+
+  String typeCode
+  Object value
 
   transient Property prop
   transient CassDocJcrRepository
@@ -21,8 +25,9 @@ class CassDocJcrValue implements Value {
 
   @Override
   public boolean getBoolean() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
+    if (typeCode == DBCodes.TYPE_CODE_BOOLEAN) {
+      return (Boolean) value
+    }
   }
 
   @Override

@@ -7,6 +7,7 @@ import cassdoc.DocType
 import cassdoc.FixedAttr
 import cassdoc.OperationContext
 import cassdoc.Rel
+import cassdoc.RelKey
 import cassdoc.RelTypes
 import cassdoc.commands.mutate.ClrAttr
 import cassdoc.commands.mutate.ClrAttrRels
@@ -16,6 +17,7 @@ import cassdoc.commands.mutate.DelDocRels
 import cassdoc.commands.mutate.DelDoc_E
 import cassdoc.commands.mutate.DelDoc_P
 import cassdoc.commands.mutate.DelFixedCol
+import cassdoc.commands.mutate.DelRel
 import cassdoc.commands.retrieve.GetAttrRelsCmd
 import cassdoc.commands.retrieve.GetRelsCmd
 import cassdoc.commands.retrieve.GetRelsRCH
@@ -128,6 +130,12 @@ class DeleteOperations {
     // TODO: clear bidirectional rels
 
 
+  }
+
+  static void delRel(CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey rel)
+  {
+    DelRel delRel = new DelRel(relKey:rel)
+    opctx.addCommand(svcs, detail, delRel)
   }
 
 

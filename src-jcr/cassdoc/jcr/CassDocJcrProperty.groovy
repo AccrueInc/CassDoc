@@ -9,6 +9,7 @@ import javax.jcr.ItemNotFoundException
 import javax.jcr.ItemVisitor
 import javax.jcr.Node
 import javax.jcr.Property
+import javax.jcr.PropertyType
 import javax.jcr.ReferentialIntegrityException
 import javax.jcr.RepositoryException
 import javax.jcr.Session
@@ -20,7 +21,23 @@ import javax.jcr.nodetype.NoSuchNodeTypeException
 import javax.jcr.nodetype.PropertyDefinition
 import javax.jcr.version.VersionException
 
+import cassdoc.CassDocJsonUtil
+import cassdoc.DBCodes
+import cassdoc.Detail
+import cassdoc.OperationContext
+
 class CassDocJcrProperty implements Property {
+  String docId
+  String propName
+  String typeCode
+  Object value
+  transient CassDocJcrNode node
+  transient CassDocJcrRepository repo
+
+  boolean isNew = true
+  boolean isModified = true
+  boolean keepChanges = false
+
 
   @Override
   public Binary getBinary() throws ValueFormatException, RepositoryException {
@@ -30,20 +47,28 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public boolean getBoolean() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
+    if (value instanceof boolean)
+      return (boolean) value
+    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $typeCode")
   }
 
   @Override
   public Calendar getDate() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    if (value instanceof BigInteger) {
+      Date date = new Date(((BigInteger)value).longValue())
+      Calendar cal = Calendar.getInstance()
+      cal.setTime(date)
+      return cal
+    }
+    throw new ValueFormatException("CassDoc JCR property does not support dates $docId $propName $typeCode")
   }
 
   @Override
   public BigDecimal getDecimal() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    if (value instanceof BigDecimal) {
+      return (BigDecimal) value
+    }
+    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $typeCode")
   }
 
   @Override
@@ -54,8 +79,10 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public double getDouble() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return 0;
+    if (value instanceof BigDecimal) {
+      return ((BigDecimal)value).doubleValue
+    }
+    throw new ValueFormatException("CassDoc JCR property is not a decimal $docId $propName $typeCode")
   }
 
   @Override
@@ -72,8 +99,10 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public long getLong() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return 0;
+    if (typeCode == DBCodes.TYPE_CODE_INTEGER) {
+      return ((BigInteger)value).longValue()
+    }
+    throw new ValueFormatException("CassDoc JCR property is not a integer $docId $propName $typeCode")
   }
 
   @Override
@@ -82,8 +111,10 @@ class CassDocJcrProperty implements Property {
     return null;
   }
 
+
   @Override
   public Property getProperty() throws ItemNotFoundException, ValueFormatException, RepositoryException {
+    // gets another property if this property is a path... use Rels?
     // TODO Auto-generated method stub
     return null;
   }
@@ -96,14 +127,31 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public String getString() throws ValueFormatException, RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    if (typeCode == DBCodes.TYPE_CODE_OBJECT) {
+      StringWriter sw = new StringWriter()
+      CassDocJsonUtil.specialSerialize(value,sw)
+      return sw.toString()
+    }
+    if (value == null) return null;
+    return value.toString();
   }
 
+  /**
+   * What a shitty set of property types, nice job JCR... no big decimals, big ints, lists, maps, sets etc?
+   * 
+   * WEAKREFERENCE will be used for arrays and child objects
+   * 
+   */
   @Override
   public int getType() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return 0;
+    if (typeCode == DBCodes.TYPE_CODE_STRING) return PropertyType.STRING
+    if (typeCode == DBCodes.TYPE_CODE_DECIMAL) return PropertyType.DOUBLE
+    if (typeCode == DBCodes.TYPE_CODE_INTEGER) return PropertyType.LONG
+    if (typeCode == DBCodes.TYPE_CODE_BOOLEAN) return PropertyType.BOOLEAN
+    if (typeCode == DBCodes.TYPE_CODE_ARRAY) return PropertyType.WEAKREFERENCE
+    if (typeCode == DBCodes.TYPE_CODE_OBJECT) return PropertyType.WEAKREFERENCE
+    if (typeCode == null && value == null) return 0
+    throw new RepositoryException("CassDoc JCR property has no type $docId $propName $typeCode")
   }
 
   @Override
@@ -120,13 +168,18 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public boolean isMultiple() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return false;
+    // List/objects are considered "multiple". All else is not
+    if (typeCode == DBCodes.TYPE_CODE_ARRAY || typeCode == DBCodes.TYPE_CODE_OBJECT) {
+      return true
+    }
+    return false
   }
 
   @Override
   public void setValue(BigDecimal arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
+    typeCode = DBCodes.TYPE_CODE_DECIMAL
+    value = arg0
+    isModified = true
 
   }
 
@@ -138,20 +191,23 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public void setValue(boolean arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    typeCode = DBCodes.TYPE_CODE_BOOLEAN
+    value = arg0
+    isModified = true
   }
 
   @Override
   public void setValue(Calendar arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    typeCode = DBCodes.TYPE_CODE_INTEGER
+    value = BigInteger.valueOf(arg0.getTimeInMillis())
+    isModified = true
   }
 
   @Override
   public void setValue(double arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    typeCode = DBCodes.TYPE_CODE_DECIMAL
+    value = new BigDecimal(arg0)
+    isModified = true
   }
 
   @Override
@@ -162,7 +218,9 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public void setValue(long arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
+    typeCode = DBCodes.TYPE_CODE_INTEGER
+    value = BigInteger.valueOf(arg0)
+    isModified = true
 
   }
 
@@ -180,8 +238,9 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public void setValue(String[] arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    typeCode = DBCodes.TYPE_CODE_ARRAY
+    value = Arrays.asList(arg0)
+    isModified = true
   }
 
   @Override
@@ -191,9 +250,15 @@ class CassDocJcrProperty implements Property {
   }
 
   @Override
-  public void setValue(Value[] arg0) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
-    // TODO Auto-generated method stub
-
+  public void setValue(Value[] values) throws ValueFormatException, VersionException, LockException, ConstraintViolationException, RepositoryException {
+    typeCode = DBCodes.TYPE_CODE_ARRAY
+    List list = []
+    for (Value v : values) {
+      CassDocJcrValue val = (CassDocJcrValue)v
+      list.add(val.value)
+    }
+    value = list
+    isModified = true
   }
 
   @Override
@@ -216,8 +281,7 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public String getName() throws RepositoryException {
-    // TODO Auto-generated method stub
-    return null;
+    return propName
   }
 
   @Override
@@ -246,14 +310,12 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public boolean isNew() {
-    // TODO Auto-generated method stub
-    return false;
+    isNew
   }
 
   @Override
   public boolean isNode() {
-    // TODO Auto-generated method stub
-    return false;
+    false
   }
 
   @Override
@@ -264,19 +326,23 @@ class CassDocJcrProperty implements Property {
 
   @Override
   public void refresh(boolean arg0) throws InvalidItemStateException, RepositoryException {
+
+    // does this re-pull from the database
+
+
     // TODO Auto-generated method stub
 
   }
 
   @Override
   public void remove() throws VersionException, LockException, ConstraintViolationException, AccessDeniedException, RepositoryException {
-    // TODO Auto-generated method stub
-
+    repo.cassDocAPI.delAttr(new OperationContext(space:repo.space), new Detail(), docId, propName)
   }
 
   @Override
   public void save() throws AccessDeniedException, ItemExistsException, ConstraintViolationException, InvalidItemStateException, ReferentialIntegrityException, VersionException, LockException, NoSuchNodeTypeException, RepositoryException {
-    // TODO Auto-generated method stub
+    // use overlay???
+
 
   }
 

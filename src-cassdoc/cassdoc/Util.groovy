@@ -116,6 +116,12 @@ class CassDocJsonUtil {
   }
 }
 
+/**
+ * A utility class that makes sure the keys referenced in a map are backed by Lists.
+ * 
+ * @author cowardlydragon
+ *
+ */
 @CompileStatic
 class ListMap {
   static List get(Map map, Object key) {
@@ -138,6 +144,12 @@ class ListMap {
 }
 
 
+/**
+ * A utility class that makes sure the keys referenced in a map are backed by Sets.
+ * 
+ * @author cowardlydragon
+ *
+ */
 @CompileStatic
 class SetMap {
   static Set get(Map map, Object key) {

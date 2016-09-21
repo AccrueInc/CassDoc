@@ -24,19 +24,10 @@ import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 
 
-// TODO:
-// - more paxos
-// - more graph + test graph
-// - search operations
-
-
 @Log
 @CompileStatic
 class API {
 
-  //TODO:
-  // - delete rel, upsert rel, new rel
-  // - newDoc/newAttr without serialization for Maps/Lists (see specialSerialize)
 
   @Autowired
   CommandExecServices svcs;
@@ -437,10 +428,11 @@ class API {
    * @param docUUID
    * @param attr
    * @param json
+   * @param paxos - if true, IF NOT EXIST paxos conditional is applied to upsert statement
    */
-  public void newAttrPAXOS(OperationContext opctx, Detail detail, String docUUID, String attr, String json)
+  public void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos)
   {
-    CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json)
+    CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json, paxos)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
   }
 
@@ -484,6 +476,24 @@ class API {
     UpdateOperations.updateAttr(svcs,opctx,detail,docUUID,attr,json)
     if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
   }
+
+  /**
+   * Update the attribute of a document, using only detail-indicated consistency indicators and NOT using PAXOS.
+   * 
+   * This is the non-JSON API version
+   *
+   * @param opctx
+   * @param detail
+   * @param docUUID
+   * @param attr
+   * @param json
+   */
+  public void updateAttrEntry(OperationContext opctx, Detail detail, String docUUID, Map.Entry<String,Object> attr)
+  {
+    UpdateOperations.updateAttrEntry(svcs,opctx,detail,docUUID,attr)
+    if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+  }
+
 
   /**
    * This updates a document with mixed creation of new subdocuments as well as preserving indicated extant ids. 
@@ -637,10 +647,23 @@ class API {
     return rel
   }
 
+  /**
+   * this is executed as an upsert, so this can be used to update the few non-key fields of a Rel as well
+   * 
+   * @param opctx
+   * @param detail
+   * @param rel
+   */
   public void addRel(OperationContext opctx, Detail detail, Rel rel)
   {
     CreateOperations.addRel(svcs, opctx, detail, rel)
-    if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    if (opctx.executionMode == "batch")opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+  }
+
+  public void deleteRel(OperationContext opctx, Detail detail, RelKey rel)
+  {
+    DeleteOperations.delRel(svcs, opctx, detail, rel)
+    if (opctx.executionMode == "batch")opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
   }
 
   public List<Rel> deserializeDocRels(OperationContext opctx, Detail detail, String docUUID)

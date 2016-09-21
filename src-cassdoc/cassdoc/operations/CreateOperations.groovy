@@ -115,12 +115,24 @@ class CreateOperations {
 
   }
 
-  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json)
+  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json , boolean paxos)
   {
     JsonParser parser = svcs.jsonFactory.createParser(json)
+    newAttr(svcs,opctx,detail,docUUID,attr,parser,paxos)
+  }
+
+  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, Reader json , boolean paxos)
+  {
+    JsonParser parser = svcs.jsonFactory.createParser(json)
+    newAttr(svcs,opctx,detail,docUUID,attr,parser,paxos)
+  }
+
+  public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, JsonParser parser , boolean paxos)
+  {
     NewAttr cmd = new NewAttr(docUUID:docUUID, attrName:attr)
     cmd.attrValue = parseField(svcs,opctx,detail,docUUID,attr,parser)
     cmd.isComplete = true;
+    cmd.paxos = paxos
     analyzeNewAttrEvent(svcs,opctx,detail,cmd)
   }
 
@@ -456,32 +468,10 @@ class CreateOperations {
     analyzeNewDocEvent(svcs,opctx,detail, newDocCmd)
 
     while (fields.hasNext()) {
-
       Map.Entry<String,Object> field = fields.next()
-      FieldValue fv = new FieldValue()
-
       if (field.key != svcs.idField) {
-        if (field.value == null) {
-          fv.value = null
-          fv.type = null
-        } else if (field.value instanceof CharSequence) {
-          fv.value = field.value.toString()
-          fv.type = DBCodes.TYPE_CODE_STRING
-        } else if (field.value instanceof float || field.value instanceof double || field.value instanceof BigDecimal) {
-          fv.value = field.value.toString()
-          fv.type = DBCodes.TYPE_CODE_DECIMAL
-        } else if (field.value instanceof byte || field.value instanceof int || field.value instanceof long || field.value instanceof BigInteger) {
-          fv.value = field.value.toString()
-          fv.type = DBCodes.TYPE_CODE_INTEGER
-        } else if (field.value instanceof List) {
-          fv.value = newListValue(svcs,opctx,detail,docId,field.key,(List)field.value)
-          fv.type = DBCodes.TYPE_CODE_ARRAY
-        } else if (field.value instanceof Map) {
-          fv.value = newMapValue(svcs,opctx,detail,docId,field.key,(Map)field.value)
-          fv.type = DBCodes.TYPE_CODE_OBJECT
-        }
-
-        NewAttr newAttrCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:field.key)
+        FieldValue fv = serializeAttr(svcs,opctx,detail,field,docId,parentUUID,parentAttr)
+        NewAttr newAttrCmd = new NewAttr(docUUID:docId, attrName:field.key)
         newAttrCmd.attrValue = fv
         newAttrCmd.isComplete = true;
         analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
@@ -491,7 +481,35 @@ class CreateOperations {
 
   }
 
-  public static String newListValue(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, List list)
+  public static FieldValue serializeAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, Map.Entry<String,Object> field, String docId, String parentUUID, String parentAttr)
+  {
+    FieldValue fv = new FieldValue()
+
+    if (field.value == null) {
+      fv.value = null
+      fv.type = null
+    } else if (field.value instanceof CharSequence) {
+      fv.value = field.value.toString()
+      fv.type = DBCodes.TYPE_CODE_STRING
+    } else if (field.value instanceof float || field.value instanceof double || field.value instanceof BigDecimal) {
+      fv.value = field.value.toString()
+      fv.type = DBCodes.TYPE_CODE_DECIMAL
+    } else if (field.value instanceof byte || field.value instanceof int || field.value instanceof long || field.value instanceof BigInteger) {
+      fv.value = field.value.toString()
+      fv.type = DBCodes.TYPE_CODE_INTEGER
+    } else if (field.value instanceof List) {
+      fv.value = serializeList(svcs,opctx,detail,docId,field.key,(List)field.value)
+      fv.type = DBCodes.TYPE_CODE_ARRAY
+    } else if (field.value instanceof Map) {
+      fv.value = serializeMap(svcs,opctx,detail,docId,field.key,(Map)field.value)
+      fv.type = DBCodes.TYPE_CODE_OBJECT
+    }
+
+    return fv
+
+  }
+
+  public static String serializeList(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, List list)
   {
     StringWriter sw = new StringWriter()
     sw << "["
@@ -503,16 +521,16 @@ class CreateOperations {
       if (o instanceof CharSequence || o instanceof float || o instanceof double || o instanceof BigDecimal || o instanceof int || o instanceof byte || o instanceof long || o instanceof BigDecimal) {
         sw << '"' << StringEscapeUtils.escapeJson(o.toString()) << '"'
       } else if (o instanceof List) {
-        sw << newListValue(svcs,opctx,detail,docId,curAttr,(List)o)
+        sw << serializeList(svcs,opctx,detail,docId,curAttr,(List)o)
       } else if (o instanceof Map) {
-        sw << newMapValue(svcs,opctx,detail,docId,curAttr,(Map)o)
+        sw << serializeMap(svcs,opctx,detail,docId,curAttr,(Map)o)
       }
     }
     sw << "]"
     return sw.toString()
   }
 
-  public static String newMapValue(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, Map map)
+  public static String serializeMap(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, Map map)
   {
     StringWriter sw = new StringWriter()
     // determine if this is a new child document, or just a map value
@@ -532,9 +550,9 @@ class CreateOperations {
         if (o instanceof CharSequence || o instanceof float || o instanceof double || o instanceof BigDecimal || o instanceof int || o instanceof byte || o instanceof long || o instanceof BigDecimal) {
           sw << '"' << StringEscapeUtils.escapeJson(o.toString()) << '"'
         } else if (o instanceof List) {
-          sw << newListValue(svcs,opctx,detail,docId,curAttr,(List)o)
+          sw << serializeList(svcs,opctx,detail,docId,curAttr,(List)o)
         } else if (o instanceof Map) {
-          sw << newMapValue(svcs,opctx,detail,docId,curAttr,(Map)o)
+          sw << serializeMap(svcs,opctx,detail,docId,curAttr,(Map)o)
         }
       }
     }
