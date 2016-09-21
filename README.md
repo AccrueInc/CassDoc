@@ -15,4 +15,4 @@ Secondary missions are the JCR and Tinkerpop3 interfaces. However those have bee
 - JsonPath features
 - Since JSON seamlessly serializes / deserializes to Maps / Lists / BigInts / BigDecs / booleans / strings, almost all the API calls that you can do with JSON you can do with simple java object trees of maps/lists/bigint/bigdec/bool/str. 
 - streaming: I want the ability for really large lists of documents to "streaming insert" without having to waypoint the entire request in the JVM heap of the CassDoc engine. Likewise for large document pulls. 
-- paxps: enable a mechanism and process to do paxos-guarded attribute updates (to a degree). Using metadata retrievals, you can get the zv version timeuuid for an attribute and then do a PAXOS-guarded conditional update for some degree of PAXOS transactional operations on document fields/keys/attributes.
+- paxos: enable a mechanism and process to do paxos-guarded attribute updates (to a degree). Using metadata retrievals, you can get the zv version timeuuid for an attribute and then do a PAXOS-guarded conditional update for some degree of PAXOS transactional operations on document fields/keys/attributes.
