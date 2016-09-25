@@ -422,9 +422,6 @@ class CreateOperations {
     NewRel newRelCmd = new NewRel()
     newRelCmd.p1 = rel.p1
     newRelCmd.ty1 = rel.ty1
-    newRelCmd.ty2 = rel.ty2
-    newRelCmd.ty3 = rel.ty3
-    newRelCmd.ty4 = rel.ty4
     newRelCmd.p2 = rel.p2
     newRelCmd.p3 = rel.p3
     newRelCmd.p4 = rel.p4
@@ -432,6 +429,7 @@ class CreateOperations {
     newRelCmd.c2 = rel.c2
     newRelCmd.c3 = rel.c3
     newRelCmd.c4 = rel.c4
+    newRelCmd.ty2 = rel.ty2
     newRelCmd.link = rel.lk
     newRelCmd.d = rel.d
     // metadata isn't allowed. Must use other metadata APIs for that. to avoid the user making their own ids

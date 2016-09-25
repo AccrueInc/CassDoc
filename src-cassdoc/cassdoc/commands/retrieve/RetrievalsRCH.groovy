@@ -203,9 +203,6 @@ class GetAttrMetaRCH implements RowCallbackHandler {
 class GetRelsCmd extends QueryCmd {
   String p1 = ""
   String ty1 = ""
-  String ty2 = ""
-  String ty3 = ""
-  String ty4 = ""
   String p2 = ""
   String p3 = ""
   String p4 = ""
@@ -213,11 +210,12 @@ class GetRelsCmd extends QueryCmd {
   String c2 = ""
   String c3 = ""
   String c4 = ""
+  String ty2 = ""
 
   GetRelsRCH queryCassandraDocRels(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     String consistency = resolveConsistency(detail,opctx)
     String space = opctx.space
-    String cql = "SELECT p1,ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4,d,link,z_md FROM ${space}.r WHERE p1 = ?"
+    String cql = "SELECT p1,ty1,p2,p3,p4,c1,c2,c3,c4,ty2,d,link,z_md FROM ${space}.r WHERE p1 = ?"
     Object[] cqlargs = [p1] as Object[]
     GetRelsRCH rch = new GetRelsRCH()
     if (opctx.cqlTraceEnabled) opctx.cqlTrace.add([
@@ -232,7 +230,7 @@ class GetRelsCmd extends QueryCmd {
   GetRelsRCH queryCassandraDocRelsForType(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     String consistency = resolveConsistency(detail,opctx)
     String space = opctx.space
-    String cql = "SELECT p1,ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4,d,link,z_md FROM ${space}.r WHERE p1 = ? AND ty1 = ?"
+    String cql = "SELECT p1,ty1,p3,p4,c1,c2,c3,c4,ty2,d,link,z_md FROM ${space}.r WHERE p1 = ? AND ty1 = ?"
     Object[] cqlargs = [p1, ty1] as Object[]
     GetRelsRCH rch = new GetRelsRCH()
     if (opctx.cqlTraceEnabled) opctx.cqlTrace.add([
@@ -248,7 +246,7 @@ class GetRelsCmd extends QueryCmd {
     String consistency = resolveConsistency(detail,opctx)
 
     String space = opctx.space
-    String cql = "SELECT p1,ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4,d,link,z_md FROM ${space}.r WHERE p1 = ? AND ty1 = ? AND ty2='' AND ty3='' AND ty4='' AND p2 = ?"
+    String cql = "SELECT p1,ty1,p2,p3,p4,c1,c2,c3,c4,ty2,d,link,z_md FROM ${space}.r WHERE p1 = ? AND ty1 = ? AND p2 = ?"
     Object[] cqlargs = [p1, ty1, p2] as Object[]
     GetRelsRCH rch = new GetRelsRCH()
     if (opctx.cqlTraceEnabled) opctx.cqlTrace.add([
@@ -289,48 +287,12 @@ class GetRelKeyCmd extends QueryCmd {
       // type specified
       where << "AND ty1 = ? "
       arglist.add(relKey.ty1)
-      if (!relKey.isty2) {
-        if (relKey.isp2) {
-          where << "AND ty2 = '' AND ty3 = '' AND ty4 = '' AND p2 = ? "
-          arglist.add(relKey.p2)
-        } else {
-          // getting all relations beginning with type ty1 for p1
-          return
-        }
+      if (relKey.isp2) {
+        where << " AND p2 = ? "
+        arglist.add(relKey.p2)
       } else {
-        where << "AND ty2 = ? "
-        arglist.add(relKey.ty2)
-        if (!relKey.isty3) {
-          if (relKey.isp2) {
-            where << "AND ty3 = '' AND ty4 = '' AND p2 = ? "
-            arglist.add(relKey.p2)
-          } else {
-            // getting relations matching ty1 and ty2 for p1
-            return
-          }
-        } else {
-          where << "AND ty3 = ? "
-          arglist.add(relKey.ty3)
-          if (!relKey.isty4) {
-            if (relKey.isp2) {
-              where << "AND ty4 = '' AND p2 = ? "
-              arglist.add(relKey.p2)
-            } else {
-              // getting relations matching ty1, ty2, ty3 for p1
-              return
-            }
-          } else {
-            where << "AND ty4 = ? "
-            arglist.add(relKey.ty4)
-            if (!relKey.isp2) {
-              // getting relations matching ty1, ty2, ty3, ty4  for p1
-              return
-            } else {
-              where << "AND p2 = ? "
-              arglist.add(relKey.p2)
-            }
-          }
-        }
+        // getting all relations beginning with type ty1 for p1
+        return
       }
     }
 
@@ -364,20 +326,45 @@ class GetRelKeyCmd extends QueryCmd {
       }
     }
 
-    // see if there are more c fields
-    if (relKey.isc2) {
-      where << "AND c2 = ? "
-      arglist.add(relKey.c2)
-    }
+    if (!relKey.isty2) {
+      // see if there are more c fields
+      if (relKey.isc2) {
+        where << "AND c2 = ? "
+        arglist.add(relKey.c2)
+      }
 
-    if (relKey.isc3) {
-      where << "AND c3 = ? "
-      arglist.add(relKey.c3)
-    }
+      if (relKey.isc3) {
+        where << "AND c3 = ? "
+        arglist.add(relKey.c3)
+      }
 
-    if (relKey.isc4) {
-      where << "AND c4 = ? "
-      arglist.add(relKey.c4)
+      if (relKey.isc4) {
+        where << "AND c4 = ? "
+        arglist.add(relKey.c4)
+      }
+    } else {
+      if (relKey.isc2) {
+        if (relKey.isc3) {
+          if (relKey.isc4) {
+            where << "AND c2 = ? AND c3 = ? and c4 = ? "
+            arglist.add(relKey.c2)
+            arglist.add(relKey.c3)
+            arglist.add(relKey.c4)
+          } else {
+            where << "AND c2 = ? AND c3 = ? and c4 = '' "
+            arglist.add(relKey.c2)
+            arglist.add(relKey.c3)
+          }
+        } else {
+          where << "AND c2 = ? AND c3 = '' and c4 = '' "
+          arglist.add(relKey.c2)
+        }
+      }
+
+      if (relKey.isty2) {
+        where << "AND ty2 = ? "
+        arglist.add(relKey.ty2)
+      }
     }
 
   }
@@ -391,7 +378,7 @@ class GetRelKeyCmd extends QueryCmd {
 
     analyzeRelKey(where, arglist)
 
-    String cql = "SELECT p1,ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4,d,link,z_md FROM ${space}.r WHERE " + where
+    String cql = "SELECT p1,ty1,p2,p3,p4,c1,c2,c3,c4,ty2,d,link,z_md FROM ${space}.r WHERE " + where
     Object[] cqlargs = arglist.toArray()
     GetRelsRCH rch = new GetRelsRCH()
     if (opctx.cqlTraceEnabled) opctx.cqlTrace.add([
@@ -416,7 +403,7 @@ class GetAttrRelsCmd extends QueryCmd {
     String consistency = resolveConsistency(detail,opctx)
 
     String space = opctx.space
-    String cql = "SELECT p1,ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4,d,link,z_md FROM ${space}.r WHERE p1 = ? AND ty1 in ? AND ty2='' AND ty3='' AND ty4='' AND p2 = ?"
+    String cql = "SELECT p1,ty1,p2,p3,p4,c1,c2,c3,c4,ty2,d,link,z_md FROM ${space}.r WHERE p1 = ? AND ty1 in ? AND p2 = ?"
     Object[] cqlargs = [p1, ty1s, p2] as Object[]
     GetRelsRCH rch = new GetRelsRCH()
     if (opctx.cqlTraceEnabled) opctx.cqlTrace.add([
@@ -443,13 +430,11 @@ class GetRelsRCH implements RowCallbackHandler {
         p3:row.getString("p3"),
         p4:row.getString("p4"),
         ty1:row.getString("ty1"),
-        ty2:row.getString("ty2"),
-        ty3:row.getString("ty3"),
-        ty4:row.getString("ty4"),
         c1:row.getString("c1"),
         c2:row.getString("c2"),
         c3:row.getString("c3"),
         c4:row.getString("c4"),
+        ty2:row.getString("ty2"),
         d:row.getString("d"),
         lk:row.getString("link"),
         z_md:row.getString("z_md")

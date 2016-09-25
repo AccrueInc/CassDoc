@@ -36,13 +36,13 @@ DROP KEYSPACE ${keyspace};
 CREATE KEYSPACE $keyspace WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '$replicationFactor'}  AND durable_writes = true;
 """
 
+// relations can be typed to two levels of distinction... BUT only the first one is high up in the primary key, so that relations of that type for a given vertex/node/doc/entity can be subqueried.
+// ... the ty2 sub-category is after all other parts of the parent and child subtypes, so it isn't really subset queryable, but is part of the PK so the relations of a type can still be subtyped if need be.
+
 println """
 CREATE TABLE ${keyspace}.r (
   p1 text,
   ty1 text,
-  ty2 text,
-  ty3 text,
-  ty4 text,
   p2 text,
   p3 text,
   p4 text,
@@ -50,11 +50,12 @@ CREATE TABLE ${keyspace}.r (
   c2 text,
   c3 text,
   c4 text,
+  ty2 text,
   d text,
   link text,
-  z_md text,  
-  
-  PRIMARY KEY ((p1),ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4)
+  z_md text,
+  zv uuid,
+  PRIMARY KEY ((p1),ty1,p2,p3,p4,c1,c2,c3,c4,ty2)
 );
 """
 

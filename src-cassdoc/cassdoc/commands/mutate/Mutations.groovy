@@ -496,21 +496,19 @@ class UpdRelMetadata extends MutationCmd
 
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
-    cql = "UPDATE ${space}.r SET z_md = ? WHERE p1 = ? AND ty1 = ? and ty2 = ? and ty3 = ? and ty4 = ? and p2 = ? and p3 = ? and p4 = ? and c1 = ? and c2 = ? and c3 = ? and c4 = ?"
+    cql = "UPDATE ${space}.r SET z_md = ? WHERE p1 = ? AND ty1 = ? and p2 = ? and p3 = ? and p4 = ? and c1 = ? and c2 = ? and c3 = ? and c4 = ? and ty2 = ? "
     cqlargs = [
       metadataUUID,
       relkey.p1,
       relkey.ty1,
-      relkey.ty2,
-      relkey.ty3,
-      relkey.ty4,
       relkey.p2,
       relkey.p3,
       relkey.p4,
       relkey.c1,
       relkey.c2,
       relkey.c3,
-      relkey.c4] as Object[]
+      relkey.c4,
+      relkey.ty2] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
 
@@ -699,7 +697,7 @@ class DelAttrRels extends MutationCmd {
 
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
-    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and ty2 = '' and ty3 = '' and ty4 = '' and p2 = ?"
+    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and p2 = ?"
     cqlargs = [p1, ty1, p2] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
@@ -721,20 +719,19 @@ class DelRel extends MutationCmd {
 
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
-    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and ty2 = ?  and ty3 = ? and ty4 = ? and p2 = ? and p3 = ? and p4 = ? and c1 = ? and c2 = ? and c3 = ? and c4 = ?"
+    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and p2 = ? and p3 = ? and p4 = ? and c1 = ? and c2 = ? and c3 = ? and c4 = ? and ty2 = ? "
     cqlargs = [
       relKey.p1,
       relKey.ty1,
-      relKey.ty2,
-      relKey.ty3,
-      relKey.ty4,
       relKey.p2,
       relKey.p3,
       relKey.p4,
       relKey.c1,
       relKey.c2,
       relKey.c3,
-      relKey.c4 ] as Object[]
+      relKey.c4,
+      relKey.ty2,
+    ] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
 
@@ -760,7 +757,7 @@ class ClrAttrRels extends DelAttrRels {
 
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
-    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and ty2 = '' and ty3 = '' and ty4 = '' and p2 = ?"
+    cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and p2 = ?"
     cqlargs = [p1, ty1, p2] as Object[]
     return execOrPrep(svcs,opctx,detail)
   }
@@ -771,9 +768,6 @@ class ClrAttrRels extends DelAttrRels {
 class NewRel extends MutationCmd {
   String p1 = ""
   String ty1 = ""
-  String ty2 = ""
-  String ty3 = ""
-  String ty4 = ""
   String p2 = ""
   String p3 = ""
   String p4 = ""
@@ -782,6 +776,8 @@ class NewRel extends MutationCmd {
   String c2 = ""
   String c3 = ""
   String c4 = ""
+
+  String ty2 = ""
 
   String link = ""
   String d = ""
@@ -800,13 +796,10 @@ class NewRel extends MutationCmd {
 
   Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
     space = opctx.space
-    cql = "INSERT INTO ${space}.r (p1,ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4,link,d) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+    cql = "INSERT INTO ${space}.r (p1,ty1,p2,p3,p4,c1,c2,c3,c4,ty2,link,d) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
     cqlargs = [
       p1,
       ty1,
-      ty2,
-      ty3,
-      ty4,
       p2,
       p3,
       p4,
@@ -814,6 +807,7 @@ class NewRel extends MutationCmd {
       c2,
       c3,
       c4,
+      ty2,
       link,
       d] as Object[]
     return execOrPrep(svcs,opctx,detail)
