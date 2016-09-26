@@ -53,8 +53,6 @@ class UpdateOperations {
     analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
   }
 
-
-
   static void analyzeUpdateAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdAttr cmd) {
     // PAXOS updates: prepare the clears and new-writes, but the other writes must only be executed if the initial PAXOS update succeeds
     // ...probably will occur in optimization  and execution...
@@ -301,6 +299,17 @@ class UpdateOperations {
     }
   }
 
+  /**
+   * While parsing a stream token, if behavior says we need to ignore fields, this and the Child / Array associated 
+   * routines eat the tokens, ignoring them until the parent field, array, or object ends. 
+   * 
+   * @param svcs
+   * @param opctx
+   * @param detail
+   * @param docUUID
+   * @param fieldName
+   * @param parser
+   */
   static void parseFieldIgnore(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String fieldName, JsonParser parser)
   {
     String fieldValue

@@ -141,11 +141,7 @@ class CreateOperations {
   public static String newChildDoc(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final JsonParser parser, final String parentUUID, final String parentAttr, final boolean threaded) {
     final String docId = parseIDAttr(svcs,opctx,detail,parser);
     if (threaded) {
-      new Thread() {
-            public void run() {
-              CreateOperations.performNewChildDoc(svcs,opctx,detail,parser,docId, parentUUID,parentAttr)
-            }
-          }.start()
+      new Thread() { public void run() { CreateOperations.performNewChildDoc(svcs,opctx,detail,parser,docId, parentUUID,parentAttr) } }.start()
     } else {
       performNewChildDoc(svcs,opctx,detail,parser,docId, parentUUID,parentAttr)
     }
@@ -442,11 +438,7 @@ class CreateOperations {
 
     if (docUUID == null) throw new Exception("New document map must have id field")
     if (threaded) {
-      new Thread() {
-            public void run() {
-              CreateOperations.performNewChildDocMap(svcs,opctx,detail,docMap.entrySet().iterator(),docUUID,parentUUID,parentAttr)
-            }
-          }.start()
+      new Thread() { public void run() { CreateOperations.performNewChildDocMap(svcs,opctx,detail,docMap.entrySet().iterator(),docUUID,parentUUID,parentAttr) } }.start()
     } else {
       CreateOperations.performNewChildDocMap(svcs,opctx,detail,docMap.entrySet().iterator(),docUUID,parentUUID,parentAttr)
     }

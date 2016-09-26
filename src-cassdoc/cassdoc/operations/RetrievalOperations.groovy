@@ -605,130 +605,131 @@ class RetrievalOperations {
 
     final LinkedBlockingQueue attrQ = new LinkedBlockingQueue(1000)
     final BlockingIterator<Map.Entry<String,Object>> iterator = new BlockingIterator<Map.Entry<String,Object>>(queue:attrQ)
-    // fire off a thread?
-    Map.Entry<String,Object> docUUIDField = new AbstractMap.SimpleEntry<String,Object> (AttrNames.SYS_DOCID,docUUID)
-    attrQ.put(docUUIDField)
 
-    new Thread(){
-          public void run() {
-            if (detail.docIDTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
-            if (detail.docIDDateMeta) {  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
-            if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-              GetDoc eCmd = new GetDoc(docUUID:docUUID)
-              GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-              if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_TOKEN,eRCH.token)) }
-              if (detail.docPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOS,eRCH.paxosVer)) }
-              if (detail.docPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
-              if (detail.docPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
-              if (detail.docMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETAID,eRCH.metadata_id)) }
-              if (detail.docMetaDataMeta) {
-                if (eRCH.metadata_id != null) {
-                  Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
-                  Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
-                  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETADATA,metadatadoc))
-                }
-              }
-              if (detail.parentMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PARENT,eRCH.a0)) }
-              if (detail.docWritetimeMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime)) }
-              if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WTDT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime.intdiv(1000))) }
-            }
-            if (detail.docRelationsMeta) {
-              GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
-              GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-              attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,relRCH.rels))
-            }
-            if (detail.docChildrenMeta) {
-              GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
-              GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-              attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,relRCH.rels))
-            }
-
-            // non-streaming
-            //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
-            //GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
-            //for (Object[] attr : rch.attrs) {
-
-            // streaming
-            GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
-            cmd.initiateQuery(svcs,opctx,detail)
-            Object[] attr = null
-            while (attr = cmd.nextRow()) {
-
-              Detail attrDetail = detail.resolveAttrDetail((String)attr[0])
-              // if attr-specific detail meta differs from the base detail we used to query doc attrs, we need to do a followup query
-              if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
-              || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
-                GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID:docUUID,attrName:(String)attr[0])
-                GetAttrMetaRCH metaRCH = metaCmd.queryCassandra(svcs, opctx, attrDetail)
-                // overwrite/fill in with correct detail values
-                attr[4] = metaRCH.writetime
-                attr[5] = metaRCH.token
-                attr[6] = metaRCH.attrMetaID
-              }
-              if (attrDetail != null) {
-                Object value = null
-                if (attr[2] == null) {
-                  value = null
-                } else { if (attr[1] == DBCodes.TYPE_CODE_STRING) {
-                    value = (String)attr[2]
-                  } else if (attr[1] == DBCodes.TYPE_CODE_INTEGER ) {
-                    value = new BigInteger((String)attr[2])
-                  } else if (attr[1] == DBCodes.TYPE_CODE_DECIMAL) {
-                    value = new BigDecimal((String)attr[2])
-                  } else if (attr[1] == DBCodes.TYPE_CODE_BOOLEAN) {
-                    value = Boolean.parseBoolean((String)attr[2])
-                  } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
-                    JsonParser arrayParser = svcs.jsonFactory.createParser((String)attr[2])
-                    JsonToken arrayStartToken = arrayParser.nextToken();
-                    if (arrayStartToken == JsonToken.START_ARRAY) {
-                      List list = RetrievalOperations.deserializeRetrievedChildArray(svcs,opctx,attrDetail,docUUID,(String)attr[0],arrayParser)
-                      value = list
-                    } else {
-                      // array type but not array? check for empty string or null
-                    }
-                  } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
-                    JsonParser objParser = svcs.jsonFactory.createParser((String)attr[2])
-                    JsonToken objStartToken = objParser.nextToken();
-                    if (objStartToken == JsonToken.START_OBJECT) {
-                      Map map = RetrievalOperations.deserializeRetrievedChildObject(svcs,opctx,attrDetail,docUUID,(String)attr[0],objParser)
-                      value = map
-                    } else {
-                      // obj type but no start object? check for empty string or null
-                    }
-                  } else {
-                    throw log.err(opctx,null,new RetrievalException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
-                  }
-                  attrQ.put(new AbstractMap.SimpleEntry<String,Object>((String)attr[0],value))
-
-                  // attr-specific meta-attrs
-                  if (attrDetail.attrWritetimeMeta != null) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + AttrNames.META_WT_PRE + detail.attrWritetimeMeta + ']',attr[4])) }
-                  if (attrDetail.attrWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + AttrNames.META_WTDT_PRE+attrDetail.attrWritetimeMeta+']',((Long)attr[4]).intdiv(1000)))}
-                  if (attrDetail.attrTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_TOKEN ,attr[5])) }
-                  if (attrDetail.attrPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOS ,attr[3])) }
-                  if (attrDetail.attrPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOSTIME ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()))) }
-                  if (attrDetail.attrPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOSDATE ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())))}
-                  if (attrDetail.attrMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_ATTRMETAID ,attr[6])) }
-                  if (attrDetail.attrMetaDataMeta) {
-                    if (attr[6] != null) {
-                      Detail metaDetail = detail.resolveAttrDetail((String)attr[6])
-                      Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,(String)attr[6],false)
-                      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (""+(String)attr[0]+AttrNames.META_ATTRMETADATA,metadatadoc))
-                    }
-                  }
-
-                }
-              } else {
-                // log.debug: detail-excluded atribute
-              }
-            }
-            if (root && opctx.cqlTraceEnabled) {
-              attrQ.put(new AbstractMap.SimpleEntry<String,Object>(AttrNames.META_CQLTRACE ,opctx.cqlTrace))
-            }
-          }
-        }.start();
+    new Thread() { public void run() { RetrievalOperations.feedAttrQueue(svcs,opctx,detail,docUUID,root,attrQ) } }.start();
 
     return iterator;
+  }
 
+
+
+  public static void feedAttrQueue(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, boolean root, LinkedBlockingQueue attrQ)
+  {
+    Map.Entry<String,Object> docUUIDField = new AbstractMap.SimpleEntry<String,Object> (AttrNames.SYS_DOCID,docUUID)
+    attrQ.put(docUUIDField)
+    if (detail.docIDTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
+    if (detail.docIDDateMeta) {  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
+    if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
+      GetDoc eCmd = new GetDoc(docUUID:docUUID)
+      GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
+      if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_TOKEN,eRCH.token)) }
+      if (detail.docPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOS,eRCH.paxosVer)) }
+      if (detail.docPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
+      if (detail.docPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
+      if (detail.docMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETAID,eRCH.metadata_id)) }
+      if (detail.docMetaDataMeta) {
+        if (eRCH.metadata_id != null) {
+          Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
+          Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
+          attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETADATA,metadatadoc))
+        }
+      }
+      if (detail.parentMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PARENT,eRCH.a0)) }
+      if (detail.docWritetimeMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime)) }
+      if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WTDT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime.intdiv(1000))) }
+    }
+    if (detail.docRelationsMeta) {
+      GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
+      GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
+      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,relRCH.rels))
+    }
+    if (detail.docChildrenMeta) {
+      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
+      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,relRCH.rels))
+    }
+
+    // non-streaming
+    //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
+    //GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
+    //for (Object[] attr : rch.attrs) {
+
+    // streaming
+    GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
+    cmd.initiateQuery(svcs,opctx,detail)
+    Object[] attr = null
+    while (attr = cmd.nextRow()) {
+
+      Detail attrDetail = detail.resolveAttrDetail((String)attr[0])
+      // if attr-specific detail meta differs from the base detail we used to query doc attrs, we need to do a followup query
+      if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
+      || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
+        GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID:docUUID,attrName:(String)attr[0])
+        GetAttrMetaRCH metaRCH = metaCmd.queryCassandra(svcs, opctx, attrDetail)
+        // overwrite/fill in with correct detail values
+        attr[4] = metaRCH.writetime
+        attr[5] = metaRCH.token
+        attr[6] = metaRCH.attrMetaID
+      }
+      if (attrDetail != null) {
+        Object value = null
+        if (attr[2] == null) {
+          value = null
+        } else { if (attr[1] == DBCodes.TYPE_CODE_STRING) {
+            value = (String)attr[2]
+          } else if (attr[1] == DBCodes.TYPE_CODE_INTEGER ) {
+            value = new BigInteger((String)attr[2])
+          } else if (attr[1] == DBCodes.TYPE_CODE_DECIMAL) {
+            value = new BigDecimal((String)attr[2])
+          } else if (attr[1] == DBCodes.TYPE_CODE_BOOLEAN) {
+            value = Boolean.parseBoolean((String)attr[2])
+          } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
+            JsonParser arrayParser = svcs.jsonFactory.createParser((String)attr[2])
+            JsonToken arrayStartToken = arrayParser.nextToken();
+            if (arrayStartToken == JsonToken.START_ARRAY) {
+              List list = RetrievalOperations.deserializeRetrievedChildArray(svcs,opctx,attrDetail,docUUID,(String)attr[0],arrayParser)
+              value = list
+            } else {
+              // array type but not array? check for empty string or null
+            }
+          } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
+            JsonParser objParser = svcs.jsonFactory.createParser((String)attr[2])
+            JsonToken objStartToken = objParser.nextToken();
+            if (objStartToken == JsonToken.START_OBJECT) {
+              Map map = RetrievalOperations.deserializeRetrievedChildObject(svcs,opctx,attrDetail,docUUID,(String)attr[0],objParser)
+              value = map
+            } else {
+              // obj type but no start object? check for empty string or null
+            }
+          } else {
+            throw log.err(opctx,null,new RetrievalException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
+          }
+          attrQ.put(new AbstractMap.SimpleEntry<String,Object>((String)attr[0],value))
+
+          // attr-specific meta-attrs
+          if (attrDetail.attrWritetimeMeta != null) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + AttrNames.META_WT_PRE + detail.attrWritetimeMeta + ']',attr[4])) }
+          if (attrDetail.attrWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0] + AttrNames.META_WTDT_PRE+attrDetail.attrWritetimeMeta+']',((Long)attr[4]).intdiv(1000)))}
+          if (attrDetail.attrTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_TOKEN ,attr[5])) }
+          if (attrDetail.attrPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOS ,attr[3])) }
+          if (attrDetail.attrPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOSTIME ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString()))) }
+          if (attrDetail.attrPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_PAXOSDATE ,IDUtil.extractUnixTimeFromEaioTimeUUID(attr[3].toString())))}
+          if (attrDetail.attrMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object>(""+(String)attr[0]+AttrNames.META_ATTRMETAID ,attr[6])) }
+          if (attrDetail.attrMetaDataMeta) {
+            if (attr[6] != null) {
+              Detail metaDetail = detail.resolveAttrDetail((String)attr[6])
+              Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,(String)attr[6],false)
+              attrQ.put(new AbstractMap.SimpleEntry<String,Object> (""+(String)attr[0]+AttrNames.META_ATTRMETADATA,metadatadoc))
+            }
+          }
+
+        }
+      } else {
+        // log.debug: detail-excluded atribute
+      }
+    }
+    if (root && opctx.cqlTraceEnabled) {
+      attrQ.put(new AbstractMap.SimpleEntry<String,Object>(AttrNames.META_CQLTRACE ,opctx.cqlTrace))
+    }
   }
 
   public static String getDocMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID)

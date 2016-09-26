@@ -325,32 +325,58 @@ class API {
   /**
    * Delete document: cascading deletes of subdocuments are controlled by detail. In cassandra this should delete the entire row and it's relations
    * 
-   * Synchronous (TODO: asynchronous cascade api)
+   * threaded = false will synchronously delete it
    * 
+   * threaded = true will delegate the cleanup to a thread and quick-return 
+   *  
    * @param opctx
    * @param detail
    * @param docUUID
    */
-  void delDoc(OperationContext opctx, Detail detail, String docUUID)
+  void delDoc(OperationContext opctx, Detail detail, String docUUID, boolean threaded)
   {
-    DeleteOperations.deleteDoc(svcs, opctx, detail, docUUID)
-    if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    if (threaded) {
+      new Thread () {
+            public void run() {
+              log.dbg("async doc deletion BEGIN "+docUUID,null)
+              DeleteOperations.deleteDoc(svcs, opctx, detail, docUUID)
+              if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+              log.dbg("async doc deletion END "+docUUID,null)
+            }
+          }.start()
+    } else {
+      DeleteOperations.deleteDoc(svcs, opctx, detail, docUUID)
+      if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    }
   }
 
   /**
    * Delete document attribute: cascading deletes of the attribute's subdocuments are controlled by detail. In cassandra this deletes a column key within a row
+   *
+   * threaded = false will synchronously delete the attribute
    * 
-   * Synchronous (TODO: asynchronous cascade api call)
+   * threaded = true will delegate the delete to a thread and quick-return 
    * 
    * @param opctx
    * @param detail
    * @param docUUID
    * @param attr
    */
-  void delAttr(OperationContext opctx, Detail detail, String docUUID, String attr)
+  void delAttr(OperationContext opctx, Detail detail, String docUUID, String attr, boolean threaded)
   {
-    DeleteOperations.deleteAttr(svcs, opctx, detail, docUUID, attr, false)
-    if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    if (threaded) {
+      new Thread () {
+            public void run() {
+              log.dbg("async attr deletion BEGIN "+docUUID+ " "+attr,null)
+              DeleteOperations.deleteAttr(svcs, opctx, detail, docUUID, attr, false)
+              if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+              log.dbg("async attr deletion END "+docUUID+ " "+attr,null)
+            }
+          }.start()
+    } else {
+      DeleteOperations.deleteAttr(svcs, opctx, detail, docUUID, attr, false)
+      if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    }
   }
 
   // ---- Streaming Parse Write Operations
@@ -457,10 +483,21 @@ class API {
    * @param json
    * @param paxos - if true, IF NOT EXIST paxos conditional is applied to upsert statement
    */
-  public void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos)
+  public void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos, boolean threaded)
   {
-    CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json, paxos)
-    if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    if (threaded) {
+      new Thread() {
+            public void run() {
+              log.dbg("async new attr BEGIN "+docUUID+" "+attr,null)
+              CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json, paxos)
+              if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+              log.dbg("async new attr END "+docUUID+" "+attr,null)
+            }
+          }.start()
+    } else {
+      CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json, paxos)
+      if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    }
   }
 
 
@@ -498,10 +535,21 @@ class API {
    * @param attr
    * @param json
    */
-  public void updateAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json)
+  public void updateAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean threaded)
   {
-    UpdateOperations.updateAttr(svcs,opctx,detail,docUUID,attr,json)
-    if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    if (threaded) {
+      new Thread() {
+            public void run() {
+              log.dbg("async update attr BEGIN "+docUUID+" "+attr,null)
+              UpdateOperations.updateAttr(svcs,opctx,detail,docUUID,attr,json)
+              if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+              log.dbg("async update attr END "+docUUID+" "+attr,null)
+            }
+          }.start()
+    } else {
+      UpdateOperations.updateAttr(svcs,opctx,detail,docUUID,attr,json)
+      if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    }
   }
 
   /**
@@ -515,10 +563,21 @@ class API {
    * @param attr
    * @param json
    */
-  public void updateAttrEntry(OperationContext opctx, Detail detail, String docUUID, Map.Entry<String,Object> attr)
+  public void updateAttrEntry(OperationContext opctx, Detail detail, String docUUID, Map.Entry<String,Object> attr, boolean threaded)
   {
-    UpdateOperations.updateAttrEntry(svcs,opctx,detail,docUUID,attr)
-    if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    if (threaded) {
+      new Thread() {
+            public void run() {
+              log.dbg("async update attr entry BEGIN "+docUUID+" "+attr,null)
+              UpdateOperations.updateAttrEntry(svcs,opctx,detail,docUUID,attr)
+              if (opctx.executionMode == "batch")     opctx.DO(svcs, detail)
+              log.dbg("async update attr entry END "+docUUID+" "+attr,null)
+            }
+          }.start()
+    } else {
+      UpdateOperations.updateAttrEntry(svcs,opctx,detail,docUUID,attr)
+      if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    }
   }
 
 
@@ -537,10 +596,21 @@ class API {
    * @param json
    * @return
    */
-  public Set<String> updateAttrOverlay(OperationContext opctx, Detail detail,String docUUID, String attr, String json)
+  public Set<String> updateAttrOverlay(OperationContext opctx, Detail detail,String docUUID, String attr, String json, boolean threaded)
   {
-    UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
-    if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    if (threaded) {
+      new Thread() {
+            public void run() {
+              log.dbg("async update attr overlay BEGIN "+docUUID+" "+attr,null)
+              UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
+              if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+              log.dbg("async update attr overlay END "+docUUID+" "+attr,null)
+            }
+          }.start()
+    } else {
+      UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
+      if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    }
   }
 
   public List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args)
