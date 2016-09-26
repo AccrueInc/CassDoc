@@ -33,7 +33,7 @@ class CassDocVertex implements Vertex {
   public void remove() {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
-    cassDocGraph.cassDocAPI.delDoc(opctx, detail, docId)
+    cassDocGraph.cassDocAPI.delDoc(opctx, detail, docId, false)
   }
 
   @Override
@@ -54,7 +54,7 @@ class CassDocVertex implements Vertex {
         Object val = keyValues[i*2+1]
         StringWriter w = new StringWriter()
         CassDocJsonUtil.specialSerialize(val,w)
-        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString(),false)
+        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString(),false, false)
       }
     }
   }
