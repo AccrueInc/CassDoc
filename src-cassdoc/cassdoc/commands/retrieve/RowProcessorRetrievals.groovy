@@ -378,3 +378,24 @@ class EntityTableSecondaryIndexRP extends CassandraPagedRowProcessor
     return data
   }
 }
+
+@CompileStatic
+class DocAttrListRP extends CassandraPagedRowProcessor
+{
+  String docUUID
+
+  void initiateQuery(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args)
+  {
+    String consistency = QueryCmd.resolveConsistency(detail,opctx)
+    String space = opctx.space
+    String suffix = IDUtil.idSuffix(docUUID)
+    StringBuilder cql = new StringBuilder(32)
+    cql << "SELECT token(e),p FROM ${space}.p_${suffix}"
+    rs = svcs.driver.initiateQuery(space, cql.toString(), null, consistency, detail?.fetchPageSize ?: 30000, detail?.fetchNextPageThreshold ?: 3000)
+  }
+
+  Object[] processRow(Row row) {
+    Object[] data = [row.getString(1)] as Object[]
+    return data
+  }
+}

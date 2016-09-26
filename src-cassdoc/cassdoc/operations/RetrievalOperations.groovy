@@ -18,6 +18,7 @@ import cassdoc.Rel
 import cassdoc.RelKey
 import cassdoc.RelTypes
 import cassdoc.TypeConfigurationService
+import cassdoc.commands.retrieve.DocAttrListRP
 import cassdoc.commands.retrieve.GetAttrCmd
 import cassdoc.commands.retrieve.GetAttrMetaCmd
 import cassdoc.commands.retrieve.GetAttrMetaRCH
@@ -773,5 +774,25 @@ class RetrievalOperations {
     GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
     return relRCH.rels
   }
+
+  public static Iterator<String> attrNamesIterator(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final String docUUID) {
+
+    final LinkedBlockingQueue attrQ = new LinkedBlockingQueue(100)
+    final BlockingIterator<String> iterator = new BlockingIterator<String>(queue:attrQ)
+
+    new Thread() {
+          public void run() {
+            DocAttrListRP cmd = new DocAttrListRP(docUUID:docUUID)
+            cmd.initiateQuery(svcs,opctx,detail)
+            Object[] attrName = null
+            while (attrName = cmd.nextRow()) {
+              attrQ.put(attrName[0])
+            }
+          }
+        }.start();
+
+    return iterator;
+  }
+
 
 }

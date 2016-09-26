@@ -130,8 +130,6 @@ class CassDocVertex implements Vertex {
   }
 
 
-  // TODO: figure out how rel.ty1/ty2/ty3/ty4 relates to labels. Right now, ty1 == label.
-  // TODO: reverse relations with "-" protocol, fix "up" in engine --> -CH
   @Override
   public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
     Set<String> labels = null

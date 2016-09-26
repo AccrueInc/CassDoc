@@ -34,7 +34,8 @@ import cwdrg.util.json.JSONUtil
 @CompileStatic
 class API {
 
-  // TODO: cross-space registry (id : space)
+  // TODO: cross-space registry (id : space) (id: space code + space codes
+  // TODO: list attribute/field/key/property names
 
   @Autowired
   CommandExecServices svcs;
@@ -62,6 +63,28 @@ class API {
   }
 
   // ---- Streaming Parse Read Operations
+
+  Iterator<String> getAttrNamesIterator(OperationContext opctx, Detail detail, String docUUID)
+  {
+    log.inf("GetAttrNamesIterator :: $docUUID",null)
+    Iterator<String> attrNames = RetrievalOperations.attrNamesIterator(svcs, opctx, detail, docUUID)
+    return attrNames
+  }
+
+  void getAttrNames(OperationContext opctx, Detail detail, String docUUID, Writer writer)
+  {
+    log.inf("GetAttrNames :: $docUUID",null)
+    writer << '['
+    Iterator<String> names = getAttrNamesIterator(opctx,detail,docUUID)
+
+    boolean first = true
+    for (String name : names) {
+      if (first) first = false else writer << ','
+      writer << '"' << StringEscapeUtils.escapeJson(name) << '"'
+    }
+    writer << ']'
+    log.dbg("GetAttrNames DONE :: $docUUID",null)
+  }
 
   /**
    * Get a document attribute, with no recursion or document parsing introspection for subdocuments.
