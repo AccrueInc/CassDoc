@@ -43,16 +43,22 @@ class API {
   boolean docExists(OperationContext opctx, Detail detail, String uuid)
   {
     // token would work too, at least on cass 3.5
+    log.inf("DocExists :: $uuid",null)
     String typeSuffix = IDUtil.idSuffix(uuid)
     List<Object[]> rows = query(opctx,detail,"SELECT zv from ${opctx.space}.e_${typeSuffix} WHERE e = ?",uuid)
-    return (rows.size() > 0)
+    boolean found = (rows.size() > 0)
+    log.dbg("DocExists DONE :: $uuid :: $found",null)
+    return found
   }
 
   boolean attrExists(OperationContext opctx, Detail detail, String uuid, String attr)
   {
+    log.inf("AttrExists :: $uuid $attr",null)
     String typeSuffix = IDUtil.idSuffix(uuid)
     List<Object[]> rows = query(opctx,detail,"SELECT zv from ${opctx.space}.p_${typeSuffix} WHERE e = ? and p = ?",uuid,attr)
-    return (rows.size() > 0)
+    boolean found = (rows.size() > 0)
+    log.dbg("AttrExists DONE :: $uuid $attr :: $found",null)
+    return found
   }
 
   // ---- Streaming Parse Read Operations
@@ -70,11 +76,11 @@ class API {
    */
   String getSimpleAttr(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
-
+    log.inf("GetSimpleAttr :: $docUUID $attr",null)
     StringWriter writer = new StringWriter()
     getSimpleAttr(opctx,detail,docUUID,attr,writer)
     String toStr = writer.toString()
-    log.dbg( "OPGetAttrSimple_return"+toStr, null)
+    log.dbg("GetSimpleAttr DONE :: $docUUID $attr :: "+toStr,null)
     return toStr
   }
 
@@ -91,23 +97,23 @@ class API {
    */
   void getSimpleAttr (OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer)
   {
-    log.inf("OPGetAttrSimple_top :: $docUUID $attr",null)
-
+    log.inf("GetSimpleAttr[wrt] :: $docUUID $attr",null)
     GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
     GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-
     if (rch.valType == DBCodes.TYPE_CODE_STRING) {
       writer << '"' << StringEscapeUtils.escapeJson(rch.data) << '"'
     } else {
       writer << rch.data
     }
+    log.dbg("GetSimpleAttr[wrt] DONE :: $docUUID $attr",null)
   }
 
   Object deserializeSimpleAttr(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
-
+    log.inf("DeserializeSimpleAttr :: $docUUID $attr",null)
     GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
     GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
+    log.dbg("DeserializeSimpleAttr DONE :: $docUUID $attr :: "+rch.data,null)
     if (rch.data == null) {
       return null
     }
@@ -144,9 +150,12 @@ class API {
    */
   String getSimpleDoc(OperationContext opctx, Detail detail, String docUUID)
   {
+    log.inf("GetSimpleDoc :: $docUUID",null)
     StringWriter writer = new StringWriter()
     getSimpleDoc(opctx,detail,docUUID,writer)
-    return writer.toString()
+    String doc = writer.toString()
+    log.dbg("GetSimpleDoc DONE :: $docUUID :: "+doc,null)
+    return doc
   }
 
   /**
@@ -163,6 +172,7 @@ class API {
    */
   void getSimpleDoc (OperationContext opctx, Detail detail, String docUUID, Writer writer)
   {
+    log.inf("GetSimpleDoc[wrt] :: $docUUID",null)
     writer << '{"_id":"'<<docUUID<<'"'
     GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
     GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
@@ -175,6 +185,7 @@ class API {
       }
     }
     writer << '}'
+    log.dbg("GetSimpleDoc[wrt] DONE :: $docUUID",null)
   }
 
   /**
@@ -188,9 +199,12 @@ class API {
    * @return
    */
   String getDoc(OperationContext opctx, Detail detail, String docUUID) {
+    log.inf("GetDoc :: $docUUID",null)
     StringWriter writer = new StringWriter()
     RetrievalOperations.getSingleDoc(svcs,opctx,detail,docUUID,writer,true)
-    return writer.toString()
+    String doc = writer.toString()
+    log.dbg("GetDoc DONE :: $docUUID :: "+doc,null)
+    return doc
   }
 
   /**
@@ -204,7 +218,9 @@ class API {
    * @param writer
    */
   void getDoc(OperationContext opctx, Detail detail, String docUUID, Writer writer) {
+    log.inf("GetDoc[wrt] :: $docUUID",null)
     RetrievalOperations.getSingleDoc(svcs,opctx,detail,docUUID,writer,true)
+    log.dbg("GetDoc[wrt] DONE :: $docUUID",null)
   }
 
   /**
@@ -216,7 +232,9 @@ class API {
    * @return
    */
   Map<String,Object> deserializeDoc(OperationContext opctx, Detail detail, String docUUID) {
+    log.inf("DeserializeDoc :: $docUUID",null)
     Map map = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, docUUID, true)
+    log.dbg("DeserializeDoc DONE :: $docUUID :: "+JSONUtil.serialize(map),null)
     return map
   }
 
@@ -234,9 +252,12 @@ class API {
    * @return
    */
   String getAttr(OperationContext opctx, Detail detail, String docUUID, String attr) {
+    log.inf("GetAttr :: $docUUID $attr",null)
     StringWriter writer = new StringWriter()
     RetrievalOperations.getAttr(svcs,opctx,detail,docUUID,attr,writer)
-    return writer.toString()
+    String attrval = writer.toString()
+    log.dbg("GetAttr DONE :: $docUUID $attr :: "+attrval,null)
+    return attrval
   }
 
   /**
@@ -251,7 +272,9 @@ class API {
    * @param writer
    */
   void getAttr(OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer) {
+    log.inf("GetAttr[wrt] :: $docUUID $attr",null)
     RetrievalOperations.getAttr(svcs,opctx,detail,docUUID,attr,writer)
+    log.dbg("GetAttr[wrt] DONE :: $docUUID $attr",null)
   }
 
   /**
@@ -266,7 +289,9 @@ class API {
    * @return
    */
   Object deserializeAttr(OperationContext opctx, Detail detail, String docUUID, String attr) {
+    log.inf("DeserializeAttr :: $docUUID $attr",null)
     Object attrVal =  RetrievalOperations.deserializeAttr(svcs, opctx, detail, docUUID, attr)
+    log.dbg("DeserializeAttr DONE :: $docUUID $attr :: "+JSONUtil.serialize(attrVal),null)
     return attrVal
   }
 
@@ -284,11 +309,14 @@ class API {
    * @return
    */
   String getDocJsonPath(OperationContext opctx, Detail detail, String docUUID, String jsonPath) {
+    log.inf("GetDocJsonPath :: $docUUID $jsonPath",null)
     StringWriter writer = new StringWriter()
     RetrievalOperations.getSingleDoc(svcs,opctx,detail,docUUID,writer,true)
     String json = writer.toString()
     JsonPath pathexpr = JsonPath.compile(jsonPath)
-    return JsonPath.parse(json).read(pathexpr).toString()
+    String result = JsonPath.parse(json).read(pathexpr).toString()
+    log.dbg("GetDocJsonPath DONE :: $docUUID $jsonPath :: "+result,null)
+    return result
   }
 
   /**
@@ -302,24 +330,15 @@ class API {
    * @return
    */
   String getAttrJsonPath(OperationContext opctx, Detail detail, String docUUID, String attr, String jsonPath) {
-
     //http://blog.ostermiller.org/convert-a-java-writer-to-a-reader/
-
+    log.inf("GetAttrJsonPath :: $docUUID $attr $jsonPath",null)
     StringWriter writer = new StringWriter()
     RetrievalOperations.getAttr(svcs,opctx,detail,docUUID,attr,writer)
     String json =  writer.toString()
     JsonPath pathexpr = JsonPath.compile(jsonPath)
-    return JsonPath.parse(json).read(pathexpr).toString()
-  }
-
-  // TODO: jsonpath for getAttr
-  void getAttrJsonPath(OperationContext opctx, Detail detail, String docUUID, String attr, String jsonpath, Writer w) {
-    // TODO fully streaming version
-    StringWriter writer = new StringWriter()
-    RetrievalOperations.getAttr(svcs,opctx,detail,docUUID,attr,writer)
-    String json =  writer.toString()
-    JsonPath pathexpr = JsonPath.compile(jsonpath)
-    w << JsonPath.parse(json).read(pathexpr).toString()
+    String result = JsonPath.parse(json).read(pathexpr).toString()
+    log.dbg("GetAttrJsonPath DONE :: $docUUID $attr $jsonPath :: "+result,null)
+    return result
   }
 
   /**
@@ -338,15 +357,17 @@ class API {
     if (threaded) {
       new Thread () {
             public void run() {
-              log.dbg("async doc deletion BEGIN "+docUUID,null)
+              log.inf("DelDoc[async] :: $docUUID",null)
               DeleteOperations.deleteDoc(svcs, opctx, detail, docUUID)
               if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
-              log.dbg("async doc deletion END "+docUUID,null)
+              log.dbg("DelDoc[async] DONE :: $docUUID",null)
             }
           }.start()
     } else {
+      log.inf("DelDoc :: $docUUID",null)
       DeleteOperations.deleteDoc(svcs, opctx, detail, docUUID)
       if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+      log.dbg("DelDoc DONE :: $docUUID",null)
     }
   }
 
@@ -367,15 +388,17 @@ class API {
     if (threaded) {
       new Thread () {
             public void run() {
-              log.dbg("async attr deletion BEGIN "+docUUID+ " "+attr,null)
+              log.inf("DelAttr[async] $docUUID $attr",null)
               DeleteOperations.deleteAttr(svcs, opctx, detail, docUUID, attr, false)
               if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
-              log.dbg("async attr deletion END "+docUUID+ " "+attr,null)
+              log.dbg("DelAttr[async] DONE $docUUID $attr",null)
             }
           }.start()
     } else {
+      log.inf("DelAttr $docUUID $attr",null)
       DeleteOperations.deleteAttr(svcs, opctx, detail, docUUID, attr, false)
       if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+      log.dbg("DelAttr DONE $docUUID $attr",null)
     }
   }
 
@@ -393,9 +416,11 @@ class API {
    * @param json
    * @return
    */
-  public String newDocFromMap(OperationContext opctx, Detail detail, Map<String,Object> mapDoc) {
-    String newid =  CreateOperations.newMap(svcs,opctx,detail,mapDoc,false)
+  public String newDocFromMap(OperationContext opctx, Detail detail, Map<String,Object> mapDoc, boolean threaded) {
+    log.inf("NewDocFromMap",null)
+    String newid =  CreateOperations.newMap(svcs,opctx,detail,mapDoc,threaded)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    log.dbg("NewDocFromMap DONE :: $newid",null)
     return newid
   }
 
@@ -411,8 +436,10 @@ class API {
    * @return
    */
   public String newDoc(OperationContext opctx, Detail detail, String json) {
+    log.inf("NewDoc",null)
     String newid =  CreateOperations.newDoc(svcs,opctx,detail,json,false)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    log.dbg("NewDoc DONE :: $newid",null)
     return newid
   }
 
@@ -427,8 +454,10 @@ class API {
    * @return
    */
   public String newDoc(OperationContext opctx, Detail detail, Reader json) {
+    log.inf("NewDoc",null)
     String newid =  CreateOperations.newDoc(svcs,opctx,detail,json,false)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    log.dbg("NewDoc DONE :: $newid",null)
     return newid
   }
 
@@ -446,8 +475,10 @@ class API {
    * @return
    */
   public String newDocAsync(OperationContext opctx, Detail detail, Reader json) {
+    log.inf("NewDocAsync",null)
     String newid =  CreateOperations.newDoc(svcs,opctx,detail,json,true)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+    log.dbg("NewDocAsync DONE :: $newid",null)
     return newid
   }
 
@@ -465,9 +496,10 @@ class API {
    */
   public void newDocList(OperationContext opctx, Detail detail, Reader jsonListReader, Writer jsonIDList)
   {
+    log.inf("NewDocList",null)
     CreateOperations.newDocStream(svcs, opctx, detail, jsonListReader, jsonIDList)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
-
+    log.dbg("NewDocList DONE",null)
   }
 
 
@@ -488,15 +520,17 @@ class API {
     if (threaded) {
       new Thread() {
             public void run() {
-              log.dbg("async new attr BEGIN "+docUUID+" "+attr,null)
+              log.inf("NewAttr[async] :: $docUUID $attr",null)
               CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json, paxos)
               if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
-              log.dbg("async new attr END "+docUUID+" "+attr,null)
+              log.dbg("NewAttr[async] DONE :: $docUUID $attr",null)
             }
           }.start()
     } else {
+      log.inf("NewAttr :: $docUUID $attr",null)
       CreateOperations.newAttr(svcs,opctx,detail,docUUID,attr,json, paxos)
       if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+      log.dbg("NewAttr DONE :: $docUUID $attr",null)
     }
   }
 
@@ -521,9 +555,11 @@ class API {
    */
   public void updateAttrPAXOS(OperationContext opctx, Detail detail, String docUUID, String attr, String json, UUID checkVal)
   {
+    log.inf("UpdateAttrPAXOS :: $docUUID $attr $checkVal",null)
     opctx.paxosGatekeeperUpdateID = ["P", docUUID] as String[]
     UpdateOperations.updateAttrPAXOS(svcs,opctx,detail,docUUID,attr,json,checkVal)
     if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    log.dbg("UpdateAttrPAXOS DONE :: $docUUID $attr $checkVal",null)
   }
 
   /**
@@ -540,15 +576,17 @@ class API {
     if (threaded) {
       new Thread() {
             public void run() {
-              log.dbg("async update attr BEGIN "+docUUID+" "+attr,null)
+              log.inf("UpdateAttr[async] :: $docUUID $attr",null)
               UpdateOperations.updateAttr(svcs,opctx,detail,docUUID,attr,json)
               if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
-              log.dbg("async update attr END "+docUUID+" "+attr,null)
+              log.dbg("UpdateAttr[async] DONE :: $docUUID $attr",null)
             }
           }.start()
     } else {
+      log.inf("UpdateAttr :: $docUUID $attr",null)
       UpdateOperations.updateAttr(svcs,opctx,detail,docUUID,attr,json)
       if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+      log.dbg("UpdateAttr DONE :: $docUUID $attr",null)
     }
   }
 
@@ -568,15 +606,17 @@ class API {
     if (threaded) {
       new Thread() {
             public void run() {
-              log.dbg("async update attr entry BEGIN "+docUUID+" "+attr,null)
+              log.inf("UpdateAttrEntry[async] :: $docUUID $attr",null)
               UpdateOperations.updateAttrEntry(svcs,opctx,detail,docUUID,attr)
               if (opctx.executionMode == "batch")     opctx.DO(svcs, detail)
-              log.dbg("async update attr entry END "+docUUID+" "+attr,null)
+              log.dbg("UpdateAttrEntry[async] DONE :: $docUUID $attr",null)
             }
           }.start()
     } else {
+      log.inf("UpdateAttrEntry :: $docUUID $attr",null)
       UpdateOperations.updateAttrEntry(svcs,opctx,detail,docUUID,attr)
       if (opctx.executionMode == "batch")     opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+      log.dbg("UpdateAttrEntry DONE :: $docUUID $attr",null)
     }
   }
 
@@ -601,20 +641,23 @@ class API {
     if (threaded) {
       new Thread() {
             public void run() {
-              log.dbg("async update attr overlay BEGIN "+docUUID+" "+attr,null)
+              log.inf("UpdateAttrOverlay[async] :: $docUUID $attr",null)
               UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
               if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
-              log.dbg("async update attr overlay END "+docUUID+" "+attr,null)
+              log.dbg("UpdateAttrOverlay[async] DONE :: $docUUID $attr",null)
             }
           }.start()
     } else {
+      log.inf("UpdateAttrOverlay :: $docUUID $attr",null)
       UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
-      if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+      if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+      log.dbg("UpdateAttrOverlay DONE :: $docUUID $attr",null)
     }
   }
 
   public List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args)
   {
+    log.inf("Query :: $cql :: "+JSONUtil.serialize(args),null)
     QueryToListOfStrArr cmd = new QueryToListOfStrArr(query:cql)
     if (args != null)
       cmd.initiateQuery(svcs, opctx, detail, args)
@@ -625,77 +668,100 @@ class API {
     while (data = cmd.nextRow()) {
       queryresult.add(data)
     }
+    log.dbg("Query DONE :: $cql :: "+JSONUtil.serialize(args),null)
     return queryresult
   }
 
   public String getDocMetadata(OperationContext opctx, Detail detail, String docUUID)
   {
+    log.inf("GetDocMetadata :: $docUUID ",null)
     Writer writer = new StringWriter()
     String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
     RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
-    return writer.toString()
+    String data =  writer.toString()
+    log.dbg("GetDocMetadata DONE :: $docUUID :: "+data,null)
+    return data
   }
 
   public void getDocMetadata(OperationContext opctx, Detail detail, String docUUID, Writer writer)
   {
+    log.inf("GetDocMetadata[wrt] :: $docUUID ",null)
     String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
     RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
+    log.dbg("GetDocMetadata[wrt] DONE :: $docUUID",null)
   }
 
   public Map<String,Object> deserializeDocMetadata(OperationContext opctx, Detail detail, String docUUID)
   {
+    log.inf("DeserializeDocMetadata :: $docUUID ",null)
     String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
     Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, metaid, true)
+    log.dbg("DeserializeDocMetadata DONE :: $docUUID :: "+JSONUtil.serialize(doc),null)
     return doc
   }
 
 
   public String getAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
+    log.inf("GetAttrMetadata :: $docUUID $attr",null)
     Writer writer = new StringWriter()
     String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
     RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
-    return writer.toString()
+    String data = writer.toString()
+    log.dbg("GetAttrMetadata DONE :: $docUUID :: "+data,null)
+    return data
   }
 
   public void getAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer)
   {
+    log.inf("GetAttrMetadata[wrt] :: $docUUID $attr",null)
     String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
     RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
+    log.dbg("GetAttrMetadata[wrt] DONE :: $docUUID $attr",null)
   }
 
   public Map<String,Object> deserializeAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
+    log.inf("DeserializeAttrMetadata :: $docUUID $attr",null)
     String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
     Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, metaid, true)
+    log.dbg("DeserializeAttrMetadata DONE :: $docUUID $attr :: "+JSONUtil.serialize(doc),null)
     return doc
   }
 
 
   public String getRelMetadata(OperationContext opctx, Detail detail, RelKey rel)
   {
+    log.inf("GetRelMetadata :: "+JSONUtil.serialize(rel),null)
     Writer writer = new StringWriter()
     String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
     RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
-    return writer.toString()
+    String data =  writer.toString()
+    log.dbg("GetRelMetadata DONE :: "+JSONUtil.serialize(rel)+" :: "+data,null)
+    return data
   }
 
   public void getRelMetadata(OperationContext opctx, Detail detail, RelKey rel, Writer writer)
   {
+    log.inf("GetRelMetadata[wrt] :: "+JSONUtil.serialize(rel),null)
     String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
     RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
+    log.dbg("GetRelMetadata[wrt] DONE :: "+JSONUtil.serialize(rel),null)
   }
 
   public Map<String,Object> deserializeRelMetadata(OperationContext opctx, Detail detail, RelKey rel)
   {
+    log.inf("DeserializeRelMetadata :: "+JSONUtil.serialize(rel),null)
     String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
     Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, metaid, true)
+    log.dbg("DeserializeRelMetadata DONE :: "+JSONUtil.serialize(rel)+" :: "+JSONUtil.serialize(doc),null)
     return doc
   }
 
 
   public String docMetadataUUID(OperationContext opctx, Detail detail, String docUUID)
   {
+    log.inf("DocMetadataUUID :: $docUUID",null)
     String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
     if (metaid != null) {
       return metaid
@@ -707,12 +773,14 @@ class API {
     metaid = CreateOperations.newDoc(svcs, opctx, initDetail, '{"_id":"META"}', false)
     UpdDocMetadata upd = new UpdDocMetadata(docUUID:docUUID, metadataUUID: metaid)
     upd.execMutationCassandra(svcs, opctx, initDetail)
+    log.dbg("DocMetadataUUID DONE :: $docUUID :: $metaid",null)
     return metaid
   }
 
 
   public String attrMetadataUUID(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
+    log.inf("AttrMetadataUUID :: $docUUID $attr",null)
     String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
     if (metaid != null) {
       return metaid
@@ -721,11 +789,13 @@ class API {
     metaid = CreateOperations.newDoc(svcs, opctx, detail, '{"_id":"META"}', false)
     UpdAttrMetadata upd = new UpdAttrMetadata(docUUID:docUUID,attr:attr, metadataUUID: metaid)
     upd.execMutationCassandra(svcs, opctx, detail)
+    log.dbg("AttrMetadataUUID DONE :: $docUUID $attr :: $metaid",null)
     return metaid
   }
 
   public String relMetadataUUID(OperationContext opctx, Detail detail, RelKey rel)
   {
+    log.inf("RelMetadataUUID :: "+JSONUtil.serialize(rel),null)
     String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
     if (metaid != null) {
       return metaid
@@ -735,12 +805,15 @@ class API {
     // Update the z_md field in the e table for the doc TODO: should be paxos...
     UpdRelMetadata upd = new UpdRelMetadata(relkey:rel, metadataUUID: metaid)
     upd.execMutationCassandra(svcs, opctx, detail)
+    log.dbg("RelMetadataUUID DONE :: "+JSONUtil.serialize(rel)+" :: $metaid",null)
     return metaid
   }
 
   public Rel deserializeRel(OperationContext opctx, Detail detail, RelKey relkey)
   {
+    log.inf("DeserializeRel :: "+JSONUtil.serialize(relkey),null)
     Rel rel = RetrievalOperations.getRel(svcs, opctx, detail, relkey)
+    log.dbg("DeserializeRel DONE :: "+JSONUtil.serialize(rel),null)
     return rel
   }
 
@@ -753,19 +826,25 @@ class API {
    */
   public void addRel(OperationContext opctx, Detail detail, Rel rel)
   {
+    log.inf("AddRel :: "+JSONUtil.serialize(rel),null)
     CreateOperations.addRel(svcs, opctx, detail, rel)
     if (opctx.executionMode == "batch")opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    log.dbg("AddRel DONE :: "+JSONUtil.serialize(rel),null)
   }
 
   public void deleteRel(OperationContext opctx, Detail detail, RelKey rel)
   {
+    log.inf("DeleteRel :: "+JSONUtil.serialize(rel),null)
     DeleteOperations.delRel(svcs, opctx, detail, rel)
     if (opctx.executionMode == "batch")opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+    log.dbg("DeleteRel DONE :: "+JSONUtil.serialize(rel),null)
   }
 
   public List<Rel> deserializeDocRels(OperationContext opctx, Detail detail, String docUUID)
   {
+    log.inf("DeserializeDocRels :: $docUUID",null)
     RetrievalOperations.deserializeDocRels(svcs,opctx,detail,docUUID)
+    log.dbg("DeserializeDocRels DONE :: $docUUID",null)
   }
 
 
@@ -782,6 +861,7 @@ class API {
    */
   public Iterator<Map> searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters)
   {
+    log.inf("SearchIndex :: $indexName "+JSONUtil.serialize(searchCriteria),null)
     Index idx = svcs.idxSvc.getIndex(indexName)
     Iterator<Map> iterator = idx.searchIndex(svcs, opctx, detail, searchCriteria)
     return iterator
@@ -800,6 +880,7 @@ class API {
    */
   public void searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters, Writer searchResultsWriter)
   {
+    log.inf("SearchIndex[wrt] :: $indexName "+JSONUtil.serialize(searchCriteria),null)
     Iterator<Map> iterator = searchIndex(opctx,detail,indexName, searchCriteria, filters)
     searchResultsWriter << "["
     while (iterator.hasNext()) {
