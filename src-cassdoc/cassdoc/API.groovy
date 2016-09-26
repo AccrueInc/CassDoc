@@ -843,8 +843,9 @@ class API {
   public List<Rel> deserializeDocRels(OperationContext opctx, Detail detail, String docUUID)
   {
     log.inf("DeserializeDocRels :: $docUUID",null)
-    RetrievalOperations.deserializeDocRels(svcs,opctx,detail,docUUID)
-    log.dbg("DeserializeDocRels DONE :: $docUUID",null)
+    List<Rel> rels = RetrievalOperations.deserializeDocRels(svcs,opctx,detail,docUUID)
+    log.dbg("DeserializeDocRels DONE :: $docUUID :: "+JSONUtil.serialize(rels),null)
+    return rels
   }
 
 
