@@ -75,8 +75,8 @@ class ManualIndex {
 @Log
 class TypeConfigurationService {
 
-  final Map<String, DocType> suffixTypeMap = [:]
-  final Map<String, DocType> uriTypeMap = [:]
+  Map<String, DocType> suffixTypeMap = [:]
+  Map<String, DocType> uriTypeMap = [:]
 
   List<DocType> getTypeList() {
     uriTypeMap.values().asList()
@@ -112,25 +112,28 @@ class TypeConfigurationService {
 
   static String attrTypeCode(Class type)
   {
-    if (type == String.class) {return "S"}
+    if (type == String.class) {return DBCodes.TYPE_CODE_STRING}
     if (type == null) { return null }
-    if (type == List.class) {return "A"}
-    if (type == Map.class) {return "O"}
-    if (type == Integer.class) {return "I"}
-    if (type == Float.class) {return "D"}
-    if (type == Boolean.class) {return "B"}
+    if (type == List.class) {return DBCodes.TYPE_CODE_ARRAY}
+    if (type == Map.class) {return DBCodes.TYPE_CODE_OBJECT}
+    if (type == BigInteger.class) {return DBCodes.TYPE_CODE_INTEGER}
+    if (type == Integer.class) {return DBCodes.TYPE_CODE_INTEGER}
+    if (type == BigDecimal.class) {return DBCodes.TYPE_CODE_DECIMAL}
+    if (type == Double.class) {return DBCodes.TYPE_CODE_DECIMAL}
+    if (type == Float.class) {return DBCodes.TYPE_CODE_DECIMAL}
+    if (type == Boolean.class) {return DBCodes.TYPE_CODE_BOOLEAN}
     throw new Exception("Unknown JSON type "+type.name)
   }
 
   static Class attrClass(String typeCode)
   {
-    if (typeCode == "S") {return String.class}
+    if (typeCode == DBCodes.TYPE_CODE_STRING) {return String.class}
     if (typeCode == null) { return null }
-    if (typeCode == "A") {return List.class}
-    if (typeCode == "O") {return Map.class}
-    if (typeCode == "I") {return Integer.class}
-    if (typeCode == "D") {return Float.class}
-    if (typeCode == "B") {return Boolean.class}
+    if (typeCode == DBCodes.TYPE_CODE_ARRAY) {return List.class}
+    if (typeCode == DBCodes.TYPE_CODE_OBJECT) {return Map.class}
+    if (typeCode == DBCodes.TYPE_CODE_INTEGER) {return BigInteger.class}
+    if (typeCode == DBCodes.TYPE_CODE_DECIMAL) {return BigDecimal.class}
+    if (typeCode == DBCodes.TYPE_CODE_BOOLEAN) {return Boolean.class}
     throw new Exception("Unknown JSON typecode"+typeCode)
   }
 

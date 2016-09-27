@@ -795,7 +795,8 @@ class API {
     initDetail.docMetaIDMeta = true
     metaid = CreateOperations.newDoc(svcs, opctx, initDetail, '{"_id":"META"}', false)
     UpdDocMetadata upd = new UpdDocMetadata(docUUID:docUUID, metadataUUID: metaid)
-    upd.execMutationCassandra(svcs, opctx, initDetail)
+    opctx.addCommand(svcs, detail, upd)
+    if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
     log.dbg("DocMetadataUUID DONE :: $docUUID :: $metaid",null)
     return metaid
   }
@@ -811,7 +812,8 @@ class API {
     // create new UUID for META
     metaid = CreateOperations.newDoc(svcs, opctx, detail, '{"_id":"META"}', false)
     UpdAttrMetadata upd = new UpdAttrMetadata(docUUID:docUUID,attr:attr, metadataUUID: metaid)
-    upd.execMutationCassandra(svcs, opctx, detail)
+    opctx.addCommand(svcs, detail, upd)
+    if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
     log.dbg("AttrMetadataUUID DONE :: $docUUID $attr :: $metaid",null)
     return metaid
   }
@@ -827,7 +829,8 @@ class API {
     metaid = CreateOperations.newDoc(svcs, opctx, detail, '{"_id":"META"}', false)
     // Update the z_md field in the e table for the doc TODO: should be paxos...
     UpdRelMetadata upd = new UpdRelMetadata(relkey:rel, metadataUUID: metaid)
-    upd.execMutationCassandra(svcs, opctx, detail)
+    opctx.addCommand(svcs, detail, upd)
+    if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
     log.dbg("RelMetadataUUID DONE :: "+JSONUtil.serialize(rel)+" :: $metaid",null)
     return metaid
   }

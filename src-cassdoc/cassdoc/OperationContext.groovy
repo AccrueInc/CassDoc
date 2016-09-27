@@ -17,7 +17,6 @@ import drv.cassdriver.St
 @CompileStatic
 class OperationContext {
 
-  String database
   String space
 
   void batchInit() {
@@ -74,7 +73,7 @@ class OperationContext {
     cmd.added = true
     if (executionMode == "immediate") {
       log.dbg("EXEC IMMEDIATE: "+JSONUtil.serialize(cmd),null)
-      cmd.execMutationCassandra(svcs, this, detail)
+      cmd.execMutation(svcs, this, detail)
     } else {
       if (cmd.optimize(svcs, this, detail)) {
         commands.add(cmd)
@@ -106,7 +105,7 @@ class OperationContext {
             operationTimestamp] as Object[])
           // prepare the stmts
           paxosBatchCmds.eachWithIndex { MutationCmd cmd, int i ->
-            St bst = (St)paxosBatchCmds[i].execMutationCassandra(svcs, this, detail)
+            St bst = (St)paxosBatchCmds[i].execMutation(svcs, this, detail)
             if (cqlTraceEnabled) cqlTrace.add([
               bst.cql,
               bst.cqlargs,
@@ -143,7 +142,7 @@ class OperationContext {
             detail.writeConsistency,
             operationTimestamp] as Object[])
           batchCmds.eachWithIndex { MutationCmd cmd, int i ->
-            St bst = (St)batchCmds[i].execMutationCassandra(svcs, this, detail)
+            St bst = (St)batchCmds[i].execMutation(svcs, this, detail)
             if (cqlTraceEnabled) cqlTrace.add([
               bst.cql,
               bst.cqlargs,
@@ -160,7 +159,7 @@ class OperationContext {
         }
         batchLeftovers.each { MutationCmd cmd ->
           if (cmd != null) {
-            St stmt = (St)cmd.execMutationCassandra(svcs,this,detail);
+            St stmt = (St)cmd.execMutation(svcs,this,detail);
             if (cqlTraceEnabled) cqlTrace.add([
               stmt.cql,
               stmt.cqlargs,
@@ -178,7 +177,7 @@ class OperationContext {
             if (paxosCmd.paxosId != null && paxosCmd.paxosId == paxosGatekeeperUpdateID) {
               log.dbg("MODE: sync PAXOS id found",null)
               // exec this
-              St stmt = (St)paxosCmd.execMutationCassandra(svcs,this,detail)
+              St stmt = (St)paxosCmd.execMutation(svcs,this,detail)
               if (cqlTraceEnabled) cqlTrace.add([
                 stmt.cql,
                 stmt.cqlargs,
@@ -207,7 +206,7 @@ class OperationContext {
         commands.each { cmd ->
           if (cmd != null) {
             if (cmd.optimize(svcs, this, detail)) {
-              St stmt = (St)cmd.execMutationCassandra(svcs,this,detail);
+              St stmt = (St)cmd.execMutation(svcs,this,detail);
               if (cqlTraceEnabled) cqlTrace.add([
                 stmt.cql,
                 stmt.cqlargs,

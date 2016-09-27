@@ -429,7 +429,7 @@ class CreateOperations {
     newRelCmd.link = rel.lk
     newRelCmd.d = rel.d
     // metadata isn't allowed. Must use other metadata APIs for that. to avoid the user making their own ids
-    newRelCmd.execMutationCassandra(svcs, opctx, detail)
+    opctx.addCommand(svcs, detail, newRelCmd)
   }
 
   public static String newChildDocMap(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final Map<String,Object> docMap, final String parentUUID, final String parentAttr, final boolean threaded)

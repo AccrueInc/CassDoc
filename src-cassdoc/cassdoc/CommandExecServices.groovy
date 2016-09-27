@@ -15,6 +15,13 @@ import drv.cassdriver.DriverWrapper
 class CommandExecServices {
 
   String idField = "_id";
+  // there should only be one type of database per service. If you want to support multiple databases,
+  // spin up a service instance per database, and route based on space or url or similar scheme
+  String dbType = "cassandra" // "JDBC" // "Dynamo"
+
+  @Autowired
+  DriverWrapper driver
+
 
   JsonFactory jsonFactory = new JsonFactory();
 
@@ -24,8 +31,6 @@ class CommandExecServices {
   @Autowired
   IndexConfigurationService idxSvc
 
-  @Autowired
-  DriverWrapper driver
 
   // TODO: service-ify and autowire
 
