@@ -38,6 +38,7 @@ CREATE KEYSPACE $keyspace WITH replication = {'class': 'SimpleStrategy', 'replic
 
 // relations can be typed to two levels of distinction... BUT only the first one is high up in the primary key, so that relations of that type for a given vertex/node/doc/entity can be subqueried.
 // ... the ty2 sub-category is after all other parts of the parent and child subtypes, so it isn't really subset queryable, but is part of the PK so the relations of a type can still be subtyped if need be.
+// effectively this is an adjacency list approach for graph storage
 
 println """
 CREATE TABLE ${keyspace}.r (
