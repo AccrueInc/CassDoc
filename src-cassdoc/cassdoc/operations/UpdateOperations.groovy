@@ -18,7 +18,8 @@ import cassdoc.commands.mutate.NewDoc
 import cassdoc.commands.mutate.NewRel
 import cassdoc.commands.mutate.UpdAttr
 import cassdoc.commands.mutate.UpdAttrPAXOS
-import cassdoc.commands.retrieve.GetAttrRelsRP
+import cassdoc.commands.retrieve.RPUtil
+import cassdoc.commands.retrieve.cassandra.GetAttrRelsRP
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
@@ -62,7 +63,7 @@ class UpdateOperations {
       RelTypes.TO_CHILD
     ],p2:cmd.attrName)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
 
     // cleanup (TODO: separate thread?)
     DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), rels, true)
@@ -100,7 +101,7 @@ class UpdateOperations {
       RelTypes.TO_CHILD]
     ,p2:cmd.attrName)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
 
     // cleanup (TODO: separate thread?)
     DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), rels, true)

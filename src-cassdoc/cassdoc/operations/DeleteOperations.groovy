@@ -18,8 +18,9 @@ import cassdoc.commands.mutate.DelDoc_E
 import cassdoc.commands.mutate.DelDoc_P
 import cassdoc.commands.mutate.DelFixedCol
 import cassdoc.commands.mutate.DelRel
-import cassdoc.commands.retrieve.GetAttrRelsRP
-import cassdoc.commands.retrieve.GetDocRelsRP
+import cassdoc.commands.retrieve.RPUtil
+import cassdoc.commands.retrieve.RowProcessor
+import cassdoc.commands.retrieve.cassandra.GetAttrRelsRP
 import cwdrg.lg.annotation.Log
 
 @Log
@@ -38,9 +39,9 @@ class DeleteOperations {
   {
     log.inf( "DELDOC_top:: $docUUID",null)
 
-    GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+    RowProcessor relCmd = svcs.retrievals.getDocRelsRP(docUUID)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
     analyzeDeleteDocEvent(svcs,opctx,detail,docUUID,rels)
 
   }
@@ -53,7 +54,7 @@ class DeleteOperations {
       RelTypes.TO_CHILD
     ],p2:attr)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
 
     DelAttr delAttr = new DelAttr(docUUID:docUUID,attrName:attr)
     analyzeDeleteAttrEvent(svcs,opctx,detail,delAttr,rels,clear)

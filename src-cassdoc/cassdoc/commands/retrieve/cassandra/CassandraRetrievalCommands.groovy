@@ -1,13 +1,16 @@
-package cassdoc.commands.retrieve
+package cassdoc.commands.retrieve.cassandra
 
 import groovy.transform.CompileStatic
+import cassdoc.RelKey
+import cassdoc.commands.retrieve.RetrievalCommands
+import cassdoc.commands.retrieve.RowProcessor
 import cwdrg.lg.annotation.Log
-
 
 
 @CompileStatic
 @Log
 class CassandraRetrievalCommands implements RetrievalCommands {
+  int a = 1;
   RowProcessor getDocRP(String docUUID) {
     new GetDocRP(docUUID:docUUID)
   }
@@ -28,5 +31,26 @@ class CassandraRetrievalCommands implements RetrievalCommands {
   }
   RowProcessor docAttrListRP(String docUUID) {
     new DocAttrListRP(docUUID:docUUID)
+  }
+  RowProcessor getAttrRP(String docUUID, String attrName) {
+    new GetAttrRP(docUUID:docUUID,attrName:attrName)
+  }
+  RowProcessor getAttrMetaRP(String docUUID, String attrName) {
+    new GetAttrMetaRP(docUUID:docUUID,attrName:attrName)
+  }
+  RowProcessor getAttrRelsRP(String p1, List<String> ty1s, String p2) {
+    new GetAttrRelsRP(p1:p1,ty1s:ty1s,p2:p2)
+  }
+  RowProcessor getDocRelsRP(String p1) {
+    new GetDocRelsRP(p1:p1)
+  }
+  RowProcessor getDocRelsForTypeRP(String p1, String ty1) {
+    new GetDocRelsForTypeRP(p1:p1,ty1:ty1)
+  }
+  RowProcessor getAttrRelsForTypeRP(String p1, String ty1, String p2) {
+    new GetAttrRelsForTypeRP(p1:p1,ty1:ty1,p2:p2)
+  }
+  RowProcessor getRelKeyRP(RelKey relkey) {
+    new GetRelKeyRP(relKey:relkey)
   }
 }

@@ -7,7 +7,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import cassdoc.CommandExecServices
 import cassdoc.Detail
 import cassdoc.OperationContext
-import cassdoc.commands.retrieve.CassandraPagedRowProcessor
+import cassdoc.commands.retrieve.cassandra.CassandraPagedRowProcessor;
 
 import com.datastax.driver.core.*
 

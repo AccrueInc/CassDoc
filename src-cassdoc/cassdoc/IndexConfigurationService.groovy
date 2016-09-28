@@ -1,7 +1,7 @@
 package cassdoc
 
 import groovy.transform.CompileStatic
-import cassdoc.commands.retrieve.IndexTableRP
+import cassdoc.commands.retrieve.cassandra.IndexTableRP;
 import cassdoc.operations.SearchOperations
 
 

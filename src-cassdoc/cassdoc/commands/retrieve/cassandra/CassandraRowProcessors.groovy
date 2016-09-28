@@ -1,10 +1,8 @@
-package cassdoc.commands.retrieve
+package cassdoc.commands.retrieve.cassandra
 
 import groovy.transform.CompileStatic
 
 import java.nio.ByteBuffer
-
-import org.apache.commons.lang3.StringUtils
 
 import cassdoc.CommandExecServices
 import cassdoc.Detail
@@ -16,7 +14,6 @@ import cassdoc.RelKey
 import com.datastax.driver.core.DataType
 import com.datastax.driver.core.ResultSet
 import com.datastax.driver.core.Row
-import com.datastax.driver.core.Token
 import com.datastax.driver.core.utils.Bytes
 
 import cwdrg.util.json.JSONUtil
@@ -32,105 +29,6 @@ import cwdrg.util.json.JSONUtil
 // 1) code the initiateQuery, which constructs the CQL query and initiates the execution
 // 2) call nextRow until it returns null
 // 3) after each nextRow, if desired, check if there was a new Partition and get the afterproducts of the previous completed partition
-
-@CompileStatic
-abstract class RowProcessor {
-  boolean newPartition
-  long pageCount = 0
-  long rowCount = 0
-  long partitionRowCount = 0
-  int fetchNextPageThreshold = 5000
-  void initiateQuery(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {}
-  Object[] nextRow() {}
-
-  List<Object[]> getAllRows() {
-    List rows = []
-    Object[] row = null
-    while (row = nextRow()) {
-      rows.add(row)
-    }
-    return rows
-  }
-}
-
-@CompileStatic
-abstract class CassandraPagedRowProcessor extends RowProcessor
-{
-  static String resolveConsistency(Detail detail, OperationContext opctx)
-  {
-    if (detail != null && StringUtils.isNotEmpty(detail.readConsistency))
-      return detail.readConsistency
-    if (StringUtils.isNotEmpty(opctx.readConsistency))
-      return opctx.readConsistency
-    return "ONE"
-  }
-
-
-  ResultSet rs = null
-  private Token lastToken = null
-
-  /**
-   * This method is called for every row encountered
-   * 
-   * @param row
-   * @return
-   */
-  Object[] processRow(Row row){}
-
-  /**
-   * This optional method initializes any data structures tracking data across column/clustering keys in a partition.
-   * 
-   */
-  void initNewPartition() {}
-
-  /**
-   * This optional method is called whenever a new partition key is encountered,  in case 
-   * there are some final products/packaging/processing needed before the next partition tracking is done
-   * 
-   * Examples: summing columns in a row, tracking column keys in a row, etc
-   */
-  void completeFinishedPartition() {}
-
-  /**
-   * An optional method, the code using the RowProcessor, if indicated by the newPartition stateful property, can call this method to get the
-   * final products/data structures/information that has been accumulated and finalized by completeFinishedPartition()
-   * 
-   * @return Object[]
-   */
-  Object[] getFinishedPartitionData() {null}
-
-  Object[] nextRow() {
-    Row row = rs.one()
-    if (row == null) {
-      newPartition = false
-      return null
-    } else {
-      rowCount++
-      partitionRowCount++
-      Token currentToken = row.partitionKeyToken
-      if (currentToken == lastToken) {
-        newPartition = false
-        if (lastToken == null) {
-          pageCount++ // increment to 1 as soon as we get a legitimate row
-          lastToken = currentToken
-        } else {
-          newPartition = true
-          completeFinishedPartition()
-          lastToken = currentToken
-          initNewPartition()
-        }
-      }
-
-      if (rs.getAvailableWithoutFetching() == fetchNextPageThreshold && !rs.isFullyFetched()) {
-        pageCount++;
-        rs.fetchMoreResults()
-      }
-    }
-
-    return processRow(row)
-  }
-
-}
 
 
 
@@ -586,15 +484,6 @@ class BaseGetRelsRP extends CassandraPagedRowProcessor
     return [rel] as Object[]
   }
 
-  List<Rel> getAllRels()
-  {
-    List<Rel> rels = []
-    Object[] row = null
-    while (row = nextRow()) {
-      rels.add((Rel)row[0])
-    }
-    return rels
-  }
 }
 
 class GetAttrRelsRP extends BaseGetRelsRP {

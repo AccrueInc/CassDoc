@@ -18,14 +18,15 @@ import cassdoc.Rel
 import cassdoc.RelKey
 import cassdoc.RelTypes
 import cassdoc.TypeConfigurationService
-import cassdoc.commands.retrieve.DocAttrListRP
-import cassdoc.commands.retrieve.GetAttrMetaRP
-import cassdoc.commands.retrieve.GetAttrRP
-import cassdoc.commands.retrieve.GetDocAttrsRP
-import cassdoc.commands.retrieve.GetDocRP
-import cassdoc.commands.retrieve.GetDocRelsForTypeRP
-import cassdoc.commands.retrieve.GetDocRelsRP
-import cassdoc.commands.retrieve.GetRelKeyRP
+import cassdoc.commands.retrieve.RPUtil
+import cassdoc.commands.retrieve.cassandra.DocAttrListRP
+import cassdoc.commands.retrieve.cassandra.GetAttrMetaRP
+import cassdoc.commands.retrieve.cassandra.GetAttrRP
+import cassdoc.commands.retrieve.cassandra.GetDocAttrsRP
+import cassdoc.commands.retrieve.cassandra.GetDocRP
+import cassdoc.commands.retrieve.cassandra.GetDocRelsForTypeRP
+import cassdoc.commands.retrieve.cassandra.GetDocRelsRP
+import cassdoc.commands.retrieve.cassandra.GetRelKeyRP
 import cassdoc.exceptions.RetrievalException
 
 import com.fasterxml.jackson.core.JsonParser
@@ -87,13 +88,13 @@ class RetrievalOperations {
     if (detail.docRelationsMeta) {
       GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
       relCmd.initiateQuery(svcs, opctx, detail, null)
-      List<Rel> rels = relCmd.getAllRels()
+      List<Rel> rels = RPUtil.getAllRels(relCmd)
       map[AttrNames.META_RELS] = rels
     }
     if (detail.docChildrenMeta) {
       GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
       relCmd.initiateQuery(svcs, opctx, detail, null)
-      List<Rel> rels = relCmd.getAllRels()
+      List<Rel> rels = RPUtil.getAllRels(relCmd)
       map[AttrNames.META_CHILDREN] = rels
     }
     GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
@@ -201,13 +202,13 @@ class RetrievalOperations {
     if (detail.docRelationsMeta) {
       GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
       relCmd.initiateQuery(svcs, opctx, detail, null)
-      List<Rel> rels = relCmd.getAllRels()
+      List<Rel> rels = RPUtil.getAllRels(relCmd)
       writer << ',"' << AttrNames.META_RELS << '":' << JSONUtil.serialize(rels)
     }
     if (detail.docChildrenMeta) {
       GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
       relCmd.initiateQuery(svcs, opctx, detail, null)
-      List<Rel> rels = relCmd.getAllRels()
+      List<Rel> rels = RPUtil.getAllRels(relCmd)
       writer << ',"' << AttrNames.META_CHILDREN << '":' << JSONUtil.serialize(rels)
     }
 
@@ -643,13 +644,13 @@ class RetrievalOperations {
     if (detail.docRelationsMeta) {
       GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
       relCmd.initiateQuery(svcs, opctx, detail, null)
-      List<Rel> rels = relCmd.getAllRels()
+      List<Rel> rels = RPUtil.getAllRels(relCmd)
       attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,rels))
     }
     if (detail.docChildrenMeta) {
       GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
       relCmd.initiateQuery(svcs, opctx, detail, null)
-      List<Rel> rels = relCmd.getAllRels()
+      List<Rel> rels = RPUtil.getAllRels(relCmd)
       attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,rels))
     }
 
@@ -754,7 +755,7 @@ class RetrievalOperations {
   {
     GetRelKeyRP relCmd = new GetRelKeyRP(relKey:relKey)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
     if (rels.size() == 1) {
       return rels[0].z_md
     }
@@ -765,7 +766,7 @@ class RetrievalOperations {
   {
     GetRelKeyRP relCmd = new GetRelKeyRP(relKey:relKey)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
 
     if (rels.size() == 1) {
       return rels[0]
@@ -776,7 +777,7 @@ class RetrievalOperations {
   public static List<Rel> deserializeDocRels(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID) {
     GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
     relCmd.initiateQuery(svcs, opctx, detail, null)
-    List<Rel> rels = relCmd.getAllRels()
+    List<Rel> rels = RPUtil.getAllRels(relCmd)
     return rels
   }
 

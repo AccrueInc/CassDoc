@@ -8,9 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import cassdoc.commands.mutate.UpdAttrMetadata
 import cassdoc.commands.mutate.UpdDocMetadata
 import cassdoc.commands.mutate.UpdRelMetadata
-import cassdoc.commands.retrieve.GetAttrRP
-import cassdoc.commands.retrieve.GetDocAttrsRP
-import cassdoc.commands.retrieve.QueryToListOfStrArr
+import cassdoc.commands.retrieve.RowProcessor
 import cassdoc.operations.CreateOperations
 import cassdoc.operations.DeleteOperations
 import cassdoc.operations.RetrievalOperations
@@ -33,7 +31,6 @@ import cwdrg.util.json.JSONUtil
 class API {
 
   // TODO: cross-space registry (id : space) (id: space code + space codes
-  // TODO: list attribute/field/key/property names
 
   @Autowired
   CommandExecServices svcs;
@@ -119,7 +116,7 @@ class API {
   void getSimpleAttr (OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer)
   {
     log.inf("GetSimpleAttr[wrt] :: $docUUID $attr",null)
-    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    RowProcessor cmd = svcs.retrievals.getAttrRP(docUUID, attr)
     cmd.initiateQuery(svcs,opctx,detail,null)
     Object[] row = cmd.nextRow()
     if (row[0] == DBCodes.TYPE_CODE_STRING) {
@@ -133,7 +130,7 @@ class API {
   Object deserializeSimpleAttr(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
     log.inf("DeserializeSimpleAttr :: $docUUID $attr",null)
-    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    RowProcessor cmd = svcs.retrievals.getAttrRP(docUUID,attr)
     cmd.initiateQuery(svcs,opctx,detail,null)
     Object[] row = cmd.nextRow()
     log.dbg("DeserializeSimpleAttr DONE :: $docUUID $attr :: "+row[1],null)
@@ -198,7 +195,7 @@ class API {
     log.inf("GetSimpleDoc[wrt] :: $docUUID",null)
     writer << '{"_id":"'<<docUUID<<'"'
 
-    GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
+    RowProcessor cmd = svcs.retrievals.getDocAttrsRP(docUUID)
     cmd.initiateQuery(svcs,opctx,detail)
     Object[] attr = null
     while (attr = cmd.nextRow()) {
@@ -684,7 +681,7 @@ class API {
   public List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args)
   {
     log.inf("Query :: $cql :: "+JSONUtil.serialize(args),null)
-    QueryToListOfStrArr cmd = new QueryToListOfStrArr(query:cql)
+    RowProcessor cmd = svcs.retrievals.queryToListOfStrArrRP(cql)
     if (args != null)
       cmd.initiateQuery(svcs, opctx, detail, args)
     else

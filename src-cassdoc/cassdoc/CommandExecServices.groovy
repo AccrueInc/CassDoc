@@ -4,6 +4,8 @@ import groovy.transform.CompileStatic
 
 import org.springframework.beans.factory.annotation.Autowired
 
+import cassdoc.commands.retrieve.RetrievalCommands
+
 import com.fasterxml.jackson.core.JsonFactory
 
 import drv.cassdriver.DriverWrapper
@@ -15,6 +17,10 @@ class CommandExecServices {
   // there should only be one type of database per service. If you want to support multiple databases,
   // spin up a service instance per database, and route based on space or url or similar scheme
   String dbType = "cassandra" // "JDBC" // "Dynamo"
+
+
+  RetrievalCommands retrievals
+  //MutationCommands mutations
 
   @Autowired
   DriverWrapper driver
