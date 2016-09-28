@@ -49,7 +49,7 @@ abstract class MutationCmd extends Cmd {
   abstract boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail);
   //abstract Object execMutationRdbms(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args);
 
-  Object execOrPrep(CommandExecServices svcs, OperationContext opctx, Detail detail)
+  Object execOrPrepCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail)
   {
     if (opctx.executionMode == "immediate") {
       if (opctx.cqlTraceEnabled) opctx.cqlTrace.add([
@@ -109,7 +109,7 @@ class NewDoc extends MutationCmd {
       docUUID,
       opctx.updateUUID,
       parentUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -154,7 +154,7 @@ class ClrIdxVal extends MutationCmd {
       v1,
       v2,
       v3] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -195,7 +195,7 @@ class InsIdxValOnly extends MutationCmd {
       v1,
       v2,
       v3] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -228,7 +228,7 @@ class UpdFixedCol extends MutationCmd {
       docUUID,
       value,
       opctx.updateUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -255,7 +255,7 @@ class DelFixedCol extends MutationCmd {
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "UPDATE ${space}.e_${suffix} SET ${colName} = null WHERE e = ?"
     cqlargs = [docUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -282,7 +282,7 @@ class ClrFixedCol extends DelFixedCol {
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "UPDATE ${space}.e_${suffix} SET ${colName} = null WHERE e = ?"
     cqlargs = [docUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -316,7 +316,7 @@ class UpdDocFixedColPAXOS extends MutationCmd {
       value,
       opctx.updateUUID,
       previousVersion] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -352,7 +352,7 @@ class NewAttr extends MutationCmd {
       opctx.updateUUID,
       attrValue?.value,
       TypeConfigurationService.attrTypeCode(attrValue?.type)] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -385,7 +385,7 @@ class UpdAttr extends NewAttr {
       opctx.updateUUID,
       attrValue?.value,
       TypeConfigurationService.attrTypeCode(attrValue?.type)] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 
@@ -419,7 +419,7 @@ class UpdAttrPAXOS extends UpdAttr {
       docUUID,
       attrName,
       previousVersion] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -447,7 +447,7 @@ class UpdDocMetadata extends MutationCmd
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "UPDATE ${space}.e_${suffix} SET z_md = ? WHERE e = ?"
     cqlargs = [metadataUUID, docUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -476,7 +476,7 @@ class UpdAttrMetadata extends MutationCmd
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "UPDATE ${space}.p_${suffix} SET z_md = ? WHERE e = ? AND p = ?"
     cqlargs = [metadataUUID, docUUID, attr] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -514,7 +514,7 @@ class UpdRelMetadata extends MutationCmd
       relkey.c3,
       relkey.c4,
       relkey.ty2] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -542,7 +542,7 @@ class DelDoc_E extends MutationCmd {
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "DELETE FROM ${space}.e_${suffix} WHERE e = ?"
     cqlargs = [docUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -568,7 +568,7 @@ class DelDoc_P extends MutationCmd {
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ?"
     cqlargs = [docUUID] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -599,7 +599,7 @@ class DelAttr extends MutationCmd {
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ? and p = ?"
     cqlargs = [docUUID, attrName] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -627,7 +627,7 @@ class ClrAttr extends DelAttr {
     String suffix = IDUtil.idSuffix(docUUID)
     cql = "DELETE FROM ${space}.p_${suffix} WHERE e = ? and p = ?"
     cqlargs = [docUUID, attrName] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -651,7 +651,7 @@ class DelDocRels extends MutationCmd {
     space = opctx.space
     cql = "DELETE FROM ${space}.r WHERE p1 = ?"
     cqlargs = [p1] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -677,7 +677,7 @@ class ClrDocRels extends DelDocRels {
     space = opctx.space
     cql = "DELETE FROM ${space}.r WHERE p1 = ?"
     cqlargs = [p1] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -704,7 +704,7 @@ class DelAttrRels extends MutationCmd {
     space = opctx.space
     cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and p2 = ?"
     cqlargs = [p1, ty1, p2] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -737,7 +737,7 @@ class DelRel extends MutationCmd {
       relKey.c4,
       relKey.ty2,
     ] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }
@@ -764,7 +764,7 @@ class ClrAttrRels extends DelAttrRels {
     space = opctx.space
     cql = "DELETE FROM ${space}.r WHERE p1 = ? and ty1 = ? and p2 = ?"
     cqlargs = [p1, ty1, p2] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 }
 
@@ -815,7 +815,7 @@ class NewRel extends MutationCmd {
       ty2,
       link,
       d] as Object[]
-    return execOrPrep(svcs,opctx,detail)
+    return execOrPrepCassandra(svcs,opctx,detail)
   }
 
 }

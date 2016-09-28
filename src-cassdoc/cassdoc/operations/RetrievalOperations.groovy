@@ -19,16 +19,13 @@ import cassdoc.RelKey
 import cassdoc.RelTypes
 import cassdoc.TypeConfigurationService
 import cassdoc.commands.retrieve.DocAttrListRP
-import cassdoc.commands.retrieve.GetAttrCmd
-import cassdoc.commands.retrieve.GetAttrMetaCmd
-import cassdoc.commands.retrieve.GetAttrMetaRCH
-import cassdoc.commands.retrieve.GetAttrRCH
-import cassdoc.commands.retrieve.GetDoc
+import cassdoc.commands.retrieve.GetAttrMetaRP
+import cassdoc.commands.retrieve.GetAttrRP
 import cassdoc.commands.retrieve.GetDocAttrsRP
-import cassdoc.commands.retrieve.GetDocRCH
-import cassdoc.commands.retrieve.GetRelKeyCmd
-import cassdoc.commands.retrieve.GetRelsCmd
-import cassdoc.commands.retrieve.GetRelsRCH
+import cassdoc.commands.retrieve.GetDocRP
+import cassdoc.commands.retrieve.GetDocRelsForTypeRP
+import cassdoc.commands.retrieve.GetDocRelsRP
+import cassdoc.commands.retrieve.GetRelKeyRP
 import cassdoc.exceptions.RetrievalException
 
 import com.fasterxml.jackson.core.JsonParser
@@ -69,37 +66,36 @@ class RetrievalOperations {
     if (detail.docIDTimestampMeta) {map[AttrNames.META_IDTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
     if (detail.docIDDateMeta) {map[AttrNames.META_IDDATE] = new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))}
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-      GetDoc eCmd = new GetDoc(docUUID:docUUID)
-      GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-      if (detail.docTokenMeta) { map[AttrNames.META_TOKEN] = eRCH.token  }
-      if (detail.docPaxosMeta) { map[AttrNames.META_PAXOS] = eRCH.paxosVer.toString() }
-      if (detail.docPaxosTimestampMeta) { map[AttrNames.META_PAXOSTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
-      if (detail.docPaxosDateMeta) { map[AttrNames.META_PAXOSDATE]=IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
-      if (detail.docMetaIDMeta) { map[AttrNames.META_DOCMETAID] = eRCH.metadata_id }
+      GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+      eCmd.initiateQuery(svcs, opctx, detail, null)
+      Object[] eRCH = eCmd.nextRow()
+      if (detail.docTokenMeta) { map[AttrNames.META_TOKEN] = eRCH[3]  }
+      if (detail.docPaxosMeta) { map[AttrNames.META_PAXOS] = eRCH[1]?.toString() }
+      if (detail.docPaxosTimestampMeta) { map[AttrNames.META_PAXOSTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH[1]?.toString()) }
+      if (detail.docPaxosDateMeta) { map[AttrNames.META_PAXOSDATE]=IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH[1]?.toString()) }
+      if (detail.docMetaIDMeta) { map[AttrNames.META_DOCMETAID] = eRCH[4] }
       if (detail.docMetaDataMeta) {
-        if (eRCH.metadata_id != null) {
-          Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
-          map[AttrNames.META_DOCMETADATA] = deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
+        if (eRCH[4] != null) {
+          Detail metaDetail = detail.resolveAttrDetail(AttrNames.META_DOCMETADATA)
+          map[AttrNames.META_DOCMETADATA] = deserializeSingleDoc(svcs,opctx,metaDetail,(String)eRCH[4],false)
         }
       }
-      if (detail.parentMeta) { map[AttrNames.META_PARENT] = eRCH.a0 }
-      if (detail.docWritetimeMeta) { map[AttrNames.META_WT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] =  eRCH.writetime  }
-      if (detail.docWritetimeDateMeta) { map[AttrNames.META_WTDT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] = eRCH.writetime.intdiv(1000) }
+      if (detail.parentMeta) { map[AttrNames.META_PARENT] = eRCH[0] }
+      if (detail.docWritetimeMeta) { map[AttrNames.META_WT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] =  eRCH[2]  }
+      if (detail.docWritetimeDateMeta) { map[AttrNames.META_WTDT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] = ((Long)eRCH[2])?.intdiv(1000) }
     }
     if (detail.docRelationsMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
-      GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-      map[AttrNames.META_RELS] = relRCH.rels
+      GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+      relCmd.initiateQuery(svcs, opctx, detail, null)
+      List<Rel> rels = relCmd.getAllRels()
+      map[AttrNames.META_RELS] = rels
     }
     if (detail.docChildrenMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
-      GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-      map[AttrNames.META_CHILDREN] = relRCH.rels
+      GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      relCmd.initiateQuery(svcs, opctx, detail, null)
+      List<Rel> rels = relCmd.getAllRels()
+      map[AttrNames.META_CHILDREN] = rels
     }
-    // nonstreaming
-    //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
-    //GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
-    //for (Object[] attr : rch.attrs) {
     GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
     cmd.initiateQuery(svcs,opctx,detail)
     Object[] attr = null
@@ -111,12 +107,13 @@ class RetrievalOperations {
         if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
         || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
 
-          GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID:docUUID,attrName:(String)attr[0])
-          GetAttrMetaRCH metaRCH = metaCmd.queryCassandra(svcs, opctx, attrDetail)
+          GetAttrMetaRP metaCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:(String)attr[0])
+          metaCmd.initiateQuery(svcs, opctx, detail, null)
+          Object[] metaRCH = metaCmd.nextRow()
           // overwrite/fill in with correct detail values
-          attr[4] = metaRCH.writetime
-          attr[5] = metaRCH.token
-          attr[6] = metaRCH.attrMetaID
+          attr[4] = metaRCH[1]
+          attr[5] = metaRCH[2]
+          attr[6] = metaRCH[3]
         }
         String keyname = attr[0]
         Object value = null
@@ -182,38 +179,37 @@ class RetrievalOperations {
     if (detail.docIDTimestampMeta) {writer << ',"' << AttrNames.META_IDTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
     if (detail.docIDDateMeta) {writer << ',"' << AttrNames.META_IDDATE << '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID)).toGMTString() << '"'}
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-      GetDoc eCmd = new GetDoc(docUUID:docUUID)
-      GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-      if (detail.docTokenMeta) { writer << ',"' << AttrNames.META_TOKEN << '":' << eRCH.token  }
-      if (detail.docPaxosMeta) { writer << ',"' << AttrNames.META_PAXOS << '":"' << eRCH.paxosVer.toString() << '"' }
-      if (detail.docPaxosTimestampMeta) { writer << ',"' << AttrNames.META_PAXOSTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()) }
-      if (detail.docPaxosDateMeta) { writer << ',"' << AttrNames.META_PAXOSDATE << '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString())).toGMTString() << '"' }
-      if (detail.docMetaIDMeta) { writer << ',"' << AttrNames.META_DOCMETAID << '":"' << JSONUtil.serialize(eRCH.metadata_id) << '"'}
+      GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+      eCmd.initiateQuery(svcs, opctx, detail, null)
+      Object[] eRCH = eCmd.nextRow()
+      if (detail.docTokenMeta) { writer << ',"' << AttrNames.META_TOKEN << '":' << eRCH[3]  }
+      if (detail.docPaxosMeta) { writer << ',"' << AttrNames.META_PAXOS << '":"' << eRCH[1].toString() << '"' }
+      if (detail.docPaxosTimestampMeta) { writer << ',"' << AttrNames.META_PAXOSTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH[1].toString()) }
+      if (detail.docPaxosDateMeta) { writer << ',"' << AttrNames.META_PAXOSDATE << '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH[1].toString())).toGMTString() << '"' }
+      if (detail.docMetaIDMeta) { writer << ',"' << AttrNames.META_DOCMETAID << '":"' << JSONUtil.serialize(eRCH[4]) << '"'}
       if (detail.docMetaDataMeta) {
-        if (eRCH.metadata_id != null) {
-          Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
+        if (eRCH[4] != null) {
+          Detail metaDetail = detail.resolveAttrDetail(AttrNames.META_DOCMETADATA)
           writer << ',"' << AttrNames.META_DOCMETADATA << '":'
-          getSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,writer,false)
+          getSingleDoc(svcs,opctx,metaDetail,(String)eRCH[4],writer,false)
         }
       }
-      if (detail.parentMeta) { writer << ',"' << AttrNames.META_PARENT << '":"' << eRCH.a0 << '"' }
-      if (detail.docWritetimeMeta) { writer << ',"' << AttrNames.META_WT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":' << eRCH.writetime  }
-      if (detail.docWritetimeDateMeta) { writer << ',"' << AttrNames.META_WTDT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":"' << new Date(eRCH.writetime.intdiv(1000)).toGMTString() << '"' }
+      if (detail.parentMeta) { writer << ',"' << AttrNames.META_PARENT << '":"' << eRCH[0] << '"' }
+      if (detail.docWritetimeMeta) { writer << ',"' << AttrNames.META_WT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":' << eRCH[2]  }
+      if (detail.docWritetimeDateMeta) { writer << ',"' << AttrNames.META_WTDT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":"' << new Date(((Long)eRCH[2]).intdiv(1000)).toGMTString() << '"' }
     }
     if (detail.docRelationsMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
-      GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-      writer << ',"' << AttrNames.META_RELS << '":' << JSONUtil.serialize(relRCH.rels)
+      GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+      relCmd.initiateQuery(svcs, opctx, detail, null)
+      List<Rel> rels = relCmd.getAllRels()
+      writer << ',"' << AttrNames.META_RELS << '":' << JSONUtil.serialize(rels)
     }
     if (detail.docChildrenMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
-      GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-      writer << ',"' << AttrNames.META_CHILDREN << '":' << JSONUtil.serialize(relRCH.rels)
+      GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      relCmd.initiateQuery(svcs, opctx, detail, null)
+      List<Rel> rels = relCmd.getAllRels()
+      writer << ',"' << AttrNames.META_CHILDREN << '":' << JSONUtil.serialize(rels)
     }
-    // nonstreaming
-    //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
-    //GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
-    //for (Object[] attr : rch.attrs) {
 
     GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
     cmd.initiateQuery(svcs,opctx,detail)
@@ -225,12 +221,13 @@ class RetrievalOperations {
         // if attr-specific detail meta differs from the base detail we used to query doc attrs, we need to do a followup query
         if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
         || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
-          GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID:docUUID,attrName:(String)attr[0])
-          GetAttrMetaRCH metaRCH = metaCmd.queryCassandra(svcs, opctx, attrDetail)
+          GetAttrMetaRP metaCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:(String)attr[0])
+          metaCmd.initiateQuery(svcs, opctx, detail, null)
+          Object[] metaRCH = metaCmd.nextRow()
           // overwrite/fill in with correct detail values
-          attr[4] = metaRCH.writetime
-          attr[5] = metaRCH.token
-          attr[6] = metaRCH.attrMetaID
+          attr[4] = metaRCH[1]
+          attr[5] = metaRCH[2]
+          attr[6] = metaRCH[3]
         }
         writer << ',"'<< StringEscapeUtils.escapeJson((String)attr[0]) << '":'
         if (attr[1] == DBCodes.TYPE_CODE_STRING) {
@@ -282,22 +279,23 @@ class RetrievalOperations {
 
   public static void getAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer) {
     // writer << '"' << StringEscapeUtils.escapeJson(attr) << '":' // retiring...
-    GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
-    GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
-      writer <<  '"'<< StringEscapeUtils.escapeJson(rch.data) << '"'
-    } else if (rch.valType == null || rch.valType == DBCodes.TYPE_CODE_DECIMAL || rch.valType == DBCodes.TYPE_CODE_BOOLEAN|| rch.valType == DBCodes.TYPE_CODE_INTEGER) {
-      writer << rch.data
-    } else if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
-      JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
+    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    cmd.initiateQuery(svcs,opctx,detail,null)
+    Object[] row = cmd.nextRow()
+    if (row[0] == DBCodes.TYPE_CODE_STRING) {
+      writer <<  '"'<< StringEscapeUtils.escapeJson(row[1]?.toString()) << '"'
+    } else if (row[0] == null || row[0] == DBCodes.TYPE_CODE_DECIMAL || row[0] == DBCodes.TYPE_CODE_BOOLEAN|| row[0] == DBCodes.TYPE_CODE_INTEGER) {
+      writer << row[1]
+    } else if (row[0] == DBCodes.TYPE_CODE_ARRAY) {
+      JsonParser arrayParser = svcs.jsonFactory.createParser(row[1]?.toString())
       JsonToken arrayStartToken = arrayParser.nextToken();
       if (arrayStartToken == JsonToken.START_ARRAY) {
         parseRetrievedChildArray(svcs,opctx,detail,docUUID, attr, arrayParser, writer)
       } else {
         // array type but not array? check for empty string or null
       }
-    } else if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
-      JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
+    } else if (row[0] == DBCodes.TYPE_CODE_OBJECT) {
+      JsonParser objParser = svcs.jsonFactory.createParser(row[1]?.toString())
       JsonToken objStartToken = objParser.nextToken();
       if (objStartToken == JsonToken.START_OBJECT) {
         parseRetrievedChildObject(svcs,opctx,detail,docUUID,attr,objParser,writer)
@@ -310,32 +308,33 @@ class RetrievalOperations {
   }
 
   public static Object deserializeAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
-    GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
-    GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    if (rch.data == null) {
+    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    cmd.initiateQuery(svcs,opctx,detail,null)
+    Object[] row = cmd.nextRow()
+    if (row[0] == null) {
       return null
     }
-    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
-      return rch.data
+    if (row[0] == DBCodes.TYPE_CODE_STRING) {
+      return row[1]
     }
-    if (rch.valType == DBCodes.TYPE_CODE_DECIMAL) {
-      return new BigDecimal(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_DECIMAL) {
+      return new BigDecimal(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_BOOLEAN) {
-      return Boolean.parseBoolean(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_BOOLEAN) {
+      return Boolean.parseBoolean(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_INTEGER) {
-      return new BigInteger(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_INTEGER) {
+      return new BigInteger(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
-      JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_ARRAY) {
+      JsonParser arrayParser = svcs.jsonFactory.createParser(row[1]?.toString())
       JsonToken arrayStartToken = arrayParser.nextToken();
       if (arrayStartToken == JsonToken.START_ARRAY) {
         return deserializeRetrievedChildArray(svcs,opctx,detail,docUUID, attr, arrayParser)
       }
     }
-    if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
-      JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_OBJECT) {
+      JsonParser objParser = svcs.jsonFactory.createParser(row[1]?.toString())
       JsonToken objStartToken = objParser.nextToken();
       if (objStartToken == JsonToken.START_OBJECT) {
         return deserializeRetrievedChildObject(svcs,opctx,detail,docUUID,attr,objParser)
@@ -347,22 +346,23 @@ class RetrievalOperations {
   public static DocField getDocField(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
     DocField docfield = new DocField(docUUID:docUUID,name:attr)
     StringWriter writer = new StringWriter()
-    GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
-    GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
-      writer <<  '"'<< StringEscapeUtils.escapeJson(rch.data) << '"'
-    } else if (rch.valType == null || rch.valType == DBCodes.TYPE_CODE_DECIMAL || rch.valType == DBCodes.TYPE_CODE_BOOLEAN|| rch.valType == DBCodes.TYPE_CODE_INTEGER) {
-      writer << rch.data
-    } else if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
-      JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
+    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    cmd.initiateQuery(svcs,opctx,detail,null)
+    Object[] row = cmd.nextRow()
+    if (row[0] == DBCodes.TYPE_CODE_STRING) {
+      writer <<  '"'<< StringEscapeUtils.escapeJson(row[1]?.toString()) << '"'
+    } else if (row[0] == null || row[0] == DBCodes.TYPE_CODE_DECIMAL || row[0] == DBCodes.TYPE_CODE_BOOLEAN|| row[0] == DBCodes.TYPE_CODE_INTEGER) {
+      writer << row[1]
+    } else if (row[0] == DBCodes.TYPE_CODE_ARRAY) {
+      JsonParser arrayParser = svcs.jsonFactory.createParser(row[1]?.toString())
       JsonToken arrayStartToken = arrayParser.nextToken();
       if (arrayStartToken == JsonToken.START_ARRAY) {
         parseRetrievedChildArray(svcs,opctx,detail,docUUID, attr, arrayParser, writer)
       } else {
         // array type but not array? check for empty string or null
       }
-    } else if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
-      JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
+    } else if (row[0] == DBCodes.TYPE_CODE_OBJECT) {
+      JsonParser objParser = svcs.jsonFactory.createParser(row[0]?.toString())
       JsonToken objStartToken = objParser.nextToken();
       if (objStartToken == JsonToken.START_OBJECT) {
         parseRetrievedChildObject(svcs,opctx,detail,docUUID,attr,objParser,writer)
@@ -372,7 +372,7 @@ class RetrievalOperations {
     } else {
       // error
     }
-    docfield.value = new FieldValue(value:writer.toString(),type:TypeConfigurationService.attrClass(rch.valType))
+    docfield.value = new FieldValue(value:writer.toString(),type:TypeConfigurationService.attrClass(row[0]?.toString()))
     return docfield
   }
 
@@ -621,39 +621,37 @@ class RetrievalOperations {
     if (detail.docIDTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
     if (detail.docIDDateMeta) {  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-      GetDoc eCmd = new GetDoc(docUUID:docUUID)
-      GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-      if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_TOKEN,eRCH.token)) }
-      if (detail.docPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOS,eRCH.paxosVer)) }
-      if (detail.docPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
-      if (detail.docPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH.paxosVer.toString()))) }
-      if (detail.docMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETAID,eRCH.metadata_id)) }
+      GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+      eCmd.initiateQuery(svcs, opctx, detail, null)
+      Object[] eRCH = eCmd.nextRow()
+      if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_TOKEN,eRCH[3])) }
+      if (detail.docPaxosMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOS,eRCH[1])) }
+      if (detail.docPaxosTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH[1]?.toString()))) }
+      if (detail.docPaxosDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PAXOSDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(eRCH[1]?.toString()))) }
+      if (detail.docMetaIDMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETAID,eRCH[4])) }
       if (detail.docMetaDataMeta) {
-        if (eRCH.metadata_id != null) {
-          Detail metaDetail = detail.resolveAttrDetail(eRCH.metadata_id)
-          Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,eRCH.metadata_id,false)
+        if (eRCH[1] != null) {
+          Detail metaDetail = detail.resolveAttrDetail(AttrNames.META_DOCMETADATA)
+          Map metadatadoc = RetrievalOperations.deserializeSingleDoc(svcs,opctx,metaDetail,eRCH[1]?.toString(),false)
           attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_DOCMETADATA,metadatadoc))
         }
       }
-      if (detail.parentMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PARENT,eRCH.a0)) }
-      if (detail.docWritetimeMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime)) }
-      if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WTDT_PRE+detail.docWritetimeMeta+"]",eRCH.writetime.intdiv(1000))) }
+      if (detail.parentMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_PARENT,eRCH[0])) }
+      if (detail.docWritetimeMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WT_PRE+detail.docWritetimeMeta+"]",eRCH[2])) }
+      if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WTDT_PRE+detail.docWritetimeMeta+"]",((Long)eRCH[2]).intdiv(1000))) }
     }
     if (detail.docRelationsMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
-      GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,relRCH.rels))
+      GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+      relCmd.initiateQuery(svcs, opctx, detail, null)
+      List<Rel> rels = relCmd.getAllRels()
+      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,rels))
     }
     if (detail.docChildrenMeta) {
-      GetRelsCmd rels = new GetRelsCmd(p1:docUUID,ty1:RelTypes.TO_CHILD)
-      GetRelsRCH relRCH = rels.queryCassandraDocRelsForType(svcs, opctx, detail)
-      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,relRCH.rels))
+      GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      relCmd.initiateQuery(svcs, opctx, detail, null)
+      List<Rel> rels = relCmd.getAllRels()
+      attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,rels))
     }
-
-    // non-streaming
-    //GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
-    //GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
-    //for (Object[] attr : rch.attrs) {
 
     // streaming
     GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
@@ -665,12 +663,13 @@ class RetrievalOperations {
       // if attr-specific detail meta differs from the base detail we used to query doc attrs, we need to do a followup query
       if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
       || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
-        GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID:docUUID,attrName:(String)attr[0])
-        GetAttrMetaRCH metaRCH = metaCmd.queryCassandra(svcs, opctx, attrDetail)
+        GetAttrMetaRP metaCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:(String)attr[0])
+        metaCmd.initiateQuery(svcs, opctx, detail, null)
+        Object[] metaRCH = metaCmd.nextRow()
         // overwrite/fill in with correct detail values
-        attr[4] = metaRCH.writetime
-        attr[5] = metaRCH.token
-        attr[6] = metaRCH.attrMetaID
+        attr[4] = metaRCH[1]
+        attr[5] = metaRCH[2]
+        attr[6] = metaRCH[3]
       }
       if (attrDetail != null) {
         Object value = null
@@ -736,43 +735,49 @@ class RetrievalOperations {
   public static String getDocMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID)
   {
     detail.docMetaIDMeta = true
-    GetDoc eCmd = new GetDoc(docUUID:docUUID)
-    GetDocRCH eRCH = eCmd.queryCassandra(svcs, opctx, detail)
-    return eRCH.metadata_id
+    GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+    eCmd.initiateQuery(svcs, opctx, detail, null)
+    Object[] eRCH = eCmd.nextRow()
+    return eRCH[4]
   }
 
   public static String getAttrMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr)
   {
     detail.attrMetaIDMeta = true
-    GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID:docUUID,attrName:attr)
-    GetAttrMetaRCH metaRCH = metaCmd.queryCassandra(svcs, opctx, detail)
-    return metaRCH.attrMetaID
+    GetAttrMetaRP eCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:attr)
+    eCmd.initiateQuery(svcs, opctx, detail, null)
+    Object[] row = eCmd.nextRow()
+    return row[3].toString()
   }
 
   public static String getRelMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey)
   {
-    GetRelKeyCmd relkeyCmd = new GetRelKeyCmd(relKey:relKey)
-    GetRelsRCH relCmd = relkeyCmd.queryCassandraRelKey(svcs, opctx, detail)
-    if (relCmd.rels.size() == 1) {
-      return relCmd.rels[0].z_md
+    GetRelKeyRP relCmd = new GetRelKeyRP(relKey:relKey)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
+    if (rels.size() == 1) {
+      return rels[0].z_md
     }
     throw new RuntimeException("RelKey not found during metadata id retrieval for "+JSONUtil.serialize(relKey))
   }
 
   public static Rel getRel(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey)
   {
-    GetRelKeyCmd relkeyCmd = new GetRelKeyCmd(relKey:relKey)
-    GetRelsRCH relCmd = relkeyCmd.queryCassandraRelKey(svcs, opctx, detail)
-    if (relCmd.rels.size() == 1) {
-      return relCmd.rels[0]
+    GetRelKeyRP relCmd = new GetRelKeyRP(relKey:relKey)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
+
+    if (rels.size() == 1) {
+      return rels[0]
     }
     throw new RuntimeException("RelKey not found during relation retrieval for "+JSONUtil.serialize(relKey))
   }
 
   public static List<Rel> deserializeDocRels(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID) {
-    GetRelsCmd rels = new GetRelsCmd(p1:docUUID)
-    GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
-    return relRCH.rels
+    GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
+    return rels
   }
 
   public static Iterator<String> attrNamesIterator(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final String docUUID) {

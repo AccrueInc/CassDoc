@@ -8,10 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import cassdoc.commands.mutate.UpdAttrMetadata
 import cassdoc.commands.mutate.UpdDocMetadata
 import cassdoc.commands.mutate.UpdRelMetadata
-import cassdoc.commands.retrieve.GetAttrCmd
-import cassdoc.commands.retrieve.GetAttrRCH
-import cassdoc.commands.retrieve.GetDocAttrs
-import cassdoc.commands.retrieve.GetDocAttrsRCH
+import cassdoc.commands.retrieve.GetAttrRP
+import cassdoc.commands.retrieve.GetDocAttrsRP
 import cassdoc.commands.retrieve.QueryToListOfStrArr
 import cassdoc.operations.CreateOperations
 import cassdoc.operations.DeleteOperations
@@ -121,12 +119,13 @@ class API {
   void getSimpleAttr (OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer)
   {
     log.inf("GetSimpleAttr[wrt] :: $docUUID $attr",null)
-    GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
-    GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
-      writer << '"' << StringEscapeUtils.escapeJson(rch.data) << '"'
+    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    cmd.initiateQuery(svcs,opctx,detail,null)
+    Object[] row = cmd.nextRow()
+    if (row[0] == DBCodes.TYPE_CODE_STRING) {
+      writer << '"' << StringEscapeUtils.escapeJson(row[1].toString()) << '"'
     } else {
-      writer << rch.data
+      writer << row[1]
     }
     log.dbg("GetSimpleAttr[wrt] DONE :: $docUUID $attr",null)
   }
@@ -134,29 +133,30 @@ class API {
   Object deserializeSimpleAttr(OperationContext opctx, Detail detail, String docUUID, String attr)
   {
     log.inf("DeserializeSimpleAttr :: $docUUID $attr",null)
-    GetAttrCmd cmd = new GetAttrCmd(docUUID:docUUID, attrName:attr)
-    GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
-    log.dbg("DeserializeSimpleAttr DONE :: $docUUID $attr :: "+rch.data,null)
-    if (rch.data == null) {
+    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    cmd.initiateQuery(svcs,opctx,detail,null)
+    Object[] row = cmd.nextRow()
+    log.dbg("DeserializeSimpleAttr DONE :: $docUUID $attr :: "+row[1],null)
+    if (row[1] == null) {
       return null
     }
-    if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
-      return JSONUtil.deserializeMap(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_OBJECT) {
+      return JSONUtil.deserializeMap(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
-      return JSONUtil.deserializeList(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_ARRAY) {
+      return JSONUtil.deserializeList(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_STRING) {
-      return rch.data
+    if (row[0] == DBCodes.TYPE_CODE_STRING) {
+      return row[1].toString()
     }
-    if (rch.valType == DBCodes.TYPE_CODE_BOOLEAN) {
-      return Boolean.parseBoolean(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_BOOLEAN) {
+      return Boolean.parseBoolean(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_INTEGER) {
-      return new BigInteger(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_INTEGER) {
+      return new BigInteger(row[1].toString())
     }
-    if (rch.valType == DBCodes.TYPE_CODE_DECIMAL) {
-      return new BigDecimal(rch.data)
+    if (row[0] == DBCodes.TYPE_CODE_DECIMAL) {
+      return new BigDecimal(row[1].toString())
     }
     return null
   }
@@ -197,15 +197,18 @@ class API {
   {
     log.inf("GetSimpleDoc[wrt] :: $docUUID",null)
     writer << '{"_id":"'<<docUUID<<'"'
-    GetDocAttrs cmd = new GetDocAttrs(docUUID:docUUID)
-    GetDocAttrsRCH rch = cmd.queryCassandra(svcs,opctx,detail)
-    for (Object[] attr : rch.attrs) {
+
+    GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
+    cmd.initiateQuery(svcs,opctx,detail)
+    Object[] attr = null
+    while (attr = cmd.nextRow()) {
       writer << ',"'<< StringEscapeUtils.escapeJson((String)attr[0]) << '":'
       if (attr[1] == DBCodes.TYPE_CODE_STRING) {
         writer << '"' << StringEscapeUtils.escapeJson((String)attr[2]) << '"'
       } else {
         writer << attr[2]
       }
+
     }
     writer << '}'
     log.dbg("GetSimpleDoc[wrt] DONE :: $docUUID",null)

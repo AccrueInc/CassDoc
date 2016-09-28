@@ -10,6 +10,7 @@ import cassdoc.Detail
 import cassdoc.FieldValue
 import cassdoc.IDUtil
 import cassdoc.OperationContext
+import cassdoc.Rel
 import cassdoc.RelTypes
 import cassdoc.commands.mutate.DelAttr
 import cassdoc.commands.mutate.NewAttr
@@ -17,8 +18,7 @@ import cassdoc.commands.mutate.NewDoc
 import cassdoc.commands.mutate.NewRel
 import cassdoc.commands.mutate.UpdAttr
 import cassdoc.commands.mutate.UpdAttrPAXOS
-import cassdoc.commands.retrieve.GetAttrRelsCmd
-import cassdoc.commands.retrieve.GetRelsRCH
+import cassdoc.commands.retrieve.GetAttrRelsRP
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
@@ -57,11 +57,15 @@ class UpdateOperations {
     // PAXOS updates: prepare the clears and new-writes, but the other writes must only be executed if the initial PAXOS update succeeds
     // ...probably will occur in optimization  and execution...
 
-    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:cmd.docUUID,ty1s:["_I", "CH"] as HashSet,p2:cmd.attrName)
-    GetRelsRCH attrRels = getRels.queryCassandraAttrRels(svcs, opctx, detail, null)
+    GetAttrRelsRP relCmd = new GetAttrRelsRP(p1:cmd.docUUID,ty1s:[
+      RelTypes.SYS_INDEX,
+      RelTypes.TO_CHILD
+    ],p2:cmd.attrName)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
 
     // cleanup (TODO: separate thread?)
-    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), attrRels.rels, true)
+    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), rels, true)
     // write new value
     CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail, cmd)
   }
@@ -91,13 +95,15 @@ class UpdateOperations {
 
     opctx.addCommand(svcs, detail, cmd)
 
-    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:cmd.docUUID,ty1s:[
+    GetAttrRelsRP relCmd = new GetAttrRelsRP(p1:cmd.docUUID,ty1s:[
       RelTypes.SYS_INDEX,
-      RelTypes.TO_CHILD] as HashSet,p2:cmd.attrName)
-    GetRelsRCH attrRels = getRels.queryCassandraAttrRels(svcs, opctx, detail, null)
+      RelTypes.TO_CHILD]
+    ,p2:cmd.attrName)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
 
     // cleanup (TODO: separate thread?)
-    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), attrRels.rels, true)
+    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), rels, true)
     // write new value
     CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail, cmd)
   }

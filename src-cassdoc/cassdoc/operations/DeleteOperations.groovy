@@ -18,9 +18,8 @@ import cassdoc.commands.mutate.DelDoc_E
 import cassdoc.commands.mutate.DelDoc_P
 import cassdoc.commands.mutate.DelFixedCol
 import cassdoc.commands.mutate.DelRel
-import cassdoc.commands.retrieve.GetAttrRelsCmd
-import cassdoc.commands.retrieve.GetRelsCmd
-import cassdoc.commands.retrieve.GetRelsRCH
+import cassdoc.commands.retrieve.GetAttrRelsRP
+import cassdoc.commands.retrieve.GetDocRelsRP
 import cwdrg.lg.annotation.Log
 
 @Log
@@ -38,27 +37,29 @@ class DeleteOperations {
   static void deleteDoc(CommandExecServices svcs,OperationContext opctx, Detail detail, String docUUID)
   {
     log.inf( "DELDOC_top:: $docUUID",null)
-    GetRelsCmd getRels = new GetRelsCmd(p1:docUUID)
-    GetRelsRCH docRels = getRels.queryCassandraDocRels(svcs, opctx, detail)
 
-    analyzeDeleteDocEvent(svcs,opctx,detail,docUUID,docRels.rels)
+    GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
+    analyzeDeleteDocEvent(svcs,opctx,detail,docUUID,rels)
 
   }
 
 
   static void deleteAttr(CommandExecServices svcs,OperationContext opctx, Detail detail, String docUUID, String attr, boolean clear)
   {
-    GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1:docUUID,ty1s:[
+    GetAttrRelsRP relCmd = new GetAttrRelsRP(p1:docUUID,ty1s:[
       RelTypes.SYS_INDEX,
-      RelTypes.TO_CHILD] as HashSet,p2:attr)
-    GetRelsRCH attrChildDocs = getRels.queryCassandraAttrRels(svcs, opctx, detail, null)
+      RelTypes.TO_CHILD
+    ],p2:attr)
+    relCmd.initiateQuery(svcs, opctx, detail, null)
+    List<Rel> rels = relCmd.getAllRels()
 
     DelAttr delAttr = new DelAttr(docUUID:docUUID,attrName:attr)
-    analyzeDeleteAttrEvent(svcs,opctx,detail,delAttr,attrChildDocs.rels,clear)
-
+    analyzeDeleteAttrEvent(svcs,opctx,detail,delAttr,rels,clear)
 
     // cascade the delete for child rels
-    for (Rel childRel : attrChildDocs.rels) {
+    for (Rel childRel : rels) {
       if (childRel.ty1 == RelTypes.TO_CHILD) {
         String childDocUUID = childRel.c1
         // TODO: recurse/deletion cascade detail
