@@ -7,7 +7,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import cassdoc.CommandExecServices
 import cassdoc.Detail
 import cassdoc.OperationContext
-import cassdoc.commands.retrieve.cassandra.CassandraPagedRowProcessor;
+import cassdoc.commands.retrieve.RowProcessor
 
 import com.datastax.driver.core.*
 
@@ -166,7 +166,7 @@ class SearchOperations {
   }
 
   // rp.processRow() should return token in 0th and id in 1st cell
-  public static Iterator<Map> pullIDResultSet(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final CassandraPagedRowProcessor rp)
+  public static Iterator<Map> pullIDResultSet(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final RowProcessor rp)
   {
     final LinkedBlockingQueue docQ = new LinkedBlockingQueue(1000)
     final BlockingIterator<Map> iterator = new BlockingIterator<Map>(queue:docQ)

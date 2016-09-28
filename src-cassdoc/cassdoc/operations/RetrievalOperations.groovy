@@ -19,14 +19,7 @@ import cassdoc.RelKey
 import cassdoc.RelTypes
 import cassdoc.TypeConfigurationService
 import cassdoc.commands.retrieve.RPUtil
-import cassdoc.commands.retrieve.cassandra.DocAttrListRP
-import cassdoc.commands.retrieve.cassandra.GetAttrMetaRP
-import cassdoc.commands.retrieve.cassandra.GetAttrRP
-import cassdoc.commands.retrieve.cassandra.GetDocAttrsRP
-import cassdoc.commands.retrieve.cassandra.GetDocRP
-import cassdoc.commands.retrieve.cassandra.GetDocRelsForTypeRP
-import cassdoc.commands.retrieve.cassandra.GetDocRelsRP
-import cassdoc.commands.retrieve.cassandra.GetRelKeyRP
+import cassdoc.commands.retrieve.RowProcessor
 import cassdoc.exceptions.RetrievalException
 
 import com.fasterxml.jackson.core.JsonParser
@@ -67,7 +60,7 @@ class RetrievalOperations {
     if (detail.docIDTimestampMeta) {map[AttrNames.META_IDTIME] = IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
     if (detail.docIDDateMeta) {map[AttrNames.META_IDDATE] = new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))}
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-      GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+      RowProcessor eCmd = svcs.retrievals.getDocRP(docUUID)
       eCmd.initiateQuery(svcs, opctx, detail, null)
       Object[] eRCH = eCmd.nextRow()
       if (detail.docTokenMeta) { map[AttrNames.META_TOKEN] = eRCH[3]  }
@@ -86,18 +79,18 @@ class RetrievalOperations {
       if (detail.docWritetimeDateMeta) { map[AttrNames.META_WTDT_PRE+StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+"]"] = ((Long)eRCH[2])?.intdiv(1000) }
     }
     if (detail.docRelationsMeta) {
-      GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+      RowProcessor relCmd = svcs.retrievals.getDocRelsRP(docUUID)
       relCmd.initiateQuery(svcs, opctx, detail, null)
       List<Rel> rels = RPUtil.getAllRels(relCmd)
       map[AttrNames.META_RELS] = rels
     }
     if (detail.docChildrenMeta) {
-      GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      RowProcessor relCmd = svcs.retrievals.getDocRelsForTypeRP(docUUID,RelTypes.TO_CHILD)
       relCmd.initiateQuery(svcs, opctx, detail, null)
       List<Rel> rels = RPUtil.getAllRels(relCmd)
       map[AttrNames.META_CHILDREN] = rels
     }
-    GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
+    RowProcessor cmd = svcs.retrievals.getDocAttrsRP(docUUID)
     cmd.initiateQuery(svcs,opctx,detail)
     Object[] attr = null
     while (attr = cmd.nextRow()) {
@@ -108,7 +101,7 @@ class RetrievalOperations {
         if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
         || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
 
-          GetAttrMetaRP metaCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:(String)attr[0])
+          RowProcessor metaCmd = svcs.retrievals.getAttrMetaRP(docUUID,(String)attr[0])
           metaCmd.initiateQuery(svcs, opctx, detail, null)
           Object[] metaRCH = metaCmd.nextRow()
           // overwrite/fill in with correct detail values
@@ -180,7 +173,7 @@ class RetrievalOperations {
     if (detail.docIDTimestampMeta) {writer << ',"' << AttrNames.META_IDTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID) }
     if (detail.docIDDateMeta) {writer << ',"' << AttrNames.META_IDDATE << '":"' << new Date(IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID)).toGMTString() << '"'}
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-      GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+      RowProcessor eCmd = svcs.retrievals.getDocRP(docUUID)
       eCmd.initiateQuery(svcs, opctx, detail, null)
       Object[] eRCH = eCmd.nextRow()
       if (detail.docTokenMeta) { writer << ',"' << AttrNames.META_TOKEN << '":' << eRCH[3]  }
@@ -200,19 +193,19 @@ class RetrievalOperations {
       if (detail.docWritetimeDateMeta) { writer << ',"' << AttrNames.META_WTDT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta)+']":"' << new Date(((Long)eRCH[2]).intdiv(1000)).toGMTString() << '"' }
     }
     if (detail.docRelationsMeta) {
-      GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+      RowProcessor relCmd = svcs.retrievals.getDocRelsRP(docUUID)
       relCmd.initiateQuery(svcs, opctx, detail, null)
       List<Rel> rels = RPUtil.getAllRels(relCmd)
       writer << ',"' << AttrNames.META_RELS << '":' << JSONUtil.serialize(rels)
     }
     if (detail.docChildrenMeta) {
-      GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      RowProcessor relCmd = svcs.retrievals.getDocRelsForTypeRP(docUUID,RelTypes.TO_CHILD)
       relCmd.initiateQuery(svcs, opctx, detail, null)
       List<Rel> rels = RPUtil.getAllRels(relCmd)
       writer << ',"' << AttrNames.META_CHILDREN << '":' << JSONUtil.serialize(rels)
     }
 
-    GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
+    RowProcessor cmd = svcs.retrievals.getDocAttrsRP(docUUID)
     cmd.initiateQuery(svcs,opctx,detail)
     Object[] attr = null
     while (attr = cmd.nextRow()) {
@@ -222,7 +215,7 @@ class RetrievalOperations {
         // if attr-specific detail meta differs from the base detail we used to query doc attrs, we need to do a followup query
         if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
         || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
-          GetAttrMetaRP metaCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:(String)attr[0])
+          RowProcessor metaCmd = svcs.retrievals.getAttrMetaRP(docUUID,(String)attr[0])
           metaCmd.initiateQuery(svcs, opctx, detail, null)
           Object[] metaRCH = metaCmd.nextRow()
           // overwrite/fill in with correct detail values
@@ -280,7 +273,7 @@ class RetrievalOperations {
 
   public static void getAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer) {
     // writer << '"' << StringEscapeUtils.escapeJson(attr) << '":' // retiring...
-    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    RowProcessor cmd = svcs.retrievals.getAttrRP(docUUID, attr)
     cmd.initiateQuery(svcs,opctx,detail,null)
     Object[] row = cmd.nextRow()
     if (row[0] == DBCodes.TYPE_CODE_STRING) {
@@ -309,7 +302,7 @@ class RetrievalOperations {
   }
 
   public static Object deserializeAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
-    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    RowProcessor cmd = svcs.retrievals.getAttrRP(docUUID, attr)
     cmd.initiateQuery(svcs,opctx,detail,null)
     Object[] row = cmd.nextRow()
     if (row[0] == null) {
@@ -347,7 +340,7 @@ class RetrievalOperations {
   public static DocField getDocField(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
     DocField docfield = new DocField(docUUID:docUUID,name:attr)
     StringWriter writer = new StringWriter()
-    GetAttrRP cmd = new GetAttrRP(docUUID:docUUID, attrName:attr)
+    RowProcessor cmd = svcs.retrievals.getAttrRP(docUUID, attr)
     cmd.initiateQuery(svcs,opctx,detail,null)
     Object[] row = cmd.nextRow()
     if (row[0] == DBCodes.TYPE_CODE_STRING) {
@@ -622,7 +615,7 @@ class RetrievalOperations {
     if (detail.docIDTimestampMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDTIME,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
     if (detail.docIDDateMeta) {  attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_IDDATE,IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID))) }
     if (detail.docTokenMeta || detail.docPaxosMeta || detail.docPaxosTimestampMeta || detail.docPaxosDateMeta || detail.docMetaIDMeta || detail.parentMeta || detail.docWritetimeMeta != null || detail.docWritetimeDateMeta != null) {
-      GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+      RowProcessor eCmd = svcs.retrievals.getDocRP(docUUID)
       eCmd.initiateQuery(svcs, opctx, detail, null)
       Object[] eRCH = eCmd.nextRow()
       if (detail.docTokenMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_TOKEN,eRCH[3])) }
@@ -642,20 +635,20 @@ class RetrievalOperations {
       if (detail.docWritetimeDateMeta) { attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_WTDT_PRE+detail.docWritetimeMeta+"]",((Long)eRCH[2]).intdiv(1000))) }
     }
     if (detail.docRelationsMeta) {
-      GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+      RowProcessor relCmd = svcs.retrievals.getDocRelsRP(docUUID)
       relCmd.initiateQuery(svcs, opctx, detail, null)
       List<Rel> rels = RPUtil.getAllRels(relCmd)
       attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_RELS,rels))
     }
     if (detail.docChildrenMeta) {
-      GetDocRelsForTypeRP relCmd = new GetDocRelsForTypeRP(p1:docUUID,ty1:RelTypes.TO_CHILD)
+      RowProcessor relCmd = svcs.retrievals.getDocRelsForTypeRP(docUUID,RelTypes.TO_CHILD)
       relCmd.initiateQuery(svcs, opctx, detail, null)
       List<Rel> rels = RPUtil.getAllRels(relCmd)
       attrQ.put(new AbstractMap.SimpleEntry<String,Object> (AttrNames.META_CHILDREN,rels))
     }
 
     // streaming
-    GetDocAttrsRP cmd = new GetDocAttrsRP(docUUID:docUUID)
+    RowProcessor cmd = svcs.retrievals.getDocAttrsRP(docUUID)
     cmd.initiateQuery(svcs,opctx,detail)
     Object[] attr = null
     while (attr = cmd.nextRow()) {
@@ -664,7 +657,7 @@ class RetrievalOperations {
       // if attr-specific detail meta differs from the base detail we used to query doc attrs, we need to do a followup query
       if (attrDetail.attrWritetimeMeta != detail.attrWritetimeMeta || attrDetail.attrTokenMeta != detail.attrTokenMeta
       || attrDetail.attrMetaIDMeta != detail.attrMetaIDMeta || attrDetail.attrMetaDataMeta != detail.attrMetaDataMeta) {
-        GetAttrMetaRP metaCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:(String)attr[0])
+        RowProcessor metaCmd = svcs.retrievals.getAttrMetaRP(docUUID,(String)attr[0])
         metaCmd.initiateQuery(svcs, opctx, detail, null)
         Object[] metaRCH = metaCmd.nextRow()
         // overwrite/fill in with correct detail values
@@ -736,7 +729,7 @@ class RetrievalOperations {
   public static String getDocMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID)
   {
     detail.docMetaIDMeta = true
-    GetDocRP eCmd = new GetDocRP(docUUID:docUUID)
+    RowProcessor eCmd = svcs.retrievals.getDocRP(docUUID)
     eCmd.initiateQuery(svcs, opctx, detail, null)
     Object[] eRCH = eCmd.nextRow()
     return eRCH[4]
@@ -745,7 +738,7 @@ class RetrievalOperations {
   public static String getAttrMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr)
   {
     detail.attrMetaIDMeta = true
-    GetAttrMetaRP eCmd = new GetAttrMetaRP(docUUID:docUUID,attrName:attr)
+    RowProcessor eCmd = svcs.retrievals.getAttrMetaRP(docUUID,attr)
     eCmd.initiateQuery(svcs, opctx, detail, null)
     Object[] row = eCmd.nextRow()
     return row[3].toString()
@@ -753,7 +746,7 @@ class RetrievalOperations {
 
   public static String getRelMetadataUUID(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey)
   {
-    GetRelKeyRP relCmd = new GetRelKeyRP(relKey:relKey)
+    RowProcessor relCmd = svcs.retrievals.getRelKeyRP(relKey)
     relCmd.initiateQuery(svcs, opctx, detail, null)
     List<Rel> rels = RPUtil.getAllRels(relCmd)
     if (rels.size() == 1) {
@@ -764,7 +757,7 @@ class RetrievalOperations {
 
   public static Rel getRel(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey)
   {
-    GetRelKeyRP relCmd = new GetRelKeyRP(relKey:relKey)
+    RowProcessor relCmd = svcs.retrievals.getRelKeyRP(relKey)
     relCmd.initiateQuery(svcs, opctx, detail, null)
     List<Rel> rels = RPUtil.getAllRels(relCmd)
 
@@ -775,7 +768,7 @@ class RetrievalOperations {
   }
 
   public static List<Rel> deserializeDocRels(final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID) {
-    GetDocRelsRP relCmd = new GetDocRelsRP(p1:docUUID)
+    RowProcessor relCmd = svcs.retrievals.getDocRelsRP(docUUID)
     relCmd.initiateQuery(svcs, opctx, detail, null)
     List<Rel> rels = RPUtil.getAllRels(relCmd)
     return rels
@@ -788,7 +781,7 @@ class RetrievalOperations {
 
     new Thread() {
           public void run() {
-            DocAttrListRP cmd = new DocAttrListRP(docUUID:docUUID)
+            RowProcessor cmd = svcs.retrievals.docAttrListRP(docUUID)
             cmd.initiateQuery(svcs,opctx,detail)
             Object[] attrName = null
             while (attrName = cmd.nextRow()) {
