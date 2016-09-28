@@ -35,36 +35,14 @@ abstract class CassandraPagedRowProcessor extends RowProcessor {
   private Token lastToken = null
 
   /**
-   * This method is called for every row encountered
+   * This method is called for every row encountered. This performs the cassandra-specific row processing to convert
+   * the row to the Object[] for the row. Do not place cassandra-specific objects/classes into the Object[] row. 
    * 
    * @param row
    * @return
    */
   Object[] processRow(Row row){}
 
-  /**
-   * This optional method initializes any data structures tracking data across column/clustering keys in a partition.
-   * 
-   */
-  void initNewPartition() {}
-
-  /**
-   * This optional method is called whenever a new partition key is encountered,  in case 
-   * there are some final products/packaging/processing needed before the next partition tracking is done
-   * 
-   * Examples: summing columns in a row, tracking column keys in a row, etc
-   */
-  void completeFinishedPartition() {}
-
-  /**
-   * An optional method, the code using the RowProcessor, if indicated by the newPartition stateful property, can call this method to get the
-   * final products/data structures/information that has been accumulated and finalized by completeFinishedPartition()
-   * 
-   * @return Object[]
-   */
-  Object[] getFinishedPartitionData() {
-    null
-  }
 
   Object[] nextRow() {
     Row row = rs.one()

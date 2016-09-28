@@ -12,14 +12,9 @@ import cassdoc.IDUtil
 import cassdoc.OperationContext
 import cassdoc.Rel
 import cassdoc.RelTypes
-import cassdoc.commands.mutate.DelAttr
-import cassdoc.commands.mutate.NewAttr
-import cassdoc.commands.mutate.NewDoc
-import cassdoc.commands.mutate.NewRel
-import cassdoc.commands.mutate.UpdAttr
-import cassdoc.commands.mutate.UpdAttrPAXOS
+import cassdoc.commands.mutate.cassandra.MutationCmd
 import cassdoc.commands.retrieve.RPUtil
-import cassdoc.commands.retrieve.cassandra.GetAttrRelsRP
+import cassdoc.commands.retrieve.RowProcessor
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
@@ -29,46 +24,39 @@ class UpdateOperations {
 
   static void updateAttrPAXOS(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json, UUID checkVal) {
     JsonParser parser = svcs.jsonFactory.createParser(json)
-    UpdAttrPAXOS cmd = new UpdAttrPAXOS(docUUID:docUUID, attrName:attr, previousVersion:checkVal)
-    cmd.paxosId = ["P", docUUID] as Object[]
-    cmd.attrValue = CreateOperations.parseField(svcs,opctx,detail,docUUID,attr,parser)
-    cmd.isComplete = true;
-    opctx.addCommand(svcs, detail, cmd)
-    analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
+    FieldValue fv = CreateOperations.parseField(svcs,opctx,detail,docUUID,attr,parser)
+    MutationCmd cmd = svcs.mutations.updAttrPAXOS(docUUID, attr, fv, checkVal,["P", docUUID])
+    analyzeUpdateAttrEvent(svcs,opctx,detail,docUUID,attr,fv,cmd)
   }
 
   static void updateAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
     JsonParser parser = svcs.jsonFactory.createParser(json)
-    UpdAttr cmd = new UpdAttr(docUUID:docUUID, attrName:attr)
-    cmd.attrValue = CreateOperations.parseField(svcs,opctx,detail,docUUID,attr,parser)
-    cmd.isComplete = true;
-    opctx.addCommand(svcs, detail, cmd)
-    analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
+    FieldValue fv = CreateOperations.parseField(svcs,opctx,detail,docUUID,attr,parser)
+    MutationCmd cmd = svcs.mutations.updAttr(docUUID,attr,fv)
+    analyzeUpdateAttrEvent(svcs,opctx,detail,docUUID,attr,fv,cmd)
   }
 
   static void updateAttrEntry(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Map.Entry<String,Object> attr) {
-    UpdAttr cmd = new UpdAttr(docUUID:docUUID, attrName:attr.key)
-    cmd.attrValue = CreateOperations.serializeAttr(svcs,opctx,detail,attr,docUUID,null,null)
-    cmd.isComplete = true;
-    opctx.addCommand(svcs, detail, cmd)
-    analyzeUpdateAttrEvent(svcs,opctx,detail,cmd)
+    FieldValue fv =  CreateOperations.serializeAttr(svcs,opctx,detail,attr,docUUID,null,null)
+    MutationCmd cmd = svcs.mutations.updAttr(docUUID, attr.key,fv)
+    analyzeUpdateAttrEvent(svcs,opctx,detail,docUUID,attr.key,fv,cmd)
   }
 
-  static void analyzeUpdateAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdAttr cmd) {
+  static void analyzeUpdateAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, FieldValue attrValue, MutationCmd cmd) {
     // PAXOS updates: prepare the clears and new-writes, but the other writes must only be executed if the initial PAXOS update succeeds
     // ...probably will occur in optimization  and execution...
 
-    GetAttrRelsRP relCmd = new GetAttrRelsRP(p1:cmd.docUUID,ty1s:[
+    RowProcessor relCmd = svcs.retrievals.getAttrRelsRP(docUUID,[
       RelTypes.SYS_INDEX,
       RelTypes.TO_CHILD
-    ],p2:cmd.attrName)
+    ],attrName)
     relCmd.initiateQuery(svcs, opctx, detail, null)
     List<Rel> rels = RPUtil.getAllRels(relCmd)
 
     // cleanup (TODO: separate thread?)
-    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), rels, true)
+    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, docUUID,attrName, rels, true)
     // write new value
-    CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail, cmd)
+    CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail,docUUID,attrName,attrValue,cmd)
   }
 
 
@@ -84,29 +72,27 @@ class UpdateOperations {
   // TODO: paxos version... shouldn't be too hard
   static Set<String> updateAttrOverlay(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json)
   {
-    UpdAttr cmd = new UpdAttr(docUUID:docUUID, attrName:attr)
     JsonParser parser = svcs.jsonFactory.createParser(json)
     AttrOverlayTracking overlayTracker = new AttrOverlayTracking()
-    cmd.attrValue = parseFieldOverlay(svcs,opctx,detail,cmd.docUUID,cmd.attrName,parser,overlayTracker)
-    analyzeUpdateOverlayAttrEvent(svcs, opctx, detail, cmd)
+    FieldValue fv = parseFieldOverlay(svcs,opctx,detail,docUUID,attr,parser,overlayTracker)
+    MutationCmd cmd = svcs.mutations.updAttr(docUUID, attr, fv)
+    analyzeUpdateOverlayAttrEvent(svcs, opctx, detail, docUUID, attr, fv, cmd)
     return overlayTracker.newIDs
   }
 
-  static void analyzeUpdateOverlayAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdAttr cmd) {
+  static void analyzeUpdateOverlayAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, FieldValue attrValue, MutationCmd cmd) {
 
-    opctx.addCommand(svcs, detail, cmd)
-
-    GetAttrRelsRP relCmd = new GetAttrRelsRP(p1:cmd.docUUID,ty1s:[
+    RowProcessor relCmd = svcs.retrievals.getAttrRelsRP(docUUID,[
       RelTypes.SYS_INDEX,
       RelTypes.TO_CHILD]
-    ,p2:cmd.attrName)
+    ,attrName)
     relCmd.initiateQuery(svcs, opctx, detail, null)
     List<Rel> rels = RPUtil.getAllRels(relCmd)
 
     // cleanup (TODO: separate thread?)
-    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, new DelAttr(docUUID:cmd.docUUID, attrName:cmd.attrName), rels, true)
+    DeleteOperations.analyzeDeleteAttrEvent(svcs, opctx, detail, docUUID, attrName, rels, true)
     // write new value
-    CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail, cmd)
+    CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail,docUUID,attrName,attrValue,cmd)
   }
 
 
@@ -161,17 +147,15 @@ class UpdateOperations {
 
   public static String overlayChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String parentUUID, String parentAttr, AttrOverlayTracking overlayTracker) {
 
+
     String[] analyzeID = parseIDAttr(svcs,opctx,detail,parser);
     if (analyzeID[0] == "NEW") {
       overlayTracker.newIDs.add(analyzeID[1])
       // parser should be pointing at the idKey field right no
-      NewDoc newDocCmd = new NewDoc();
-      newDocCmd.docUUID = analyzeID[1]
-      newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
-      newDocCmd.parentAttr = parentAttr
-      newDocCmd.isComplete = true
-
-      CreateOperations.analyzeNewDocEvent(svcs,opctx,detail, newDocCmd)
+      parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
+      String docUUID = analyzeID[1]
+      MutationCmd newDocCmd = svcs.mutations.newDoc(docUUID, parentUUID, parentAttr)
+      CreateOperations.analyzeNewDocEvent(svcs,opctx,detail,docUUID,parentUUID,parentAttr,newDocCmd)
 
       while (true) {
         JsonToken nextField = parser.nextToken();
@@ -179,32 +163,23 @@ class UpdateOperations {
           break;
         } else if (nextField == JsonToken.FIELD_NAME) {
           String fieldName = parser.getCurrentName();
-          NewAttr newAttrCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
-          newAttrCmd.attrValue = parseFieldOverlay(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser, overlayTracker);
-          newAttrCmd.isComplete = true;
-          CreateOperations.analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
+          FieldValue fv = parseFieldOverlay(svcs,opctx,detail,docUUID,fieldName,parser, overlayTracker);
+          MutationCmd newAttrCmd = svcs.mutations.newAttr(docUUID, fieldName,fv,false)
+          CreateOperations.analyzeNewAttrEvent(svcs,opctx,detail,docUUID,fieldName,fv,newAttrCmd)
         } else {
           throw new Exception ("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT "+nextField);
         }
       }
-      return newDocCmd.docUUID
+      return docUUID
     } else {
       overlayTracker.extantIDs.add(analyzeID[1])
 
       // parent-to-child rel
-      NewRel newSubdocRelCmd = new NewRel()
-      newSubdocRelCmd.p1 = parentUUID
-      newSubdocRelCmd.ty1 = RelTypes.TO_CHILD
-      newSubdocRelCmd.p2 = parentAttr
-      newSubdocRelCmd.c1 = analyzeID[1]
+      MutationCmd newSubdocRelCmd = svcs.mutations.newRel(new Rel(p1:parentUUID,ty1:RelTypes.TO_CHILD,p2:parentAttr,c1:analyzeID[1]))
       opctx.addCommand(svcs, detail, newSubdocRelCmd)
 
       // child-to-parent rel
-      NewRel newBackrefRelCmd = new NewRel()
-      newBackrefRelCmd.p1 = analyzeID[1]
-      newBackrefRelCmd.ty1 = RelTypes.TO_PARENT
-      newBackrefRelCmd.c1 = parentUUID
-      newBackrefRelCmd.c2 = parentAttr
+      MutationCmd newBackrefRelCmd = svcs.mutations.newRel(new Rel(p1:analyzeID[1],ty1:RelTypes.TO_PARENT,c1:parentUUID,c2:parentAttr))
       opctx.addCommand(svcs, detail, newBackrefRelCmd)
 
       // extant doc... overlay does not modify extant docs, so we ignore anything inside of it

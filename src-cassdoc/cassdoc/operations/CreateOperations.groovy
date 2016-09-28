@@ -13,10 +13,8 @@ import cassdoc.FixedAttr
 import cassdoc.IDUtil
 import cassdoc.OperationContext
 import cassdoc.Rel
-import cassdoc.commands.mutate.NewAttr
-import cassdoc.commands.mutate.NewDoc
-import cassdoc.commands.mutate.NewRel
-import cassdoc.commands.mutate.UpdFixedCol
+import cassdoc.RelTypes
+import cassdoc.commands.mutate.cassandra.MutationCmd
 
 import com.datastax.driver.core.DataType
 import com.fasterxml.jackson.core.JsonParser
@@ -129,11 +127,9 @@ class CreateOperations {
 
   public static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, JsonParser parser , boolean paxos)
   {
-    NewAttr cmd = new NewAttr(docUUID:docUUID, attrName:attr)
-    cmd.attrValue = parseField(svcs,opctx,detail,docUUID,attr,parser)
-    cmd.isComplete = true;
-    cmd.paxos = paxos
-    analyzeNewAttrEvent(svcs,opctx,detail,cmd)
+    FieldValue fv = parseField(svcs,opctx,detail,docUUID,attr,parser)
+    MutationCmd cmd = svcs.mutations.newAttr(docUUID,attr,fv,paxos)
+    analyzeNewAttrEvent(svcs,opctx,detail,docUUID,attr,fv,cmd)
   }
 
   // ---- parsing helper methods
@@ -148,16 +144,12 @@ class CreateOperations {
     return docId
   }
 
-  public static void performNewChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String docId, String parentUUID, String parentAttr)
+  public static void performNewChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String docUUID, String parentUUID, String parentAttr)
   {
+    parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
     // parser should be pointing at the idKey field right now
-    NewDoc newDocCmd = new NewDoc();
-    newDocCmd.docUUID = docId
-    newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
-    newDocCmd.parentAttr = parentAttr
-    newDocCmd.isComplete = true
-
-    analyzeNewDocEvent(svcs,opctx,detail, newDocCmd)
+    MutationCmd newDocCmd = svcs.mutations.newDoc(docUUID,parentUUID,parentAttr)
+    analyzeNewDocEvent(svcs,opctx,detail,docUUID,parentUUID,parentAttr,newDocCmd)
 
     while (true) {
       JsonToken nextField = parser.nextToken();
@@ -165,10 +157,9 @@ class CreateOperations {
         break;
       } else if (nextField == JsonToken.FIELD_NAME) {
         String fieldName = parser.getCurrentName();
-        NewAttr newAttrCmd = new NewAttr(docUUID:newDocCmd.docUUID, attrName:fieldName)
-        newAttrCmd.attrValue = parseField(svcs,opctx,detail,newDocCmd.docUUID,fieldName,parser);
-        newAttrCmd.isComplete = true;
-        analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
+        FieldValue fv = parseField(svcs,opctx,detail,docUUID,fieldName,parser);
+        MutationCmd newAttrCmd = svcs.mutations.newAttr(docUUID, fieldName,fv,false)
+        analyzeNewAttrEvent(svcs,opctx,detail,docUUID,fieldName,fv,newAttrCmd)
       } else {
         throw new Exception ("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT "+nextField);
       }
@@ -322,113 +313,99 @@ class CreateOperations {
     }
   }
 
-  static void analyzeNewDocEvent (CommandExecServices svcs, OperationContext opctx, Detail detail, NewDoc newDocCmd)
+  static void analyzeNewDocEvent (CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String parentUUID, String parentAttr, MutationCmd newDocCmd)
   {
     opctx.addCommand(svcs, detail, newDocCmd)
 
-    if (newDocCmd.parentUUID != null) {
+    if (parentUUID != null) {
 
       // TODO: "xpath"
 
       // parent-to-child rel
-      NewRel newSubdocRelCmd = new NewRel()
-      newSubdocRelCmd.p1 = newDocCmd.parentUUID
-      newSubdocRelCmd.ty1 = "CH"
-      newSubdocRelCmd.p2 = newDocCmd.parentAttr
-      newSubdocRelCmd.c1 = newDocCmd.docUUID
+      MutationCmd newSubdocRelCmd = svcs.mutations.newRel(new Rel(p1:parentUUID,p2:parentAttr,ty1:RelTypes.TO_CHILD,c1:docUUID))
       opctx.addCommand(svcs, detail, newSubdocRelCmd)
 
       // child-to-parent rel
-      NewRel newBackrefRelCmd = new NewRel()
-      newBackrefRelCmd.p1 = newDocCmd.docUUID
-      newBackrefRelCmd.ty1 = "-CH"
-      newBackrefRelCmd.c1 = newDocCmd.parentUUID
-      newBackrefRelCmd.c2 = newDocCmd.parentAttr
+      MutationCmd newBackrefRelCmd = svcs.mutations.newRel(new Rel(p1:docUUID,ty1:RelTypes.TO_PARENT,c1:parentUUID,c2:parentAttr))
       opctx.addCommand(svcs, detail, newBackrefRelCmd)
 
     }
 
   }
 
-  static void analyzeNewAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, NewAttr cmd)
+  static Object convertFieldValueToFixedColValue(FieldValue attrValue, FixedAttr attrdef)
+  {
+    Object val = null
+    switch (StringUtils.lowerCase(attrdef.coltype)) {
+      case null:  // assume string/varchar/text if not specified
+      case DataType.Name.ASCII.toString():
+      case DataType.Name.TEXT.toString():
+      case DataType.Name.VARCHAR.toString():
+      case "string":
+        val = attrValue?.value
+        break;
+      case DataType.Name.TIMESTAMP.toString():
+      case "date":
+      case "datetime":
+        val = attrValue == null ? null : new Date(Long.parseLong(attrValue.value))
+        break;
+      case DataType.Name.BIGINT.toString():
+      case "long":
+      case "counter":
+        val = attrValue == null ? null : Long.parseLong(attrValue.value)
+        break;
+      case DataType.Name.INT.toString():
+      case "integer":
+      case "int":
+        val = attrValue == null ? null : Integer.parseInt(attrValue.value)
+        break;
+      case DataType.Name.BOOLEAN.toString():
+      case "boolean":
+        val = attrValue == null ? null : Boolean.parseBoolean(attrValue.value)
+        break;
+      case DataType.Name.FLOAT.toString():
+      case "float":
+        val = attrValue == null ? null : Float.parseFloat(attrValue.value)
+        break;
+      case DataType.Name.DOUBLE.toString():
+      case "double":
+        val = attrValue == null ? null : Double.parseDouble(attrValue.value)
+        break;
+      case DataType.Name.DECIMAL.toString():
+      case "bigdecimal":
+        val = attrValue == null ? null : new BigDecimal(attrValue.value)
+        break;
+      case DataType.Name.VARINT.toString():
+      case "bigint":
+      case "bigdecimal":
+        val = attrValue == null ? null : new BigInteger(attrValue.value);
+        break;
+    }
+    return val
+  }
+
+  static void analyzeNewAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, FieldValue attrValue, MutationCmd cmd)
   {
     opctx.addCommand(svcs, detail, cmd)
 
     // fixed attr: should this be in event???
-    String suffix = IDUtil.idSuffix(cmd.docUUID)
-    FixedAttr attrdef = svcs.typeSvc.getTypeForSuffix(suffix).fixedAttrMap[cmd.attrName]
+    String suffix = IDUtil.idSuffix(docUUID)
+    FixedAttr attrdef = svcs.typeSvc.getTypeForSuffix(suffix).fixedAttrMap[attrName]
     String col = attrdef?.colname
     if (col != null) {
-      Object val = null
-      switch (StringUtils.lowerCase(attrdef.coltype)) {
-        case null:  // assume string/varchar/text if not specified
-        case DataType.Name.ASCII.toString():
-        case DataType.Name.TEXT.toString():
-        case DataType.Name.VARCHAR.toString():
-        case "string":
-          val = cmd.attrValue?.value
-          break;
-        case DataType.Name.TIMESTAMP.toString():
-        case "date":
-        case "datetime":
-          val = cmd.attrValue == null ? null : new Date(Long.parseLong(cmd.attrValue.value))
-          break;
-        case DataType.Name.BIGINT.toString():
-        case "long":
-        case "counter":
-          val = cmd.attrValue == null ? null : Long.parseLong(cmd.attrValue.value)
-          break;
-        case DataType.Name.INT.toString():
-        case "integer":
-        case "int":
-          val = cmd.attrValue == null ? null : Integer.parseInt(cmd.attrValue.value)
-          break;
-        case DataType.Name.BOOLEAN.toString():
-        case "boolean":
-          val = cmd.attrValue == null ? null : Boolean.parseBoolean(cmd.attrValue.value)
-          break;
-        case DataType.Name.FLOAT.toString():
-        case "float":
-          val = cmd.attrValue == null ? null : Float.parseFloat(cmd.attrValue.value)
-          break;
-        case DataType.Name.DOUBLE.toString():
-        case "double":
-          val = cmd.attrValue == null ? null : Double.parseDouble(cmd.attrValue.value)
-          break;
-        case DataType.Name.DECIMAL.toString():
-        case "bigdecimal":
-          val = cmd.attrValue == null ? null : new BigDecimal(cmd.attrValue.value)
-          break;
-        case DataType.Name.VARINT.toString():
-        case "bigint":
-        case "bigdecimal":
-          val = cmd.attrValue == null ? null : new BigInteger(cmd.attrValue.value);
-          break;
-      }
-      UpdFixedCol fixedcol = new UpdFixedCol(docUUID:cmd.docUUID,colName:col,value:val)
+      Object val = convertFieldValueToFixedColValue(attrValue,attrdef)
+
+      MutationCmd fixedcol = svcs.mutations.updFixedCol(docUUID,col,val)
       opctx.addCommand(svcs, detail, fixedcol)
     }
 
 
-    IndexOperations.processNewAttrIndexes(svcs,opctx,detail,cmd)
+    IndexOperations.processNewAttrIndexes(svcs,opctx,detail,docUUID,attrName,attrValue)
   }
 
   static void addRel(final CommandExecServices svcs, final OperationContext opctx, final Detail detail, final Rel rel)
   {
-    NewRel newRelCmd = new NewRel()
-    newRelCmd.p1 = rel.p1
-    newRelCmd.ty1 = rel.ty1
-    newRelCmd.p2 = rel.p2
-    newRelCmd.p3 = rel.p3
-    newRelCmd.p4 = rel.p4
-    newRelCmd.c1 = rel.c1
-    newRelCmd.c2 = rel.c2
-    newRelCmd.c3 = rel.c3
-    newRelCmd.c4 = rel.c4
-    newRelCmd.ty2 = rel.ty2
-    newRelCmd.link = rel.lk
-    newRelCmd.d = rel.d
-    // metadata isn't allowed. Must use other metadata APIs for that. to avoid the user making their own ids
+    MutationCmd newRelCmd = svcs.mutations.newRel(rel)
     opctx.addCommand(svcs, detail, newRelCmd)
   }
 
@@ -446,25 +423,20 @@ class CreateOperations {
 
   }
 
-  public static String performNewChildDocMap(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<Map.Entry<String,Object>> fields, String docId, String parentUUID, String parentAttr)
+  public static String performNewChildDocMap(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<Map.Entry<String,Object>> fields, String docUUID, String parentUUID, String parentAttr)
   {
+    parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
     // parser should be pointing at the idKey field right now
-    NewDoc newDocCmd = new NewDoc();
-    newDocCmd.docUUID = docId
-    newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
-    newDocCmd.parentAttr = parentAttr
-    newDocCmd.isComplete = true
 
-    analyzeNewDocEvent(svcs,opctx,detail, newDocCmd)
+    MutationCmd newDocCmd = svcs.mutations.newDoc(docUUID,parentUUID,parentAttr)
+    analyzeNewDocEvent(svcs,opctx,detail,docUUID,parentUUID,parentAttr,newDocCmd)
 
     while (fields.hasNext()) {
       Map.Entry<String,Object> field = fields.next()
       if (field.key != svcs.idField) {
-        FieldValue fv = serializeAttr(svcs,opctx,detail,field,docId,parentUUID,parentAttr)
-        NewAttr newAttrCmd = new NewAttr(docUUID:docId, attrName:field.key)
-        newAttrCmd.attrValue = fv
-        newAttrCmd.isComplete = true;
-        analyzeNewAttrEvent(svcs,opctx,detail,newAttrCmd)
+        FieldValue fv = serializeAttr(svcs,opctx,detail,field,docUUID,parentUUID,parentAttr)
+        MutationCmd newAttrCmd = svcs.mutations.newAttr(docUUID, field.key,fv,false)
+        analyzeNewAttrEvent(svcs,opctx,detail,docUUID,field.key,fv,newAttrCmd)
       }
 
     }

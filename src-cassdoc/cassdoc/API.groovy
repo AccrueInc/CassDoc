@@ -5,9 +5,9 @@ import groovy.transform.CompileStatic
 import org.apache.commons.lang3.StringEscapeUtils
 import org.springframework.beans.factory.annotation.Autowired
 
-import cassdoc.commands.mutate.UpdAttrMetadata
-import cassdoc.commands.mutate.UpdDocMetadata
-import cassdoc.commands.mutate.UpdRelMetadata
+import cassdoc.commands.mutate.cassandra.UpdAttrMetadata;
+import cassdoc.commands.mutate.cassandra.UpdDocMetadata;
+import cassdoc.commands.mutate.cassandra.UpdRelMetadata;
 import cassdoc.commands.retrieve.RowProcessor
 import cassdoc.operations.CreateOperations
 import cassdoc.operations.DeleteOperations

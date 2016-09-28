@@ -4,6 +4,7 @@ import groovy.transform.CompileStatic
 
 import org.springframework.beans.factory.annotation.Autowired
 
+import cassdoc.commands.mutate.MutationCommands;
 import cassdoc.commands.retrieve.RetrievalCommands
 
 import com.fasterxml.jackson.core.JsonFactory
@@ -20,7 +21,7 @@ class CommandExecServices {
 
 
   RetrievalCommands retrievals
-  //MutationCommands mutations
+  MutationCommands mutations
 
   @Autowired
   DriverWrapper driver

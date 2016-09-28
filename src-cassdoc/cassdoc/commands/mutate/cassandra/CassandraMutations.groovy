@@ -1,4 +1,4 @@
-package cassdoc.commands.mutate
+package cassdoc.commands.mutate.cassandra
 
 import groovy.transform.CompileStatic
 
@@ -29,9 +29,7 @@ abstract class MutationCmd extends Cmd {
   String cql
   Object[] cqlargs
   Object execMutation(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
-    if (svcs.dbType == "cassandra") {
-      return execMutationCassandra(svcs,opctx,detail,args)
-    }
+    return execMutationCassandra(svcs,opctx,detail,args)
   }
   abstract Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args);
   abstract void batch(OperationContext opctx);

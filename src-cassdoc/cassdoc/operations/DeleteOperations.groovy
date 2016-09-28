@@ -9,18 +9,9 @@ import cassdoc.OperationContext
 import cassdoc.Rel
 import cassdoc.RelKey
 import cassdoc.RelTypes
-import cassdoc.commands.mutate.ClrAttr
-import cassdoc.commands.mutate.ClrAttrRels
-import cassdoc.commands.mutate.DelAttr
-import cassdoc.commands.mutate.DelAttrRels
-import cassdoc.commands.mutate.DelDocRels
-import cassdoc.commands.mutate.DelDoc_E
-import cassdoc.commands.mutate.DelDoc_P
-import cassdoc.commands.mutate.DelFixedCol
-import cassdoc.commands.mutate.DelRel
+import cassdoc.commands.mutate.cassandra.MutationCmd
 import cassdoc.commands.retrieve.RPUtil
 import cassdoc.commands.retrieve.RowProcessor
-import cassdoc.commands.retrieve.cassandra.GetAttrRelsRP
 import cwdrg.lg.annotation.Log
 
 @Log
@@ -49,15 +40,14 @@ class DeleteOperations {
 
   static void deleteAttr(CommandExecServices svcs,OperationContext opctx, Detail detail, String docUUID, String attr, boolean clear)
   {
-    GetAttrRelsRP relCmd = new GetAttrRelsRP(p1:docUUID,ty1s:[
+    RowProcessor relCmd = svcs.retrievals.getAttrRelsRP(docUUID,[
       RelTypes.SYS_INDEX,
       RelTypes.TO_CHILD
-    ],p2:attr)
+    ],attr)
     relCmd.initiateQuery(svcs, opctx, detail, null)
     List<Rel> rels = RPUtil.getAllRels(relCmd)
 
-    DelAttr delAttr = new DelAttr(docUUID:docUUID,attrName:attr)
-    analyzeDeleteAttrEvent(svcs,opctx,detail,delAttr,rels,clear)
+    analyzeDeleteAttrEvent(svcs,opctx,detail,docUUID,attr,,rels,clear)
 
     // cascade the delete for child rels
     for (Rel childRel : rels) {
@@ -75,16 +65,16 @@ class DeleteOperations {
 
   static void analyzeDeleteDocEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, List<Rel> docRels)
   {
-    DelDoc_E delDocE = new DelDoc_E(docUUID:docUUID)
+    MutationCmd delDocE = svcs.mutations.delDocE(docUUID)
     opctx.addCommand(svcs, detail, delDocE)
 
     // manual index cleanup
     IndexOperations.cleanupDocIndexes(svcs, opctx, detail, docUUID, docRels)
 
-    DelDocRels delRels = new DelDocRels(p1:docUUID)
+    MutationCmd delRels = svcs.mutations.delDocRels(docUUID)
     opctx.addCommand(svcs, detail, delRels)
 
-    DelDoc_P delDocP = new DelDoc_P(docUUID:docUUID)
+    MutationCmd delDocP = svcs.mutations.delDocP(docUUID)
     opctx.addCommand(svcs, detail, delDocP)
 
 
@@ -101,31 +91,33 @@ class DeleteOperations {
 
   }
 
-  static void analyzeDeleteAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, DelAttr cmd, List<Rel> attrRels, boolean clear)
+  static void analyzeDeleteAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, List<Rel> attrRels, boolean clear)
   {
-    IndexOperations.cleanupDocAttrIndexes(svcs, opctx, detail, cmd.docUUID, cmd.attrName, attrRels)
+    IndexOperations.cleanupDocAttrIndexes(svcs, opctx, detail, docUUID, attrName, attrRels)
 
-    DocType docType = svcs.typeSvc.getTypeForID(cmd.docUUID)
-    FixedAttr fixed = docType.fixedAttrMap[cmd.attrName]
+    DocType docType = svcs.typeSvc.getTypeForID(docUUID)
+    FixedAttr fixed = docType.fixedAttrMap[attrName]
 
     if (fixed != null) {
       // clear isn't necessary here...
-      DelFixedCol delFixedCol = new DelFixedCol(docUUID:cmd.docUUID,colName:fixed.colname)
+      // ... do we need a clear check here?
+      MutationCmd delFixedCol = svcs.mutations.delFixedCol(docUUID,fixed.colname)
+      opctx.addCommand(svcs, detail, delFixedCol) // ??? bugfix ???
     }
 
     if (clear) {
-      ClrAttrRels clrSubDocRels = new ClrAttrRels(p1:cmd.docUUID,ty1:RelTypes.TO_CHILD,p2:cmd.attrName)
+      MutationCmd clrSubDocRels = svcs.mutations.clrAttrRels(docUUID,RelTypes.TO_CHILD,attrName)
       opctx.addCommand(svcs, detail, clrSubDocRels)
-      ClrAttrRels clrRelsIdx = new ClrAttrRels(p1:cmd.docUUID,ty1:RelTypes.SYS_INDEX,p2:cmd.attrName)
+      MutationCmd clrRelsIdx = svcs.mutations.clrAttrRels(docUUID,RelTypes.SYS_INDEX,attrName)
       opctx.addCommand(svcs, detail, clrRelsIdx)
-      ClrAttr clrAttr = new ClrAttr(docUUID:cmd.docUUID,attrName:cmd.attrName)
+      MutationCmd clrAttr = svcs.mutations.clrAttr(docUUID,attrName)
       opctx.addCommand(svcs, detail, clrAttr)
     } else {
-      DelAttrRels delRels = new DelAttrRels(p1:cmd.docUUID,ty1:RelTypes.TO_CHILD,p2:cmd.attrName)
+      MutationCmd delRels = svcs.mutations.delAttrRels(docUUID,RelTypes.TO_CHILD,attrName)
       opctx.addCommand(svcs, detail, delRels)
-      DelAttrRels delRelsIdx = new DelAttrRels(p1:cmd.docUUID,ty1:RelTypes.SYS_INDEX,p2:cmd.attrName)
+      MutationCmd delRelsIdx = svcs.mutations.delAttrRels(docUUID,RelTypes.SYS_INDEX,attrName)
       opctx.addCommand(svcs, detail, delRelsIdx)
-      opctx.addCommand(svcs, detail, cmd)
+      opctx.addCommand(svcs, detail, svcs.mutations.delAttr(docUUID, attrName))
     }
 
     // TODO: clear parent rels to this UUID... or update? ... need to think about this.
@@ -136,7 +128,7 @@ class DeleteOperations {
 
   static void delRel(CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey rel)
   {
-    DelRel delRel = new DelRel(relKey:rel)
+    MutationCmd delRel = svcs.mutations.delRel(rel)
     opctx.addCommand(svcs, detail, delRel)
   }
 

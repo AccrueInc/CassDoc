@@ -4,17 +4,18 @@ import groovy.transform.CompileStatic
 import cassdoc.CommandExecServices
 import cassdoc.Detail
 import cassdoc.DocType
+import cassdoc.FieldValue
+import cassdoc.FixedAttr
 import cassdoc.IDUtil
 import cassdoc.IndexTypes
 import cassdoc.ManualIndex
 import cassdoc.OperationContext
 import cassdoc.Rel
 import cassdoc.RelTypes
-import cassdoc.commands.mutate.ClrIdxVal
-import cassdoc.commands.mutate.InsIdxValOnly
-import cassdoc.commands.mutate.NewAttr
-import cassdoc.commands.mutate.NewRel
-import cassdoc.commands.mutate.UpdFixedCol
+import cassdoc.commands.mutate.cassandra.ClrIdxVal
+import cassdoc.commands.mutate.cassandra.InsIdxValOnly
+import cassdoc.commands.mutate.cassandra.NewRel
+import cassdoc.commands.mutate.cassandra.UpdFixedCol
 import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 
@@ -84,18 +85,18 @@ public class IndexOperations {
     }
   }
 
-  static void processNewAttrIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, NewAttr cmd) {
+  static void processNewAttrIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, FieldValue attrValue) {
 
     // fixed attr cols (basically these are indexes)
-    String suffix = IDUtil.idSuffix(cmd.docUUID)
+    String suffix = IDUtil.idSuffix(docUUID)
     DocType docType = svcs.typeSvc.getTypeForSuffix(suffix)
-    String col = docType.fixedAttrMap[cmd.attrName]?.colname
-    if (col != null) {
-      UpdFixedCol fixedcol = new UpdFixedCol(docUUID:cmd.docUUID,colName:col,value:cmd.attrValue?.value)
-      opctx.addCommand(svcs, detail, cmd)
+    FixedAttr attrdef = docType.fixedAttrMap[attrName]
+    if (attrdef != null) {
+      UpdFixedCol fixedcol = new UpdFixedCol(docUUID:docUUID,colName:attrdef.colname,value:CreateOperations.convertFieldValueToFixedColValue(attrValue, attrdef))
+      opctx.addCommand(svcs, detail, fixedcol)
     }
 
-    Set<ManualIndex> attrIndexes = docType.attrIndexMap[cmd.attrName]
+    Set<ManualIndex> attrIndexes = docType.attrIndexMap[attrName]
     if (attrIndexes != null) {
       for (ManualIndex idx : attrIndexes) {
         // switch on implementing index type
@@ -104,21 +105,21 @@ public class IndexOperations {
 
           // add docUUID to the index for this value
 
-          InsIdxValOnly setHVIdx = new InsIdxValOnly(k1:cmd.attrValue?.value)
+          InsIdxValOnly setHVIdx = new InsIdxValOnly(k1:attrValue?.value)
           setHVIdx.i1 = idx.indexCodes.size() > 0 ? idx.indexCodes[0] : ""
           setHVIdx.i2 = idx.indexCodes.size() > 1 ? idx.indexCodes[1] : ""
           setHVIdx.i3 = idx.indexCodes.size() > 2 ? idx.indexCodes[2] : ""
-          setHVIdx.v1 = cmd.docUUID
+          setHVIdx.v1 = docUUID
           log.dbg("add idx: "+JSONUtil.serialize(setHVIdx),null)
           opctx.addCommand(svcs, detail, setHVIdx)
 
           // add "hasindex" to relations to avoid excessive reads on update/clear/delete
           NewRel rel = new NewRel()
-          rel.p1 = cmd.docUUID
+          rel.p1 = docUUID
           rel.ty1 = RelTypes.SYS_INDEX
-          rel.p2 = cmd.attrName
+          rel.p2 = attrName
           rel.c1 = idx.indexRef
-          rel.c2 = cmd.attrValue?.value
+          rel.c2 = attrValue?.value
           log.dbg("add has-idx rel: "+JSONUtil.serialize(rel),null)
           opctx.addCommand(svcs, detail, rel)
 

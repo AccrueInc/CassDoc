@@ -1,7 +1,7 @@
 package cassdoc
 
 import groovy.transform.CompileStatic
-import cassdoc.commands.mutate.MutationCmd
+import cassdoc.commands.mutate.cassandra.MutationCmd
 import cassdoc.exceptions.PersistenceConflictException
 import cassdoc.exceptions.UnexpectedPersistenceStateException
 
