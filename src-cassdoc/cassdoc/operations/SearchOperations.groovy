@@ -2,15 +2,21 @@ package cassdoc.operations
 
 import groovy.transform.CompileStatic
 
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 import cassdoc.CommandExecServices
 import cassdoc.Detail
+import cassdoc.IDUtil
 import cassdoc.OperationContext
 import cassdoc.commands.retrieve.RowProcessor
+import cassdoc.commands.retrieve.cassandra.CassandraPagedRowProcessor
 
 import com.datastax.driver.core.*
 
+import cwdrg.lg.annotation.Log
 import cwdrg.util.async.iterator.BlockingIterator
 import drv.cassdriver.CQLException
 import drv.cassdriver.RowCallbackHandler
@@ -19,8 +25,18 @@ import drv.cassdriver.St
 
 // TODO rewrite using CassandraPagedRowProcessors
 
+@Log
 @CompileStatic
 class SearchOperations {
+
+  /** by selecting the token values for 10 rowkeys, we can estimate the table rows/density
+   * 
+   * 
+   * @param startToken
+   * @param stopToken
+   * @param rangeCount
+   * @return
+   */
 
   static void searchTableIdListJSONArray(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, Writer w) {
     w << "["
@@ -45,6 +61,52 @@ class SearchOperations {
   }
 
 
+  class ScanEntityTableBase extends CassandraPagedRowProcessor
+  {
+    String startToken
+    String stopToken
+    List<String> fixedCols
+    String objectType
+    Object[] cqlargs
+    void initiateQuery(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args)
+    {
+      String consistency = resolveConsistency(detail,opctx)
+      String space = opctx.space
+      String suffix = svcs.typeSvc.getSuffixForType(objectType)
+      startToken = startToken ?: detail.searchStartToken
+      stopToken = stopToken ?: detail.searchStopToken
+
+      StringBuilder tableQuery = new StringBuilder("SELECT token(e),e")
+      if (fixedCols != null) {
+        for (String col : fixedCols) { tableQuery << "," << col  }
+      }
+      tableQuery <<  " FROM ${space}.e_${suffix}"
+      boolean hasWhere = false
+      Object[] tokenRangePrepArgs = null
+      if (startToken != null || stopToken != null) {
+        hasWhere = true
+        tableQuery << " WHERE "
+        if (startToken != null) {
+          tableQuery << "token(e) >= ? "
+          if (stopToken != null) {
+            tableQuery << " AND "
+            tokenRangePrepArgs = [
+              new Long(startToken),
+              new Long(stopToken)] as Object[]
+          } else {
+            tokenRangePrepArgs = [new Long(startToken)] as Object[]
+          }
+        }
+        if (stopToken != null) {
+          tableQuery << "token(e) <= ? "
+          if (tokenRangePrepArgs == null) {
+            tokenRangePrepArgs = [new Long(stopToken)] as Object[]
+          }
+        }
+      }
+      rs = svcs.driver.initiateQuery(space, tableQuery.toString(), cqlargs, consistency, detail?.fetchPageSize ?: 30000, detail?.fetchNextPageThreshold ?: 3000)
+    }
+  }
 
   // one row == one entity/doc id, should be pretty simple
   static void scanETable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, List<String> fixedCols, String startToken, String stopToken, RowCallbackHandler rch)
@@ -185,6 +247,67 @@ class SearchOperations {
     return iterator
   }
 
+  static void retrieveIDListThreadPoolExecutor(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<String> idIterator, Writer writer)
+  {
+    LinkedBlockingQueue idQueue = new LinkedBlockingQueue()
+    String uuid = IDUtil.timeUUID()
+    int i = 0;
+    writer << '['
+
+    ExecutorService execSvc = Executors.newFixedThreadPool(5)
+
+    // luckily this is only used in the already-synchronized mainWriter
+    Boolean[] first = [true] as Boolean[]
+
+    // only issue with this is we may flood the underlying executorservice queue with ids... is there a throttle we can do?
+    // - throttle may need to be further upsteam... perhaps in the Object stream code, or what is feeding the queue.
+    while (idIterator.hasNext())
+    {
+      String docUUID = idIterator.next()
+      DocWriterTask task = new DocWriterTask(svcs:svcs,space:opctx.space,detail:detail,mainWriter:writer,docUUID:docUUID,first:first)
+      task.setName(uuid+i)
+      i++
+      execSvc.execute(task)
+    }
+
+    execSvc.shutdown()
+    execSvc.awaitTermination(10, TimeUnit.MINUTES)
+    writer << ']'
+    log.dbg("DONE", null)
+  }
+}
+
+
+@CompileStatic
+@Log
+class DocWriterTask extends Thread
+{
+  CommandExecServices svcs
+  String space
+  Detail detail
+  Writer mainWriter
+  String docUUID
+  Boolean[] first = null
+
+
+  void run() {
+    log.dbg("id: $docUUID", null)
+    StringWriter docWriter = new StringWriter()
+    OperationContext opctx = new OperationContext(space:space)
+    RetrievalOperations.getSingleDoc(svcs, opctx, detail, docUUID, docWriter, true)
+    log.dbg("writemain START $docUUID", null)
+    writeMain(docWriter,mainWriter,first)
+    log.dbg("writemain STOP $docUUID", null)
+  }
+
+  static void writeMain(StringWriter docWriter, Writer mainWriter, Boolean[] first)
+  {
+    synchronized (mainWriter) {
+      log.dbg("WRITE TO MAINWRITER: "+docWriter.toString(),null)
+      if (first[0]) first[0] = false else mainWriter << ","
+      mainWriter.write(docWriter.toString())
+    }
+  }
 }
 
 
@@ -225,6 +348,10 @@ class IDListJSONArrayFromETableRCH implements RowCallbackHandler
   }
 
 }
+
+
+
+
 
 
 
