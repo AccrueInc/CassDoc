@@ -1,4 +1,7 @@
 # CassDoc
+
+https://docs.google.com/presentation/d/1kHR_P4xBst-6b9hTw7JtDInbiIOxLX8ov3trqXHzH1c/edit?usp=sharing
+
 A JSON Document Storage Engine for Cassandra (Stage 1)
 
 or is it a Document Graph Query Engine? (Stage 2)
