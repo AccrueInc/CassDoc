@@ -275,7 +275,39 @@ class SearchOperations {
     writer << ']'
     log.dbg("DONE", null)
   }
+
+  static void retrieveIDList(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<String> idIterator, Writer writer)
+  {
+    LinkedBlockingQueue idQueue = new LinkedBlockingQueue()
+    String uuid = IDUtil.timeUUID()
+    int i = 0;
+    writer << '['
+
+    ExecutorService execSvc = Executors.newFixedThreadPool(5)
+
+    // luckily this is only used in the already-synchronized mainWriter
+    Boolean[] first = [true] as Boolean[]
+
+    // only issue with this is we may flood the underlying executorservice queue with ids... is there a throttle we can do?
+    // - throttle may need to be further upsteam... perhaps in the Object stream code, or what is feeding the queue.
+    while (idIterator.hasNext())
+    {
+      String docUUID = idIterator.next()
+      DocWriterTask task = new DocWriterTask(svcs:svcs,space:opctx.space,detail:detail,mainWriter:writer,docUUID:docUUID,first:first)
+      task.setName(uuid+i)
+      i++
+      execSvc.execute(task)
+    }
+
+    execSvc.shutdown()
+    execSvc.awaitTermination(10, TimeUnit.MINUTES)
+    writer << ']'
+    log.dbg("DONE", null)
+  }
+
+
 }
+
 
 
 @CompileStatic
