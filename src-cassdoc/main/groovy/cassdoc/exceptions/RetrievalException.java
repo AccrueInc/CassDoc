@@ -7,24 +7,24 @@ package cassdoc.exceptions;
  * @author a999166
  */
 
-public class RetrievalException extends RuntimeException {
+class RetrievalException extends RuntimeException {
 
-    public RetrievalException() {
+    RetrievalException() {
     }
 
-    public RetrievalException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    RetrievalException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
-    public RetrievalException(String message, Throwable cause) {
+    RetrievalException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public RetrievalException(String message) {
+    RetrievalException(String message) {
         super(message);
     }
 
-    public RetrievalException(Throwable cause) {
+    RetrievalException(Throwable cause) {
         super(cause);
     }
 

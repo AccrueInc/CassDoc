@@ -20,7 +20,7 @@ import cwdrg.util.json.JSONUtil
 
 @CompileStatic
 @Log
-public class IndexOperations {
+class IndexOperations {
 
 
     static void cleanupDocIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, List<Rel> docRels) {

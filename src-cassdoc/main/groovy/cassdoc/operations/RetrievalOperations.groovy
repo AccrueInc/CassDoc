@@ -210,7 +210,6 @@ class RetrievalOperations {
         return map
     }
 
-    public
     static void getSingleDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Writer writer, boolean root) {
         writer << '{"' << AttrNames.SYS_DOCID << '":"' << docUUID << '"'
         if (detail.docIDTimestampMeta) {
@@ -348,7 +347,7 @@ class RetrievalOperations {
         writer << "}"
     }
 
-    public
+
     static void getAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer) {
         // writer << '"' << StringEscapeUtils.escapeJson(attr) << '":' // retiring...
         GetAttrCmd cmd = new GetAttrCmd(docUUID: docUUID, attrName: attr)
@@ -378,7 +377,6 @@ class RetrievalOperations {
         }
     }
 
-    public
     static Object deserializeAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
         GetAttrCmd cmd = new GetAttrCmd(docUUID: docUUID, attrName: attr)
         GetAttrRCH rch = cmd.queryCassandra(svcs, opctx, detail)
@@ -414,7 +412,7 @@ class RetrievalOperations {
         return null
     }
 
-    public
+
     static DocField getDocField(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
         DocField docfield = new DocField(docUUID: docUUID, name: attr)
         StringWriter writer = new StringWriter()
@@ -447,7 +445,6 @@ class RetrievalOperations {
         return docfield
     }
 
-    public
     static void parseRetrievedChildArray(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, JsonParser arrayParser, Writer writer) {
         writer << '['
         boolean firstMember = true
@@ -496,7 +493,7 @@ class RetrievalOperations {
         }
     }
 
-    public
+
     static List deserializeRetrievedChildArray(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, JsonParser arrayParser) {
         List<Object> list = []
         while (true) {
@@ -536,7 +533,6 @@ class RetrievalOperations {
         }
     }
 
-    public
     static void parseRetrievedChildObject(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, JsonParser objParser, Writer writer) {
 
         boolean firstField = true
@@ -600,7 +596,6 @@ class RetrievalOperations {
         }
     }
 
-    public
     static Map deserializeRetrievedChildObject(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, JsonParser objParser) {
         Map map = [:]
         boolean firstField = true
@@ -660,7 +655,7 @@ class RetrievalOperations {
     }
 
     // extract or generate UUID
-    public static String parseRetrievedIDField(OperationContext opctx, Detail detail, JsonParser parser) {
+    static String parseRetrievedIDField(OperationContext opctx, Detail detail, JsonParser parser) {
         JsonToken token = parser.nextToken()
         if (token == JsonToken.VALUE_STRING) {
             String idString = parser.getText();
@@ -685,7 +680,7 @@ class RetrievalOperations {
      * @author cowardlydragon
      *
      */
-    public static Iterator<Map.Entry<String, Object>> deserializeAttrIterator(
+    static Iterator<Map.Entry<String, Object>> deserializeAttrIterator(
             final CommandExecServices svcs,
             final OperationContext opctx, final Detail detail, final String docUUID, final boolean root) {
 
@@ -696,7 +691,7 @@ class RetrievalOperations {
         attrQ.put(docUUIDField)
 
         new Thread() {
-            public void run() {
+            void run() {
                 if (detail.docIDTimestampMeta) {
                     attrQ.put(new AbstractMap.SimpleEntry<String, Object>(AttrNames.META_IDTIME, IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID)))
                 }
@@ -852,7 +847,7 @@ class RetrievalOperations {
 
     }
 
-    public static String getDocMetadataUUID(
+    static String getDocMetadataUUID(
             final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID) {
         detail.docMetaIDMeta = true
         GetDoc eCmd = new GetDoc(docUUID: docUUID)
@@ -860,7 +855,7 @@ class RetrievalOperations {
         return eRCH.metadata_id
     }
 
-    public static String getAttrMetadataUUID(
+    static String getAttrMetadataUUID(
             final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr) {
         detail.attrMetaIDMeta = true
         GetAttrMetaCmd metaCmd = new GetAttrMetaCmd(docUUID: docUUID, attrName: attr)
@@ -868,7 +863,7 @@ class RetrievalOperations {
         return metaRCH.attrMetaID
     }
 
-    public static String getRelMetadataUUID(
+    static String getRelMetadataUUID(
             final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey) {
         GetRelKeyCmd relkeyCmd = new GetRelKeyCmd(relKey: relKey)
         GetRelsRCH relCmd = relkeyCmd.queryCassandraRelKey(svcs, opctx, detail)
@@ -878,7 +873,7 @@ class RetrievalOperations {
         throw new RuntimeException("RelKey not found during metadata id retrieval for " + JSONUtil.serialize(relKey))
     }
 
-    public static Rel getRel(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey) {
+    static Rel getRel(final CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey relKey) {
         GetRelKeyCmd relkeyCmd = new GetRelKeyCmd(relKey: relKey)
         GetRelsRCH relCmd = relkeyCmd.queryCassandraRelKey(svcs, opctx, detail)
         if (relCmd.rels.size() == 1) {
@@ -887,7 +882,7 @@ class RetrievalOperations {
         throw new RuntimeException("RelKey not found during relation retrieval for " + JSONUtil.serialize(relKey))
     }
 
-    public static List<Rel> deserializeDocRels(
+    static List<Rel> deserializeDocRels(
             final CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID) {
         GetRelsCmd rels = new GetRelsCmd(p1: docUUID)
         GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)

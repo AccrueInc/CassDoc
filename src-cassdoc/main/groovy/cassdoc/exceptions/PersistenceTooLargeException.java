@@ -7,24 +7,24 @@ package cassdoc.exceptions;
  * @author a999166
  */
 
-public class PersistenceTooLargeException extends RuntimeException {
+class PersistenceTooLargeException extends RuntimeException {
 
-    public PersistenceTooLargeException() {
+    PersistenceTooLargeException() {
     }
 
-    public PersistenceTooLargeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    PersistenceTooLargeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
-    public PersistenceTooLargeException(String message, Throwable cause) {
+    PersistenceTooLargeException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public PersistenceTooLargeException(String message) {
+    PersistenceTooLargeException(String message) {
         super(message);
     }
 
-    public PersistenceTooLargeException(Throwable cause) {
+    PersistenceTooLargeException(Throwable cause) {
         super(cause);
     }
 

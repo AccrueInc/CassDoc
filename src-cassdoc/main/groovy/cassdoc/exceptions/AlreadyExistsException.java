@@ -7,24 +7,24 @@ package cassdoc.exceptions;
  * @author a999166
  */
 
-public class AlreadyExistsException extends RuntimeException {
+class AlreadyExistsException extends RuntimeException {
 
-    public AlreadyExistsException() {
+    AlreadyExistsException() {
     }
 
-    public AlreadyExistsException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    AlreadyExistsException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
-    public AlreadyExistsException(String message, Throwable cause) {
+    AlreadyExistsException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public AlreadyExistsException(String message) {
+    AlreadyExistsException(String message) {
         super(message);
     }
 
-    public AlreadyExistsException(Throwable cause) {
+    AlreadyExistsException(Throwable cause) {
         super(cause);
     }
 

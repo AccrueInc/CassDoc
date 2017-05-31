@@ -24,7 +24,7 @@ import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 
 /**
- * This is the primary API class. It has API methods for both JSON interactions and Map/List/Map.Entry interactions. 
+ * This is the primary API class. It has API methods for both JSON interactions and Map/List/Map.Entry interactions.
  *
  *
  * @author cowardlydragon
@@ -32,12 +32,13 @@ import cwdrg.util.json.JSONUtil
  */
 @Log
 @CompileStatic
+@SuppressWarnings(['MethodCount','ParameterCount'])
 class API {
 
     // TODO: cross-space registry (id : space)
 
     @Autowired
-    CommandExecServices svcs;
+    CommandExecServices svcs
 
 
     boolean docExists(OperationContext opctx, Detail detail, String uuid) {
@@ -70,7 +71,7 @@ class API {
 
         StringWriter writer = new StringWriter()
         getSimpleAttr(opctx, detail, docUUID, attr, writer)
-        String toStr = writer.toString()
+        String toStr = writer
         log.dbg("OPGetAttrSimple_return" + toStr, null)
         return toStr
     }
@@ -278,7 +279,7 @@ class API {
     String getDocJsonPath(OperationContext opctx, Detail detail, String docUUID, String jsonPath) {
         StringWriter writer = new StringWriter()
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, docUUID, writer, true)
-        String json = writer.toString()
+        String json = writer
         JsonPath pathexpr = JsonPath.compile(jsonPath)
         return JsonPath.parse(json).read(pathexpr).toString()
     }
@@ -299,7 +300,7 @@ class API {
 
         StringWriter writer = new StringWriter()
         RetrievalOperations.getAttr(svcs, opctx, detail, docUUID, attr, writer)
-        String json = writer.toString()
+        String json = writer
         JsonPath pathexpr = JsonPath.compile(jsonPath)
         return JsonPath.parse(json).read(pathexpr).toString()
     }
@@ -309,7 +310,7 @@ class API {
         // TODO fully streaming version
         StringWriter writer = new StringWriter()
         RetrievalOperations.getAttr(svcs, opctx, detail, docUUID, attr, writer)
-        String json = writer.toString()
+        String json = writer
         JsonPath pathexpr = JsonPath.compile(jsonpath)
         w << JsonPath.parse(json).read(pathexpr).toString()
     }
@@ -357,7 +358,7 @@ class API {
      * @param json
      * @return
      */
-    public String newDocFromMap(OperationContext opctx, Detail detail, Map<String, Object> mapDoc) {
+    String newDocFromMap(OperationContext opctx, Detail detail, Map<String, Object> mapDoc) {
         String newid = CreateOperations.newMap(svcs, opctx, detail, mapDoc, false)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
         return newid
@@ -373,7 +374,7 @@ class API {
      * @param json
      * @return
      */
-    public String newDoc(OperationContext opctx, Detail detail, String json) {
+    String newDoc(OperationContext opctx, Detail detail, String json) {
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, false)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
         return newid
@@ -389,7 +390,7 @@ class API {
      * @param json
      * @return
      */
-    public String newDoc(OperationContext opctx, Detail detail, Reader json) {
+    String newDoc(OperationContext opctx, Detail detail, Reader json) {
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, false)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
         return newid
@@ -408,7 +409,7 @@ class API {
      * @param json
      * @return
      */
-    public String newDocAsync(OperationContext opctx, Detail detail, Reader json) {
+    String newDocAsync(OperationContext opctx, Detail detail, Reader json) {
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, true)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
         return newid
@@ -424,7 +425,7 @@ class API {
      * @param jsonListReader
      * @param jsonList
      */
-    public void newDocList(OperationContext opctx, Detail detail, Reader jsonListReader, Writer jsonIDList) {
+    void newDocList(OperationContext opctx, Detail detail, Reader jsonListReader, Writer jsonIDList) {
         CreateOperations.newDocStream(svcs, opctx, detail, jsonListReader, jsonIDList)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
 
@@ -442,7 +443,7 @@ class API {
      * @param json
      * @param paxos - if true, IF NOT EXIST paxos conditional is applied to upsert statement
      */
-    public void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos) {
+    void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos) {
         CreateOperations.newAttr(svcs, opctx, detail, docUUID, attr, json, paxos)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
     }
@@ -465,7 +466,7 @@ class API {
      * @param json
      * @param checkVal
      */
-    public void updateAttrPAXOS(OperationContext opctx, Detail detail, String docUUID, String attr, String json, UUID checkVal) {
+    void updateAttrPAXOS(OperationContext opctx, Detail detail, String docUUID, String attr, String json, UUID checkVal) {
         opctx.paxosGatekeeperUpdateID = ["P", docUUID] as String[]
         UpdateOperations.updateAttrPAXOS(svcs, opctx, detail, docUUID, attr, json, checkVal)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
@@ -480,7 +481,7 @@ class API {
      * @param attr
      * @param json
      */
-    public void updateAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
+    void updateAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
         UpdateOperations.updateAttr(svcs, opctx, detail, docUUID, attr, json)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
     }
@@ -496,7 +497,7 @@ class API {
      * @param attr
      * @param json
      */
-    public void updateAttrEntry(OperationContext opctx, Detail detail, String docUUID, Map.Entry<String, Object> attr) {
+    void updateAttrEntry(OperationContext opctx, Detail detail, String docUUID, Map.Entry<String, Object> attr) {
         UpdateOperations.updateAttrEntry(svcs, opctx, detail, docUUID, attr)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
     }
@@ -516,12 +517,12 @@ class API {
      * @param json
      * @return
      */
-    public Set<String> updateAttrOverlay(OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
+    Set<String> updateAttrOverlay(OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
         UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
     }
 
-    public List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args) {
+    List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args) {
         QueryToListOfStrArr cmd = new QueryToListOfStrArr(query: cql)
         if (args != null)
             cmd.initiateQuery(svcs, opctx, detail, args)
@@ -529,70 +530,72 @@ class API {
             cmd.initiateQuery(svcs, opctx, detail)
         List queryresult = []
         Object[] data = null
-        while (data = cmd.nextRow()) {
+        while (true) {
+            data = cmd.nextRow()
+            if (data == null) break
             queryresult.add(data)
         }
         return queryresult
     }
 
-    public String getDocMetadata(OperationContext opctx, Detail detail, String docUUID) {
+    String getDocMetadata(OperationContext opctx, Detail detail, String docUUID) {
         Writer writer = new StringWriter()
         String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
         return writer.toString()
     }
 
-    public void getDocMetadata(OperationContext opctx, Detail detail, String docUUID, Writer writer) {
+    void getDocMetadata(OperationContext opctx, Detail detail, String docUUID, Writer writer) {
         String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
     }
 
-    public Map<String, Object> deserializeDocMetadata(OperationContext opctx, Detail detail, String docUUID) {
+    Map<String, Object> deserializeDocMetadata(OperationContext opctx, Detail detail, String docUUID) {
         String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
         Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, metaid, true)
         return doc
     }
 
 
-    public String getAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr) {
+    String getAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr) {
         Writer writer = new StringWriter()
         String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
         return writer.toString()
     }
 
-    public void getAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer) {
+    void getAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr, Writer writer) {
         String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
     }
 
-    public Map<String, Object> deserializeAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr) {
+    Map<String, Object> deserializeAttrMetadata(OperationContext opctx, Detail detail, String docUUID, String attr) {
         String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
         Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, metaid, true)
         return doc
     }
 
 
-    public String getRelMetadata(OperationContext opctx, Detail detail, RelKey rel) {
+    String getRelMetadata(OperationContext opctx, Detail detail, RelKey rel) {
         Writer writer = new StringWriter()
         String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
         return writer.toString()
     }
 
-    public void getRelMetadata(OperationContext opctx, Detail detail, RelKey rel, Writer writer) {
+    void getRelMetadata(OperationContext opctx, Detail detail, RelKey rel, Writer writer) {
         String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
         RetrievalOperations.getSingleDoc(svcs, opctx, detail, metaid, writer, true)
     }
 
-    public Map<String, Object> deserializeRelMetadata(OperationContext opctx, Detail detail, RelKey rel) {
+    Map<String, Object> deserializeRelMetadata(OperationContext opctx, Detail detail, RelKey rel) {
         String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
         Map doc = RetrievalOperations.deserializeSingleDoc(svcs, opctx, detail, metaid, true)
         return doc
     }
 
 
-    public String docMetadataUUID(OperationContext opctx, Detail detail, String docUUID) {
+    String docMetadataUUID(OperationContext opctx, Detail detail, String docUUID) {
         String metaid = RetrievalOperations.getDocMetadataUUID(svcs, opctx, detail, docUUID)
         if (metaid != null) {
             return metaid
@@ -608,7 +611,7 @@ class API {
     }
 
 
-    public String attrMetadataUUID(OperationContext opctx, Detail detail, String docUUID, String attr) {
+    String attrMetadataUUID(OperationContext opctx, Detail detail, String docUUID, String attr) {
         String metaid = RetrievalOperations.getAttrMetadataUUID(svcs, opctx, detail, docUUID, attr)
         if (metaid != null) {
             return metaid
@@ -620,7 +623,7 @@ class API {
         return metaid
     }
 
-    public String relMetadataUUID(OperationContext opctx, Detail detail, RelKey rel) {
+    String relMetadataUUID(OperationContext opctx, Detail detail, RelKey rel) {
         String metaid = RetrievalOperations.getRelMetadataUUID(svcs, opctx, detail, rel)
         if (metaid != null) {
             return metaid
@@ -633,7 +636,7 @@ class API {
         return metaid
     }
 
-    public Rel deserializeRel(OperationContext opctx, Detail detail, RelKey relkey) {
+    Rel deserializeRel(OperationContext opctx, Detail detail, RelKey relkey) {
         Rel rel = RetrievalOperations.getRel(svcs, opctx, detail, relkey)
         return rel
     }
@@ -645,17 +648,17 @@ class API {
      * @param detail
      * @param rel
      */
-    public void addRel(OperationContext opctx, Detail detail, Rel rel) {
+    void addRel(OperationContext opctx, Detail detail, Rel rel) {
         CreateOperations.addRel(svcs, opctx, detail, rel)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
     }
 
-    public void deleteRel(OperationContext opctx, Detail detail, RelKey rel) {
+    void deleteRel(OperationContext opctx, Detail detail, RelKey rel) {
         DeleteOperations.delRel(svcs, opctx, detail, rel)
         if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
     }
 
-    public List<Rel> deserializeDocRels(OperationContext opctx, Detail detail, String docUUID) {
+    List<Rel> deserializeDocRels(OperationContext opctx, Detail detail, String docUUID) {
         RetrievalOperations.deserializeDocRels(svcs, opctx, detail, docUUID)
     }
 
@@ -669,7 +672,7 @@ class API {
      * @param indexName
      * @return
      */
-    public Iterator<Map> searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters) {
+    Iterator<Map> searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters) {
         Index idx = svcs.idxSvc.getIndex(indexName)
         Iterator<Map> iterator = idx.searchIndex(svcs, opctx, detail, searchCriteria)
         return iterator
@@ -685,7 +688,7 @@ class API {
      * @param indexName
      * @return
      */
-    public void searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters, Writer searchResultsWriter) {
+    void searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters, Writer searchResultsWriter) {
         Iterator<Map> iterator = searchIndex(opctx, detail, indexName, searchCriteria, filters)
         searchResultsWriter << "["
         while (iterator.hasNext()) {

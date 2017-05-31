@@ -14,27 +14,27 @@ class CassDocProperty<V> implements Property<V> {
   transient CassDocGraph cassDocGraph
 
   @Override
-  public String key() {
+  String key() {
     return key
   }
 
   @Override
-  public V value() throws NoSuchElementException {
+  V value() throws NoSuchElementException {
     return value;
   }
 
   @Override
-  public boolean isPresent() {
+  boolean isPresent() {
     true;
   }
 
   @Override
-  public Element element() {
+  Element element() {
     element
   }
 
   @Override
-  public void remove() {
+  void remove() {
     throw Property.Exceptions.propertyRemovalNotSupported()
   }
 }

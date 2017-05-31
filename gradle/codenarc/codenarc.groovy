@@ -52,9 +52,9 @@ ruleset {
     ThrowExceptionFromFinallyBlock
 
     // rulesets/braces.xml
-    ElseBlockBraces
+    //ElseBlockBraces
     ForStatementBraces
-    IfStatementBraces
+    //IfStatementBraces
     WhileStatementBraces
 
     // rulesets/concurrency.xml
@@ -148,8 +148,8 @@ ruleset {
     BracesForMethod
     BracesForTryCatchFinally
     ClosureStatementOnOpeningLineOfMultipleLineClosure
-    ConsecutiveBlankLines
-    FileEndsWithoutNewline
+//    ConsecutiveBlankLines
+//    FileEndsWithoutNewline
 //    LineLength
     MissingBlankLineAfterImports
     MissingBlankLineAfterPackage
@@ -342,7 +342,7 @@ ruleset {
     UnnecessaryElseStatement
     UnnecessaryFinalOnPrivateMethod
     UnnecessaryFloatInstantiation
-    UnnecessaryGString
+    //UnnecessaryGString
     UnnecessaryIfStatement
     UnnecessaryInstanceOfCheck
     UnnecessaryInstantiationToGetClass

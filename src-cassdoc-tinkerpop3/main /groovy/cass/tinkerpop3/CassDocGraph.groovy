@@ -28,15 +28,15 @@ import cwdrg.lg.annotation.Log
 //@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_INTEGRATE)
 //@Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT_PERFORMANCE)
 @Log
-public class CassDocGraph implements Graph {
+class CassDocGraph implements Graph {
 
   String space;
   API    cassDocAPI;
 
-  public static boolean testMode = false
+  static boolean testMode = false
 
 
-  public static CassDocGraph open(final Configuration configuration)
+  static CassDocGraph open(final Configuration configuration)
   {
     CassDocGraph cassDocGraph = new CassDocGraph()
     if (testMode) {
@@ -47,7 +47,7 @@ public class CassDocGraph implements Graph {
   }
 
   @Override
-  public Vertex addVertex(Object... keyValues) {
+  Vertex addVertex(Object... keyValues) {
     //log.dbg("CassDocGraph: addVertex invoked: NOT SUPPORTED: use CassDoc API methods to add a new document/vertex")
     //throw Graph.Exceptions.vertexAdditionsNotSupported()
 
@@ -76,7 +76,7 @@ public class CassDocGraph implements Graph {
 
 
   @Override
-  public void close() throws Exception {
+  void close() throws Exception {
     // close driver???
     // ignore since it is read only?
   }
@@ -88,26 +88,26 @@ public class CassDocGraph implements Graph {
    * http://tinkerpop.apache.org/docs/3.0.1-incubating/#graphcomputer
    */  
   @Override
-  public GraphComputer compute() throws IllegalArgumentException {
+  GraphComputer compute() throws IllegalArgumentException {
     throw Exceptions.graphComputerNotSupported()
   }
 
 
   @Override
-  public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
+  <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
     throw Exceptions.graphComputerNotSupported()
   }
 
 
   @Override
-  public Configuration configuration() {
+  Configuration configuration() {
     // ??? get types ??? keyspaces ???
     return null;
   }
 
 
   @Override
-  public Iterator<Edge> edges(Object... edgeIds) {
+  Iterator<Edge> edges(Object... edgeIds) {
     OperationContext opctx = new OperationContext(space:space)
     Detail detail = new Detail()
     List edges = []
@@ -122,20 +122,20 @@ public class CassDocGraph implements Graph {
 
 
   @Override
-  public Transaction tx() {
+  Transaction tx() {
     throw Exceptions.transactionsNotSupported();
   }
 
 
   @Override
-  public Variables variables() {
+  Variables variables() {
     // Graph keyspace???
     return null;
   }
 
 
   @Override
-  public Iterator<Vertex> vertices(Object... vertexIds) {
+  Iterator<Vertex> vertices(Object... vertexIds) {
     // vertexID: space,id tuple
     log.dbg("CassDoc: get vertices for Ids "+vertexIds,null,null)
     OperationContext opctx = new OperationContext(space:space)

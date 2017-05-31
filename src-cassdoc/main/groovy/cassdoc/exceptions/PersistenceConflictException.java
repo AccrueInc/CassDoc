@@ -7,24 +7,24 @@ package cassdoc.exceptions;
  * @author a999166
  */
 
-public class PersistenceConflictException extends RuntimeException {
+class PersistenceConflictException extends RuntimeException {
 
-    public PersistenceConflictException() {
+    PersistenceConflictException() {
     }
 
-    public PersistenceConflictException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    PersistenceConflictException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 
-    public PersistenceConflictException(String message, Throwable cause) {
+    PersistenceConflictException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public PersistenceConflictException(String message) {
+    PersistenceConflictException(String message) {
         super(message);
     }
 
-    public PersistenceConflictException(Throwable cause) {
+    PersistenceConflictException(Throwable cause) {
         super(cause);
     }
 
