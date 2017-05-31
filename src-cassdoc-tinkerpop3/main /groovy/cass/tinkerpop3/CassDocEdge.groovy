@@ -16,7 +16,7 @@ class CassDocEdge implements Edge {
   transient CassDocGraph cassDocGraph
 
   @Override
-  public <V> Property<V> property(String key, V value) {
+  <V> Property<V> property(String key, V value) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
     String relMetaId = cassDocGraph.cassDocAPI.relMetadataUUID(opctx, detail, rel.relKey)
@@ -28,24 +28,24 @@ class CassDocEdge implements Edge {
   }
 
   @Override
-  public void remove() {
+  void remove() {
     // TODO: cassdoc API needs Rel cleanup
     throw Edge.Exceptions.edgeRemovalNotSupported();
   }
 
 
   @Override
-  public Graph graph() {
+  Graph graph() {
     cassDocGraph
   }
 
   @Override
-  public Object id() {
+  Object id() {
     rel.relKey
   }
 
   @Override
-  public String label() {
+  String label() {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
     Map<String,Object> relMeta = cassDocGraph.cassDocAPI.deserializeRelMetadata(opctx, detail, rel.relKey)
@@ -55,7 +55,7 @@ class CassDocEdge implements Edge {
 
 
   @Override
-  public <V> Iterator<Property<V>> properties(String... propertyKeys) {
+  <V> Iterator<Property<V>> properties(String... propertyKeys) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
 
@@ -80,7 +80,7 @@ class CassDocEdge implements Edge {
   }
 
   @Override
-  public Iterator<Vertex> vertices(Direction direction) {
+  Iterator<Vertex> vertices(Direction direction) {
     // get necessary Rels based on direction / label
     switch (direction) {
       case Direction.OUT:

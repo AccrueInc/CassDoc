@@ -16,30 +16,30 @@ abstract class CassDocElement implements Element {
   transient CassDocGraph cassDocGraph
 
   @Override
-  public Graph graph() {
+  Graph graph() {
     log.dbg("CassDoc: get graph",null,null)
     cassDocGraph
   }
 
   @Override
-  public abstract Object id()
+  abstract Object id()
 
   @Override
-  public abstract String label()
+  abstract String label()
 
 
   @Override
-  public <V> Property<V> property(String key, V value) {
+  <V> Property<V> property(String key, V value) {
     log.dbg("CassDoc: add property invoked "+id(), null, null)
     throw Element.Exceptions.propertyAdditionNotSupported();
   }
 
   @Override
-  public abstract <V> Iterator<? extends Property<V>> properties(String... propertyKeys)
+  abstract <V> Iterator<? extends Property<V>> properties(String... propertyKeys)
 
 
   @Override
-  public void remove() {
+  void remove() {
     log.dbg("CassDoc: remove element invoked "+id(), null, null)
     if (this instanceof Vertex)
       throw Vertex.Exceptions.vertexRemovalNotSupported();

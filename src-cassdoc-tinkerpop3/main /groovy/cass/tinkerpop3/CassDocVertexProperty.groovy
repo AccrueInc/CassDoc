@@ -13,16 +13,16 @@ class CassDocVertexProperty<V> extends CassDocProperty<V> {
   CassDocVertex vertex
 
   @Override
-  public boolean isPresent() {
+  boolean isPresent() {
     // this doesn't exist unless it is true...
     true
   }
 
-  public Object id() {
+  Object id() {
     return [vertex.docId, key] as String[]
   }
 
-  public <V> Property<V> property(String key, V value) {
+  <V> Property<V> property(String key, V value) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
     StringWriter w = new StringWriter()
@@ -33,11 +33,11 @@ class CassDocVertexProperty<V> extends CassDocProperty<V> {
   }
 
   @Override
-  public Vertex element() {
+  Vertex element() {
     vertex
   }
 
-  public <U> Iterator<Property<U>> properties(String... propertyKeys) {
+  <U> Iterator<Property<U>> properties(String... propertyKeys) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
 

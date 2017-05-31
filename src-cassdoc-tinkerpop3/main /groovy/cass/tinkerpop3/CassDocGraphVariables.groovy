@@ -12,27 +12,27 @@ class CassDocGraphVariables implements Graph.Variables {
   private final Map<String, Object> variables = new ConcurrentHashMap<>();
 
   @Override
-  public Set<String> keys() {
+  Set<String> keys() {
     return this.variables.keySet();
   }
 
   @Override
-  public <R> Optional<R> get(final String key) {
+  <R> Optional<R> get(final String key) {
     return Optional.ofNullable((R) this.variables.get(key));
   }
 
   @Override
-  public void remove(final String key) {
+  void remove(final String key) {
     this.variables.remove(key);
   }
 
   @Override
-  public void set(final String key, final Object value) {
+  void set(final String key, final Object value) {
     GraphVariableHelper.validateVariable(key, value);
     this.variables.put(key, value);
   }
 
-  public String toString() {
+  String toString() {
     return StringFactory.graphVariablesString(this);
   }
 }

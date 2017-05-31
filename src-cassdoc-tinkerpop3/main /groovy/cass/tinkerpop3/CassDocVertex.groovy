@@ -25,19 +25,19 @@ class CassDocVertex implements Vertex {
   transient CassDocGraph cassDocGraph
 
   @Override
-  public Graph graph() {
+  Graph graph() {
     cassDocGraph
   }
 
   @Override
-  public void remove() {
+  void remove() {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
     cassDocGraph.cassDocAPI.delDoc(opctx, detail, docId)
   }
 
   @Override
-  public Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
+  Edge addEdge(String label, Vertex inVertex, Object... keyValues) {
     Rel rel = new Rel()
     rel.p1 = docId
     rel.c1 = ((CassDocVertex)inVertex).docId
@@ -60,17 +60,17 @@ class CassDocVertex implements Vertex {
   }
 
   @Override
-  public <V> VertexProperty<V> property(Cardinality cardinality, String key, V value, Object... keyValues) {
+  <V> VertexProperty<V> property(Cardinality cardinality, String key, V value, Object... keyValues) {
     throw Element.Exceptions.propertyAdditionNotSupported();
   }
 
   @Override
-  public Object id() {
+  Object id() {
     docId
   }
 
   @Override
-  public String label() {
+  String label() {
     // is label an id??? no... id() gets you id.
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
@@ -83,7 +83,7 @@ class CassDocVertex implements Vertex {
 
 
   @Override
-  public Iterator<Edge> edges(Direction direction, String... edgeLabels) {
+  Iterator<Edge> edges(Direction direction, String... edgeLabels) {
     Set<String> labels = null
     if (edgeLabels != null && edgeLabels.length > 0) {
       labels = [] as Set
@@ -106,7 +106,7 @@ class CassDocVertex implements Vertex {
 
 
   @Override
-  public  <V> Iterator<? extends Property<V>> properties(String... propertyKeys) {
+   <V> Iterator<? extends Property<V>> properties(String... propertyKeys) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
 
@@ -133,7 +133,7 @@ class CassDocVertex implements Vertex {
   // TODO: figure out how rel.ty1/ty2/ty3/ty4 relates to labels. Right now, ty1 == label.
   // TODO: reverse relations with "-" protocol, fix "up" in engine --> -CH
   @Override
-  public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
+  Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
     Set<String> labels = null
     if (edgeLabels != null && edgeLabels.length > 0) {
       labels = [] as Set

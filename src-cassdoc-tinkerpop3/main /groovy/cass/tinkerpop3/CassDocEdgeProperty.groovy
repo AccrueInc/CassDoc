@@ -15,15 +15,15 @@ class CassDocEdgeProperty<V> extends CassDocProperty<V> {
   CassDocEdge edge
 
   @Override
-  public boolean isPresent() {
+  boolean isPresent() {
     true
   }
 
-  public Object id() {
+  Object id() {
     return [docId, key] as String[]
   }
 
-  public <V> Property<V> property(String key, V value) {
+  <V> Property<V> property(String key, V value) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
     StringWriter w = new StringWriter()
@@ -34,11 +34,11 @@ class CassDocEdgeProperty<V> extends CassDocProperty<V> {
   }
 
   @Override
-  public Element element() {
+  Element element() {
     edge
   }
 
-  public <U> Iterator<Property<U>> properties(String... propertyKeys) {
+  <U> Iterator<Property<U>> properties(String... propertyKeys) {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
 
