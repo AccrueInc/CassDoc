@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src-cassdoc"/>
-	<classpathentry kind="src" path="src-drv"/>
-	<classpathentry kind="src" path="src-util"/>
-	<classpathentry kind="src" path="src-cassdoc-tinkerpop3"/>
-	<classpathentry kind="src" path="src-jcr"/>
+	<classpathentry kind="src" path="src-cassdoc/main/groovy"/>
+	<classpathentry kind="src" path="src-drv/main/groovy"/>
+	<classpathentry kind="src" path="src-util/main/groovy"/>
+	<classpathentry kind="src" path="src-jcr/main/groovy"/>
+	<classpathentry kind="src" path="src-cassdoc-tinkerpop3/main /groovy"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry exported="true" kind="con" path="GROOVY_SUPPORT"/>
 	<classpathentry exported="true" kind="con" path="GROOVY_DSL_SUPPORT"/>
