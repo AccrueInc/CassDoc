@@ -4,7 +4,7 @@ import groovy.transform.CompileStatic
 
 @CompileStatic
 abstract class Cmd {
-  boolean isComplete = false
+    boolean isComplete = false
 }
 
 
