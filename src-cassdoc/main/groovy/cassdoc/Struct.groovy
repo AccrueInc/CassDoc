@@ -14,8 +14,8 @@ class DocField {
 
 @CompileStatic
 class FieldValue {
-    Class type;
-    String value;
+    Class type
+    String value
 }
 
 // near / far space info ?
@@ -87,26 +87,26 @@ class RelKey {
     boolean isc3 = false
     boolean isc4 = false
 
-    public void setP2(String v) { isp2 = true; p2 = v }
+    void setP2(String v) { isp2 = true; p2 = v }
 
-    public void setP3(String v) { isp3 = true; p3 = v }
+    void setP3(String v) { isp3 = true; p3 = v }
 
-    public void setP4(String v) { isp4 = true; p4 = v }
+    void setP4(String v) { isp4 = true; p4 = v }
 
-    public void setTy1(String v) { isty1 = true; ty1 = v }
+    void setTy1(String v) { isty1 = true; ty1 = v }
 
-    public void setTy2(String v) { isty2 = true; ty2 = v }
+    void setTy2(String v) { isty2 = true; ty2 = v }
 
-    public void setTy3(String v) { isty3 = true; ty3 = v }
+    void setTy3(String v) { isty3 = true; ty3 = v }
 
-    public void setTy4(String v) { isty4 = true; ty4 = v }
+    void setTy4(String v) { isty4 = true; ty4 = v }
 
-    public void setC1(String v) { isc1 = true; c1 = v }
+    void setC1(String v) { isc1 = true; c1 = v }
 
-    public void setC2(String v) { isc2 = true; c2 = v }
+    void setC2(String v) { isc2 = true; c2 = v }
 
-    public void setC3(String v) { isc3 = true; c3 = v }
+    void setC3(String v) { isc3 = true; c3 = v }
 
-    public void setC4(String v) { isc4 = true; c4 = v }
+    void setC4(String v) { isc4 = true; c4 = v }
 
 }

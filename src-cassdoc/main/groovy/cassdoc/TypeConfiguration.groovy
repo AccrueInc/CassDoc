@@ -1,10 +1,9 @@
 package cassdoc
 
+import cwdrg.lg.annotation.Log
 import groovy.transform.CompileStatic
 
 import javax.naming.ConfigurationException
-
-import cwdrg.lg.annotation.Log
 
 @CompileStatic
 interface ValueExtractor {
@@ -118,53 +117,53 @@ class TypeConfigurationService {
     // ---- utils
 
     static String attrTypeCode(Class type) {
-        if (type == String.class) {
+        if (type == String) {
             return "S"
         }
         if (type == null) {
             return null
         }
-        if (type == List.class) {
+        if (type == List) {
             return "A"
         }
-        if (type == Map.class) {
+        if (type == Map) {
             return "O"
         }
-        if (type == Integer.class) {
+        if (type == Integer) {
             return "I"
         }
-        if (type == Float.class) {
+        if (type == Float) {
             return "D"
         }
-        if (type == Boolean.class) {
+        if (type == Boolean) {
             return "B"
         }
-        throw new Exception("Unknown JSON type " + type.name)
+        throw new IllegalArgumentException("Unknown JSON type " + type.name)
     }
 
     static Class attrClass(String typeCode) {
         if (typeCode == "S") {
-            return String.class
+            return String
         }
         if (typeCode == null) {
             return null
         }
         if (typeCode == "A") {
-            return List.class
+            return List
         }
         if (typeCode == "O") {
-            return Map.class
+            return Map
         }
         if (typeCode == "I") {
-            return Integer.class
+            return Integer
         }
         if (typeCode == "D") {
-            return Float.class
+            return Float
         }
         if (typeCode == "B") {
-            return Boolean.class
+            return Boolean
         }
-        throw new Exception("Unknown JSON typecode" + typeCode)
+        throw new IllegalArgumentException("Unknown JSON typecode" + typeCode)
     }
 
 }

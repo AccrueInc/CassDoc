@@ -126,7 +126,7 @@ class OperationContext {
                         // that's a problem
                         throw log.err("", new UnexpectedPersistenceStateException("Paxos BATCH update return result is null " + JSONUtil.serialize(paxosBatch)))
                     } else {
-                        Row row = paxosResultSet.one();
+                        Row row = paxosResultSet.one()
                         Boolean paxosResult = row.getBool(0)
                         log.dbg("pax result: ${row.getColumnDefinitions().getName(0)} :: $paxosResult", null)
                         if (!paxosResult) {
@@ -162,7 +162,7 @@ class OperationContext {
                 }
                 batchLeftovers.each { MutationCmd cmd ->
                     if (cmd != null) {
-                        St stmt = (St) cmd.execMutationCassandra(svcs, this, detail);
+                        St stmt = (St) cmd.execMutationCassandra(svcs, this, detail)
                         if (cqlTraceEnabled) cqlTrace.add([
                                 stmt.cql,
                                 stmt.cqlargs,
@@ -191,7 +191,7 @@ class OperationContext {
                                 // that's a problem
                                 throw log.err("", new UnexpectedPersistenceStateException("Paxos update return result is null " + JSONUtil.serialize(stmt)))
                             } else {
-                                Row row = paxosResultSet.one();
+                                Row row = paxosResultSet.one()
                                 Boolean paxosResult = row.getBool(0)
                                 log.dbg("pax result: ${row.getColumnDefinitions().getName(0)} :: $paxosResult", null)
                                 if (!paxosResult) {
@@ -202,14 +202,14 @@ class OperationContext {
 
                             // clear it
                             commands.set(i, null)
-                            break;
+                            break
                         }
                     }
                 }
                 commands.each { cmd ->
                     if (cmd != null) {
                         if (cmd.optimize(svcs, this, detail)) {
-                            St stmt = (St) cmd.execMutationCassandra(svcs, this, detail);
+                            St stmt = (St) cmd.execMutationCassandra(svcs, this, detail)
                             if (cqlTraceEnabled) cqlTrace.add([
                                     stmt.cql,
                                     stmt.cqlargs,

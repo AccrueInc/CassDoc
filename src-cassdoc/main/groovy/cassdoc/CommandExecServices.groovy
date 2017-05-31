@@ -14,9 +14,9 @@ import drv.cassdriver.DriverWrapper
 @CompileStatic
 class CommandExecServices {
 
-    String idField = "_id";
+    String idField = "_id"
 
-    JsonFactory jsonFactory = new JsonFactory();
+    JsonFactory jsonFactory = new JsonFactory()
 
     @Autowired
     TypeConfigurationService typeSvc

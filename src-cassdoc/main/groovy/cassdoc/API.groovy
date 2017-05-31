@@ -26,13 +26,12 @@ import cwdrg.util.json.JSONUtil
 /**
  * This is the primary API class. It has API methods for both JSON interactions and Map/List/Map.Entry interactions.
  *
- *
  * @author cowardlydragon
  *
  */
 @Log
 @CompileStatic
-@SuppressWarnings(['MethodCount','ParameterCount'])
+@SuppressWarnings(['MethodCount', 'ParameterCount'])
 class API {
 
     // TODO: cross-space registry (id : space)

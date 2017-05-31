@@ -18,7 +18,7 @@ interface Index {
 }
 
 interface SearchFilter {
-    boolean isFiltered(CommandExecServices svcs, OperationContext opctx, Detail detail, Map currentDocument);
+    boolean isFiltered(CommandExecServices svcs, OperationContext opctx, Detail detail, Map currentDocument)
 }
 
 @CompileStatic
