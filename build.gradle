@@ -1,13 +1,16 @@
 buildscript {
 
     repositories {
+		maven {
+			url "https://plugins.gradle.org/m2/"
+		  }
         mavenLocal()
         mavenCentral()
     }
     dependencies {
         classpath "org.springframework.boot:spring-boot-gradle-plugin:1.5.3.RELEASE"
         classpath "net.saliman:gradle-cobertura-plugin:2.4.0"
-        classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.4.1"
+        classpath "gradle.plugin.com.gorylenko.gradle-git-properties:gradle-git-properties:1.4.17"
         // classpath "com.sourcemuse.gradle.plugin:gradle-mongo-plugin:${gradleMongoPluginVersion}"
     }
 }
@@ -16,8 +19,8 @@ apply plugin: 'groovy'
 apply plugin: 'codenarc'
 apply plugin: 'org.springframework.boot'
 apply plugin: 'net.saliman.cobertura'
-apply plugin: 'mongo'
 apply plugin: "com.gorylenko.gradle-git-properties"
+//apply plugin: 'mongo'
 
 apply from: "$rootDir/gradle/integrationTest.gradle"
 
@@ -29,6 +32,7 @@ sourceSets {
 	main {
 		groovy {
 			srcDir 'src-cassdoc/main/groovy'
+			srcDir 'src-spring/main/groovy'
 			srcDir 'src-drv/main/groovy'
 			srcDir 'src-util/main/groovy'
 			//srcDir 'src-jcr/main/groovy'
@@ -67,6 +71,7 @@ dependencies {
 	compile group: 'org.aspectj', name: 'aspectjrt', version: '1.8.10'
 	compile group: 'org.aspectj', name: 'aspectjweaver', version: '1.8.10'	
 	
+	compile group: 'org.springframework', name: 'spring-web', version: '4.3.8.RELEASE'
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: '1.5.3.RELEASE'
 	compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: '1.5.3.RELEASE'
 	compile group: 'org.springframework.boot', name: 'spring-boot-configuration-processor', version: '1.5.3.RELEASE'

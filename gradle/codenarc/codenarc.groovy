@@ -150,12 +150,12 @@ ruleset {
     ClosureStatementOnOpeningLineOfMultipleLineClosure
     ConsecutiveBlankLines
     FileEndsWithoutNewline
-    LineLength
+//    LineLength
     MissingBlankLineAfterImports
     MissingBlankLineAfterPackage
     SpaceAfterCatch
     SpaceAfterClosingBrace
-    SpaceAfterComma
+    //SpaceAfterComma
     SpaceAfterFor
     SpaceAfterIf
     SpaceAfterOpeningBrace
