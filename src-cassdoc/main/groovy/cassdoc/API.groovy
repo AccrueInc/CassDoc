@@ -22,6 +22,7 @@ import com.jayway.jsonpath.JsonPath
 
 import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
+import org.springframework.stereotype.Component
 
 /**
  * This is the primary API class. It has API methods for both JSON interactions and Map/List/Map.Entry interactions.
@@ -32,6 +33,7 @@ import cwdrg.util.json.JSONUtil
 @Log
 @CompileStatic
 @SuppressWarnings(['MethodCount', 'ParameterCount'])
+@Component
 class API {
 
     // TODO: cross-space registry (id : space)
