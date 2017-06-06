@@ -1,4 +1,4 @@
-package cassdoc.exceptions;
+package cassdoc.exceptions
 
 
 /**
@@ -13,21 +13,21 @@ class InvalidTypeException extends RuntimeException {
     }
 
     InvalidTypeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
     InvalidTypeException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
     InvalidTypeException(String message) {
-        super(message);
+        super(message)
     }
 
     InvalidTypeException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 658979438789573L;
+    private static final long serialVersionUID = 658979438789573L
 
 }

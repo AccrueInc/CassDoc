@@ -1,19 +1,16 @@
 package cassdoc
 
+import cwdrg.util.json.JSONUtil
 import groovy.transform.CompileStatic
-
-import java.util.regex.Pattern
-
 import org.apache.commons.lang3.StringEscapeUtils
 import org.apache.commons.lang3.StringUtils
 
-import cwdrg.util.json.JSONUtil
-
+import java.util.regex.Pattern
 
 @CompileStatic
 class IDUtil {
     static String sampleUUID = "d7f06b43-38ae-11e4-90a1-0e7d72389a6a"
-    static final java.util.UUID ZERO_UUID = new java.util.UUID(0, 0)
+    static final UUID ZERO_UUID = new UUID(0, 0)
     static final Pattern UUID_REGEX =
             Pattern.compile("[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
     static final Pattern DOCUUID_REGEX =
@@ -23,22 +20,22 @@ class IDUtil {
     // use timeuuid/uuid + type code compound key rather than a space-inefficient string?
     static String timeUUID() { return new com.eaio.uuid.UUID().toString() }
 
-    static String randomUUID() { return java.util.UUID.randomUUID().toString() }
+    static String randomUUID() { return UUID.randomUUID().toString() }
 
-    static java.util.UUID timeuuid() {
+    static UUID timeuuid() {
         return timeuuidCASS()
     }
 
-    static java.util.UUID timeuuidEAIO() {
-        return java.util.UUID.fromString(new com.eaio.uuid.UUID().toString())
+    static UUID timeuuidEAIO() {
+        return UUID.fromString(new com.eaio.uuid.UUID().toString())
     }
 
-    static java.util.UUID timeuuidCASS() {
+    static UUID timeuuidCASS() {
         UUIDGen.getTimeUUID()
     }
 
-    static java.util.UUID randomuuid() {
-        return java.util.UUID.randomUUID()
+    static UUID randomuuid() {
+        return UUID.randomUUID()
     }
 
     static String idSuffix(String docUUID) { StringUtils.substring(docUUID, sampleUUID.length() + 1) }
@@ -56,7 +53,7 @@ class IDUtil {
 
         // time uuid components are 100ths of seconds since adoption of the Gregorian Calendar...
         // so we need to convert to 1000ths of seconds since UNIX Epoch
-        java.util.UUID uuid = java.util.UUID.fromString(cupcakeID)
+        UUID uuid = UUID.fromString(cupcakeID)
         long juuTime = uuid.timestamp()
         long time = (juuTime.intdiv(10000L)) + gregorianEpoch
 

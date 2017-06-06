@@ -25,5 +25,5 @@ class MergeOperations {
 
 /* recursive update structure?
  array operations: replace all, empty, append, update entries(), expand, apply groovy closure, find, findAll, etc
- map operations: find, findAll, remove, removeAll, addAll 
+ map operations: find, findAll, remove, removeAll, addAll
  */

@@ -2,6 +2,7 @@ package cassdoc.operations
 
 import groovy.transform.CompileStatic
 
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 import cassdoc.CommandExecServices
@@ -36,7 +37,7 @@ class SearchOperations {
         boolean first = true
         for (String id : ids) {
             // TODO: type filters, etc
-            if (first) first = false; else w << ",";
+            if (first) first = false; else w << ","
             RetrievalOperations.getSingleDoc(svcs, opctx, detail, id, w, true)
             // TODO: parallelism
         }
@@ -98,7 +99,7 @@ class SearchOperations {
             rch.processRow(curDBRow)
             rowCount++
             if (cassRS.getAvailableWithoutFetching() == fetchNextPageThreshold && !cassRS.isFullyFetched()) {
-                pageCount++;
+                pageCount++
                 cassRS.fetchMoreResults()
             }
         }
@@ -152,7 +153,7 @@ class SearchOperations {
             rch.processRow(curDBRow)
             rowCount++
             if (cassRS.getAvailableWithoutFetching() == fetchNextPageThreshold && !cassRS.isFullyFetched()) {
-                pageCount++;
+                pageCount++
                 cassRS.fetchMoreResults()
             }
         }
@@ -161,14 +162,15 @@ class SearchOperations {
     }
 
     // rp.processRow() should return token in 0th and id in 1st cell
-    public static Iterator<Map> pullIDResultSet(
+    @SuppressWarnings('UnusedObject')
+    static Iterator<Map> pullIDResultSet(
             final CommandExecServices svcs,
             final OperationContext opctx, final Detail detail, final CassandraPagedRowProcessor rp) {
-        final LinkedBlockingQueue docQ = new LinkedBlockingQueue(1000)
+        final BlockingQueue docQ = new LinkedBlockingQueue(1000)
         final BlockingIterator<Map> iterator = new BlockingIterator<Map>(queue: docQ)
 
         new Thread() {
-            public void run() {
+            void run() {
                 Object rowdata = null
                 while (rowdata = rp.nextRow()) {
                     String id = (String) rowdata[1]
@@ -187,14 +189,14 @@ class SearchOperations {
 @CompileStatic
 abstract class PTableBaseRCH {
     // called when the current doc is done being scanned
-    public abstract void processDoc()
+    abstract void processDoc()
 
     // called on a per-attr basis
-    public abstract void processAttrRow(Row row)
+    abstract void processAttrRow(Row row)
 
     String currentDocUUID = null
 
-    public void processRow(Row row) throws CQLException {
+    void processRow(Row row) throws CQLException {
         String uuid = row.getString(1)
 
         if (currentDocUUID != uuid) {
@@ -213,8 +215,8 @@ class IDListJSONArrayFromETableRCH implements RowCallbackHandler {
     Writer w
     boolean first = true
 
-    public void processRow(Row row) throws CQLException {
-        if (first) first = false; else w << ","
+    void processRow(Row row) throws CQLException {
+        if (first) first = false else w << ","
         String id = row.getString(1)
         w << '"' << id << '"'
     }

@@ -12,21 +12,21 @@ class PersistenceTooLargeException extends RuntimeException {
     }
 
     PersistenceTooLargeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
     PersistenceTooLargeException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
     PersistenceTooLargeException(String message) {
-        super(message);
+        super(message)
     }
 
     PersistenceTooLargeException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 321976438729576L;
+    private static final long serialVersionUID = 321976438729576L
 
 }

@@ -1,4 +1,4 @@
-package cassdoc.operations;
+package cassdoc.operations
 
 import groovy.transform.CompileStatic
 import cassdoc.CommandExecServices

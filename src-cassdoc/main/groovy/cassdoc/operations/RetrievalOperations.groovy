@@ -2,6 +2,7 @@ package cassdoc.operations
 
 import groovy.transform.CompileStatic
 
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.LinkedBlockingQueue
 
 import org.apache.commons.lang3.StringEscapeUtils
@@ -45,7 +46,7 @@ import cwdrg.util.json.JSONUtil
  - primary query result set is paged
  - secondary filters and followups execute as needed
  - if they hold up the next page processing, then so be it, we prevent over-retrieval and swamping downstream bottlenecks
- --- how do batch the followups, insert into multiple points? rel retreival is a folowup query...  
+ --- how do batch the followups, insert into multiple points? rel retreival is a folowup query...
  */
 
 @Log
@@ -151,7 +152,7 @@ class RetrievalOperations {
                     value = new BigDecimal((String) attr[2])
                 } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
                     JsonParser arrayParser = svcs.jsonFactory.createParser((String) attr[2])
-                    JsonToken arrayStartToken = arrayParser.nextToken();
+                    JsonToken arrayStartToken = arrayParser.nextToken()
                     if (arrayStartToken == JsonToken.START_ARRAY) {
                         value = deserializeRetrievedChildArray(svcs, opctx, attrDetail, docUUID, (String) attr[0], arrayParser)
                     } else {
@@ -159,7 +160,7 @@ class RetrievalOperations {
                     }
                 } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
                     JsonParser objParser = svcs.jsonFactory.createParser((String) attr[2])
-                    JsonToken objStartToken = objParser.nextToken();
+                    JsonToken objStartToken = objParser.nextToken()
                     if (objStartToken == JsonToken.START_OBJECT) {
                         value = deserializeRetrievedChildObject(svcs, opctx, attrDetail, docUUID, (String) attr[0], objParser)
                     } else {
@@ -176,7 +177,7 @@ class RetrievalOperations {
                     map[((String) attr[0]) + AttrNames.META_WT_PRE + detail.attrWritetimeMeta + ']'] = attr[4]
                 }
                 if (attrDetail.attrWritetimeDateMeta) {
-                    map[((String) attr[0]) + AttrNames.META_WTDT_PRE + attrDetail.attrWritetimeMeta + ']'] = new Date(((Long) attr[4]).intdiv(1000))
+                    map[((String) attr[0]) + AttrNames.META_WTDT_PRE + attrDetail.attrWritetimeMeta + ']'] = new Date((Long)((Long) attr[4]).intdiv(1000))
                 }
                 if (attrDetail.attrTokenMeta) {
                     map[((String) attr[0]) + AttrNames.META_TOKEN] = attr[5]
@@ -250,7 +251,7 @@ class RetrievalOperations {
                 writer << ',"' << AttrNames.META_WT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta) + ']":' << eRCH.writetime
             }
             if (detail.docWritetimeDateMeta) {
-                writer << ',"' << AttrNames.META_WTDT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta) + ']":"' << new Date(eRCH.writetime.intdiv(1000)).toGMTString() << '"'
+                writer << ',"' << AttrNames.META_WTDT_PRE << StringEscapeUtils.escapeJson(detail.docWritetimeMeta) + ']":"' << new Date((Long)eRCH.writetime.intdiv(1000)).toGMTString() << '"'
             }
         }
         if (detail.docRelationsMeta) {
@@ -292,7 +293,7 @@ class RetrievalOperations {
                     writer << attr[2]
                 } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
                     JsonParser arrayParser = svcs.jsonFactory.createParser((String) attr[2])
-                    JsonToken arrayStartToken = arrayParser.nextToken();
+                    JsonToken arrayStartToken = arrayParser.nextToken()
                     if (arrayStartToken == JsonToken.START_ARRAY) {
                         parseRetrievedChildArray(svcs, opctx, attrDetail, docUUID, (String) attr[0], arrayParser, writer)
                     } else {
@@ -300,7 +301,7 @@ class RetrievalOperations {
                     }
                 } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
                     JsonParser objParser = svcs.jsonFactory.createParser((String) attr[2])
-                    JsonToken objStartToken = objParser.nextToken();
+                    JsonToken objStartToken = objParser.nextToken()
                     if (objStartToken == JsonToken.START_OBJECT) {
                         parseRetrievedChildObject(svcs, opctx, attrDetail, docUUID, (String) attr[0], objParser, writer)
                     } else {
@@ -313,7 +314,7 @@ class RetrievalOperations {
                     writer << ',"' << StringEscapeUtils.escapeJson((String) attr[0]) << AttrNames.META_WT_PRE << detail.attrWritetimeMeta << ']":' << attr[4]
                 }
                 if (attrDetail.attrWritetimeDateMeta) {
-                    writer << ',"' << StringEscapeUtils.escapeJson((String) attr[0]) << AttrNames.META_WTDT_PRE + StringEscapeUtils.escapeJson(attrDetail.attrWritetimeMeta) + ']":"' << new Date(((Long) attr[4]).intdiv(1000)).toGMTString() << '"'
+                    writer << ',"' << StringEscapeUtils.escapeJson((String) attr[0]) << AttrNames.META_WTDT_PRE + StringEscapeUtils.escapeJson(attrDetail.attrWritetimeMeta) + ']":"' << new Date((Long)((Long) attr[4]).intdiv(1000)).toGMTString() << '"'
                 }
                 if (attrDetail.attrTokenMeta) {
                     writer << ',"' << StringEscapeUtils.escapeJson((String) attr[0]) << AttrNames.META_TOKEN << '":' << attr[5]
@@ -358,7 +359,7 @@ class RetrievalOperations {
             writer << rch.data
         } else if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
             JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
-            JsonToken arrayStartToken = arrayParser.nextToken();
+            JsonToken arrayStartToken = arrayParser.nextToken()
             if (arrayStartToken == JsonToken.START_ARRAY) {
                 parseRetrievedChildArray(svcs, opctx, detail, docUUID, attr, arrayParser, writer)
             } else {
@@ -366,7 +367,7 @@ class RetrievalOperations {
             }
         } else if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
             JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
-            JsonToken objStartToken = objParser.nextToken();
+            JsonToken objStartToken = objParser.nextToken()
             if (objStartToken == JsonToken.START_OBJECT) {
                 parseRetrievedChildObject(svcs, opctx, detail, docUUID, attr, objParser, writer)
             } else {
@@ -397,14 +398,14 @@ class RetrievalOperations {
         }
         if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
             JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
-            JsonToken arrayStartToken = arrayParser.nextToken();
+            JsonToken arrayStartToken = arrayParser.nextToken()
             if (arrayStartToken == JsonToken.START_ARRAY) {
                 return deserializeRetrievedChildArray(svcs, opctx, detail, docUUID, attr, arrayParser)
             }
         }
         if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
             JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
-            JsonToken objStartToken = objParser.nextToken();
+            JsonToken objStartToken = objParser.nextToken()
             if (objStartToken == JsonToken.START_OBJECT) {
                 return deserializeRetrievedChildObject(svcs, opctx, detail, docUUID, attr, objParser)
             }
@@ -424,7 +425,7 @@ class RetrievalOperations {
             writer << rch.data
         } else if (rch.valType == DBCodes.TYPE_CODE_ARRAY) {
             JsonParser arrayParser = svcs.jsonFactory.createParser(rch.data)
-            JsonToken arrayStartToken = arrayParser.nextToken();
+            JsonToken arrayStartToken = arrayParser.nextToken()
             if (arrayStartToken == JsonToken.START_ARRAY) {
                 parseRetrievedChildArray(svcs, opctx, detail, docUUID, attr, arrayParser, writer)
             } else {
@@ -432,7 +433,7 @@ class RetrievalOperations {
             }
         } else if (rch.valType == DBCodes.TYPE_CODE_OBJECT) {
             JsonParser objParser = svcs.jsonFactory.createParser(rch.data)
-            JsonToken objStartToken = objParser.nextToken();
+            JsonToken objStartToken = objParser.nextToken()
             if (objStartToken == JsonToken.START_OBJECT) {
                 parseRetrievedChildObject(svcs, opctx, detail, docUUID, attr, objParser, writer)
             } else {
@@ -551,16 +552,16 @@ class RetrievalOperations {
                             // wiuth a DBREF like this, we should have a END_OBJECT event to consume
                             JsonToken excessEndObjectToken = objParser.nextToken()
                             if (excessEndObjectToken != JsonToken.END_OBJECT) {
-                                throw new Exception("ERROR in parse: wrong excess token: " + excessEndObjectToken)
+                                throw new IllegalArgumentException("ERROR in parse: wrong excess token: " + excessEndObjectToken)
                             }
-                            return;
+                            return
                         } else {
                             writer << '{"' << AttrNames.SYS_DOCID << '":"' << StringEscapeUtils.escapeJson(childUUID) << '"}'
                             JsonToken excessEndObjectToken = objParser.nextToken()
                             if (excessEndObjectToken != JsonToken.END_OBJECT) {
-                                throw new Exception("ERROR in parse: wrong excess token after stub: " + excessEndObjectToken)
+                                throw new IllegalArgumentException("ERROR in parse: wrong excess token after stub: " + excessEndObjectToken)
                             }
-                            return;
+                            return
                         }
                     } else {
                         firstField = false
@@ -614,14 +615,14 @@ class RetrievalOperations {
                             // wiuth a DBREF like this, we should have a END_OBJECT event to consume
                             JsonToken excessEndObjectToken = objParser.nextToken()
                             if (excessEndObjectToken != JsonToken.END_OBJECT) {
-                                throw new Exception("ERROR in parse: wrong excess token: " + excessEndObjectToken)
+                                throw new IllegalArgumentException("ERROR in parse: wrong excess token: " + excessEndObjectToken)
                             }
-                            return map;
+                            return map
                         } else {
                             map[AttrNames.SYS_DOCID] = childUUID
                             JsonToken excessEndObjectToken = objParser.nextToken()
                             if (excessEndObjectToken != JsonToken.END_OBJECT) {
-                                throw new Exception("ERROR in parse: wrong excess token after stub: " + excessEndObjectToken)
+                                throw new IllegalArgumentException("ERROR in parse: wrong excess token after stub: " + excessEndObjectToken)
                             }
                             return map
                         }
@@ -658,11 +659,11 @@ class RetrievalOperations {
     static String parseRetrievedIDField(OperationContext opctx, Detail detail, JsonParser parser) {
         JsonToken token = parser.nextToken()
         if (token == JsonToken.VALUE_STRING) {
-            String idString = parser.getText();
+            String idString = parser.getText()
             return idString
         }
         // TODO: more complicated stuff? DFRef object or something similar?
-        throw new Exception("ID information not retrievable")
+        throw new IllegalArgumentException("ID information not retrievable")
     }
 
     /**
@@ -684,7 +685,7 @@ class RetrievalOperations {
             final CommandExecServices svcs,
             final OperationContext opctx, final Detail detail, final String docUUID, final boolean root) {
 
-        final LinkedBlockingQueue attrQ = new LinkedBlockingQueue(1000)
+        final BlockingQueue attrQ = new LinkedBlockingQueue(1000)
         final BlockingIterator<Map.Entry<String, Object>> iterator = new BlockingIterator<Map.Entry<String, Object>>(queue: attrQ)
         // fire off a thread?
         Map.Entry<String, Object> docUUIDField = new AbstractMap.SimpleEntry<String, Object>(AttrNames.SYS_DOCID, docUUID)
@@ -781,7 +782,7 @@ class RetrievalOperations {
                                 value = Boolean.parseBoolean((String) attr[2])
                             } else if (attr[1] == DBCodes.TYPE_CODE_ARRAY) {
                                 JsonParser arrayParser = svcs.jsonFactory.createParser((String) attr[2])
-                                JsonToken arrayStartToken = arrayParser.nextToken();
+                                JsonToken arrayStartToken = arrayParser.nextToken()
                                 if (arrayStartToken == JsonToken.START_ARRAY) {
                                     List list = RetrievalOperations.deserializeRetrievedChildArray(svcs, opctx, attrDetail, docUUID, (String) attr[0], arrayParser)
                                     value = list
@@ -790,7 +791,7 @@ class RetrievalOperations {
                                 }
                             } else if (attr[1] == DBCodes.TYPE_CODE_OBJECT) {
                                 JsonParser objParser = svcs.jsonFactory.createParser((String) attr[2])
-                                JsonToken objStartToken = objParser.nextToken();
+                                JsonToken objStartToken = objParser.nextToken()
                                 if (objStartToken == JsonToken.START_OBJECT) {
                                     Map map = RetrievalOperations.deserializeRetrievedChildObject(svcs, opctx, attrDetail, docUUID, (String) attr[0], objParser)
                                     value = map
@@ -841,9 +842,9 @@ class RetrievalOperations {
                     attrQ.put(new AbstractMap.SimpleEntry<String, Object>(AttrNames.META_CQLTRACE, opctx.cqlTrace))
                 }
             }
-        }.start();
+        }.start()
 
-        return iterator;
+        return iterator
 
     }
 

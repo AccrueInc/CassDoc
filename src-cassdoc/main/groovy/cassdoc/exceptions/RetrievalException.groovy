@@ -1,4 +1,4 @@
-package cassdoc.exceptions;
+package cassdoc.exceptions
 
 
 /**
@@ -13,21 +13,21 @@ class RetrievalException extends RuntimeException {
     }
 
     RetrievalException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
     RetrievalException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
     RetrievalException(String message) {
-        super(message);
+        super(message)
     }
 
     RetrievalException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 328595838789573L;
+    private static final long serialVersionUID = 328595838789573L
 
 }

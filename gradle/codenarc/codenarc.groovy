@@ -8,7 +8,7 @@ ruleset {
 
     // rulesets/basic.xml
     AssertWithinFinallyBlock
-    AssignmentInConditional
+    //AssignmentInConditional
     BigDecimalInstantiation
     BitwiseOperatorInConditional
     BooleanGetBoolean
@@ -27,12 +27,12 @@ ruleset {
     DuplicateSetValue
     EmptyCatchBlock
     EmptyClass
-    EmptyElseBlock
+    //EmptyElseBlock
     EmptyFinallyBlock
     EmptyForStatement
-    EmptyIfStatement
+    //EmptyIfStatement
     EmptyInstanceInitializer
-    EmptyMethod
+    //EmptyMethod
     EmptyStaticInitializer
     EmptySwitchStatement
     EmptySynchronizedStatement
@@ -90,9 +90,9 @@ ruleset {
     CouldBeElvis
     HashtableIsObsolete
     IfStatementCouldBeTernary
-    InvertedIfElse
+    //InvertedIfElse
     LongLiteralWithLowerCaseL
-    ParameterReassignment
+    //ParameterReassignment
     TernaryCouldBeElvis
     VectorIsObsolete
 
@@ -105,15 +105,15 @@ ruleset {
     CloseWithoutCloseable
     CompareToWithoutComparable
     ConstantsOnlyInterface
-    EmptyMethodInAbstractClass
+    //EmptyMethodInAbstractClass
     FinalClassWithProtectedMember
     ImplementationAsType
     // Instanceof
     LocaleSetDefault
-    NestedForLoop
+    //NestedForLoop
     PrivateFieldCouldBeFinal
     PublicInstanceField
-    ReturnsNullInsteadOfEmptyArray
+    //ReturnsNullInsteadOfEmptyArray
     ReturnsNullInsteadOfEmptyCollection
     SimpleDateFormatMissingLocale
     StatelessSingleton
@@ -137,7 +137,7 @@ ruleset {
     ThrowError
     ThrowException
     ThrowNullPointerException
-    ThrowRuntimeException
+    //ThrowRuntimeException
     ThrowThrowable
 
     // rulesets/formatting.xml
@@ -158,7 +158,7 @@ ruleset {
     //SpaceAfterComma
     SpaceAfterFor
     SpaceAfterIf
-    SpaceAfterOpeningBrace
+    //SpaceAfterOpeningBrace
     SpaceAfterSemicolon
     SpaceAfterSwitch
     SpaceAfterWhile
@@ -204,7 +204,7 @@ ruleset {
     ExplicitCallToAndMethod
     ExplicitCallToCompareToMethod
     ExplicitCallToDivMethod
-    ExplicitCallToEqualsMethod
+    //ExplicitCallToEqualsMethod
     ExplicitCallToGetAtMethod
     ExplicitCallToLeftShiftMethod
     ExplicitCallToMinusMethod
@@ -223,7 +223,7 @@ ruleset {
     ExplicitTreeSetInstantiation
     GStringAsMapKey
     GStringExpressionWithinString
-    GetterMethodCouldBeProperty
+    //GetterMethodCouldBeProperty
     GroovyLangImmutable
     UseCollectMany
     UseCollectNested
@@ -282,16 +282,16 @@ ruleset {
     AbstractClassName
     ClassName
     ClassNameSameAsFilename
-    ConfusingMethodName
-    FieldName
+    //ConfusingMethodName
+    //FieldName
     InterfaceName
-    MethodName
+    //MethodName
     ObjectOverrideMisspelledMethodName
     PackageName
     PackageNameMatchesFilePath
     ParameterName
-    PropertyName
-    VariableName
+    //PropertyName
+    //VariableName
 
     // rulesets/security.xml
     FileCreateTempFile
@@ -309,18 +309,18 @@ ruleset {
     SerialVersionUID
 
     // rulesets/size.xml
-    AbcComplexity   // DEPRECATED: Use the AbcMetric rule instead. Requires the GMetrics jar
-    AbcMetric   // Requires the GMetrics jar
-    ClassSize
-    CrapMetric   // Requires the GMetrics jar and a Cobertura coverage file
-    CyclomaticComplexity   // Requires the GMetrics jar
-    MethodCount
-    MethodSize
-    NestedBlockDepth
-    ParameterCount
+    //AbcComplexity   // DEPRECATED: Use the AbcMetric rule instead. Requires the GMetrics jar
+    //AbcMetric   // Requires the GMetrics jar
+    //ClassSize
+    //CrapMetric   // Requires the GMetrics jar and a Cobertura coverage file
+    //CyclomaticComplexity   // Requires the GMetrics jar
+    //MethodCount
+    //MethodSize
+    //NestedBlockDepth
+    //ParameterCount
 
     // rulesets/unnecessary.xml
-    AddEmptyString
+    //AddEmptyString
     ConsecutiveLiteralAppends
     ConsecutiveStringConcatenation
     UnnecessaryBigDecimalInstantiation
@@ -339,7 +339,7 @@ ruleset {
     UnnecessaryDefInVariableDeclaration
     UnnecessaryDotClass
     UnnecessaryDoubleInstantiation
-    UnnecessaryElseStatement
+    //UnnecessaryElseStatement
     UnnecessaryFinalOnPrivateMethod
     UnnecessaryFloatInstantiation
     //UnnecessaryGString
@@ -351,7 +351,7 @@ ruleset {
     UnnecessaryModOne
     UnnecessaryNullCheck
     UnnecessaryNullCheckBeforeInstanceOf
-    UnnecessaryObjectReferences
+    //UnnecessaryObjectReferences
     UnnecessaryOverridingMethod
     UnnecessaryPackageReference
     UnnecessaryParenthesesForMethodCallWithClosure
@@ -360,17 +360,17 @@ ruleset {
     UnnecessarySelfAssignment
     UnnecessarySemicolon
     UnnecessaryStringInstantiation
-    UnnecessarySubstring
+    //UnnecessarySubstring
     UnnecessaryTernaryExpression
     UnnecessaryToString
-    UnnecessaryTransientModifier
+    //UnnecessaryTransientModifier
 
     // rulesets/unused.xml
     UnusedArray
-    UnusedMethodParameter
+    //UnusedMethodParameter
     UnusedObject
     UnusedPrivateField
     UnusedPrivateMethod
     UnusedPrivateMethodParameter
-    UnusedVariable
+    //UnusedVariable
 }
