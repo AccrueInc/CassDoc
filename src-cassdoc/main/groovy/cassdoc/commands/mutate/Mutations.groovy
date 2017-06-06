@@ -29,9 +29,9 @@ abstract class MutationCmd extends Cmd {
     String cql
     Object[] cqlargs
 
-    abstract Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args);
+    abstract Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args)
 
-    abstract void batch(OperationContext opctx);
+    abstract void batch(OperationContext opctx)
 
     /**
      * optimize allows the Command to analyze the current state of other commands to determine if it doesn't need to be executed
@@ -43,8 +43,8 @@ abstract class MutationCmd extends Cmd {
      * @param detail
      * @return
      */
-    abstract boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail);
-    //abstract Object execMutationRdbms(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args);
+    abstract boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail)
+    //abstract Object execMutationRdbms(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args)
 
     Object execOrPrep(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.executionMode == "immediate") {
@@ -194,7 +194,7 @@ class InsIdxValOnly extends MutationCmd {
 class UpdFixedCol extends MutationCmd {
     String docUUID
     String colName
-    Object value;
+    Object value
 
     void batch(OperationContext opctx) {
         ListMap.put(opctx.batches, "E" + docUUID, this)
@@ -203,7 +203,8 @@ class UpdFixedCol extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("UpdFixedCol filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("UpdFixedCol filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         true
     }
@@ -234,7 +235,8 @@ class DelFixedCol extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("DelFixedCol filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("DelFixedCol filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         true
     }
@@ -261,7 +263,8 @@ class ClrFixedCol extends DelFixedCol {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("ClrFixedCol filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("ClrFixedCol filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         true
     }
@@ -282,7 +285,7 @@ class ClrFixedCol extends DelFixedCol {
 class UpdDocFixedColPAXOS extends MutationCmd {
     String docUUID
     String colName
-    Object value;
+    Object value
     UUID previousVersion
 
     void batch(OperationContext opctx) {
@@ -291,7 +294,8 @@ class UpdDocFixedColPAXOS extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("UpdDocFixedColPAXOS filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("UpdDocFixedColPAXOS filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         true
     }
@@ -326,7 +330,8 @@ class NewAttr extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("NewAttr filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("NewAttr filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         true
     }
@@ -358,10 +363,12 @@ class UpdAttr extends NewAttr {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("UpdAttrCmd filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("UpdAttrCmd filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         if (opctx.deletedIdAttrs.contains(docUUID + attrName)) {
-            log.dbg("UpdAttrCmd filtered from deleted attr " + JSONUtil.serialize(this), null); return false
+            log.dbg("UpdAttrCmd filtered from deleted attr " + JSONUtil.serialize(this), null)
+            return false
         }
         true
     }
@@ -563,7 +570,8 @@ class DelAttr extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("DelAttr filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("DelAttr filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         opctx.deletedIdAttrs.add(docUUID + attrName)
         true
@@ -592,7 +600,8 @@ class ClrAttr extends DelAttr {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(docUUID)) {
-            log.dbg("ClrAttr filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("ClrAttr filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         if (opctx.deletedIdAttrs.contains(docUUID + attrName)) {
             return false
@@ -645,7 +654,8 @@ class ClrDocRels extends DelDocRels {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(p1)) {
-            log.dbg("ClrDocRels filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("ClrDocRels filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         return true
     }
@@ -672,7 +682,8 @@ class DelAttrRels extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(p1)) {
-            log.dbg("DelAttrRels filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("DelAttrRels filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         return true
     }
@@ -694,7 +705,8 @@ class DelRel extends MutationCmd {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(relKey.p1)) {
-            log.dbg("DelAttrRels filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("DelAttrRels filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         return true
     }
@@ -732,10 +744,12 @@ class ClrAttrRels extends DelAttrRels {
 
     boolean optimize(CommandExecServices svcs, OperationContext opctx, Detail detail) {
         if (opctx.deletedIds.contains(p1)) {
-            log.dbg("ClrAttrRels filtered " + JSONUtil.serialize(this), null); return false
+            log.dbg("ClrAttrRels filtered " + JSONUtil.serialize(this), null)
+            return false
         }
         if (opctx.deletedIdAttrs.contains(p1 + p2)) {
-            log.dbg("ClrAttrRels filtered for attr " + JSONUtil.serialize(this), null); return false
+            log.dbg("ClrAttrRels filtered for attr " + JSONUtil.serialize(this), null)
+            return false
         }
         return true
     }

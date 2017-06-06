@@ -1,29 +1,17 @@
 package cassdoc.operations
 
-import groovy.transform.CompileStatic
-
-import org.apache.commons.lang3.StringEscapeUtils
-import org.apache.commons.lang3.StringUtils
-
-import cassdoc.CommandExecServices
-import cassdoc.DBCodes
-import cassdoc.Detail
-import cassdoc.FieldValue
-import cassdoc.FixedAttr
-import cassdoc.IDUtil
-import cassdoc.OperationContext
-import cassdoc.Rel
+import cassdoc.*
 import cassdoc.commands.mutate.NewAttr
 import cassdoc.commands.mutate.NewDoc
 import cassdoc.commands.mutate.NewRel
 import cassdoc.commands.mutate.UpdFixedCol
-
 import com.datastax.driver.core.DataType
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
-
 import cwdrg.lg.annotation.Log
-
+import groovy.transform.CompileStatic
+import org.apache.commons.lang3.StringEscapeUtils
+import org.apache.commons.lang3.StringUtils
 
 @Log
 @CompileStatic
@@ -31,14 +19,13 @@ class CreateOperations {
 
     // array "stream" of docs
     // TODO: special streaming execution mode: not immediate, nor do we wait until the end.
-    public
     static String newDocStream(CommandExecServices svcs, OperationContext opctx, Detail detail, Reader inputListOfJsonDocs, Writer outputListOfIDs) {
         outputListOfIDs << '['
         JsonParser parser = svcs.jsonFactory.createParser(inputListOfJsonDocs)
         JsonToken firsttoken = parser.nextToken()
         boolean firstid = true
         if (firsttoken != JsonToken.START_ARRAY) {
-            throw log.err("", new Exception("newDocStream operation must begin with JSON START_ARRAY token"))
+            throw log.err("", new IllegalArgumentException("newDocStream operation must begin with JSON START_ARRAY token"))
         } else {
             while (true) {
                 JsonToken startObjToken = parser.nextToken()
@@ -48,21 +35,22 @@ class CreateOperations {
                 } else if (startObjToken != JsonToken.START_OBJECT) {
                     // return list of objects created so far? no rollback....
                     outputListOfIDs << ']'
-                    throw log.err("", new Exception("newDocStream operation, one of the array elements is not a doc"))
+                    throw log.err("", new IllegalArgumentException("newDocStream operation, one of the array elements is not a doc"))
                 } else {
-                    JsonToken idtoken = parser.nextToken();
+                    JsonToken idtoken = parser.nextToken()
                     if (idtoken != JsonToken.FIELD_NAME) {
                         outputListOfIDs << ']'
-                        throw log.err("", new Exception("newDocStream: NO ID FIELD FOR NEW DOCUMENT"))
+                        throw log.err("", new IllegalArgumentException("newDocStream: NO ID FIELD FOR NEW DOCUMENT"))
                     } else {
-                        String firstField = parser.getCurrentName();
+                        String firstField = parser.getCurrentName()
                         if (!svcs.idField.equals(firstField)) {
                             outputListOfIDs << ']'
-                            throw log.err("", new Exception("newDocStream:ID FIELD IS NOT FIRST FIELD"))
+                            throw log.err("", new IllegalArgumentException("newDocStream:ID FIELD IS NOT FIRST FIELD"))
                         } else {
                             String newEntityUUID = newChildDoc(svcs, opctx, detail, parser, null, null, false)
                             if (firstid) {
-                                firstid = false; outputListOfIDs << '"' << newEntityUUID << '"'
+                                firstid = false
+                                outputListOfIDs << '"' << newEntityUUID << '"'
                             } else {
                                 outputListOfIDs << ',"' << newEntityUUID << '"'
                             }
@@ -73,8 +61,7 @@ class CreateOperations {
         }
     }
 
-
-    public static String newMap(
+    static String newMap(
             final CommandExecServices svcs,
             final OperationContext opctx,
             final Detail detail, final Map<String, Object> docMap, final boolean threaded) {
@@ -83,15 +70,12 @@ class CreateOperations {
         return docUUID
     }
 
-    public
     static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, Reader json, boolean threaded) {
         JsonParser parser = svcs.jsonFactory.createParser(json)
 
         return newDoc(svcs, opctx, detail, parser, threaded)
     }
 
-
-    public
     static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String json, boolean threaded) {
 
         JsonParser parser = svcs.jsonFactory.createParser(json)
@@ -100,61 +84,56 @@ class CreateOperations {
 
     }
 
-    public
     static String newDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, boolean threaded) {
-        JsonToken firsttoken = parser.nextToken();
+        JsonToken firsttoken = parser.nextToken()
         if (firsttoken == JsonToken.START_OBJECT) {
 
-            JsonToken idtoken = parser.nextToken();
+            JsonToken idtoken = parser.nextToken()
             if (idtoken != JsonToken.FIELD_NAME) {
-                throw new Exception("NO ID FIELD FOR NEW DOCUMENT");
+                throw new IllegalArgumentException("NO ID FIELD FOR NEW DOCUMENT")
             } else {
-                String firstField = parser.getCurrentName();
+                String firstField = parser.getCurrentName()
                 if (!svcs.idField.equals(firstField)) {
-                    throw new Exception("ID FIELD IS NOT FIRST FIELD");
+                    throw new IllegalArgumentException("ID FIELD IS NOT FIRST FIELD")
                 } else {
                     String newEntityUUID = newChildDoc(svcs, opctx, detail, parser, null, null, threaded)
                     return newEntityUUID
                 }
             }
         } else {
-            throw new Exception("Invalid Parser state")
+            throw new IllegalArgumentException("Invalid Parser state")
         }
-
     }
 
-    public
     static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos) {
         JsonParser parser = svcs.jsonFactory.createParser(json)
         newAttr(svcs, opctx, detail, docUUID, attr, parser, paxos)
     }
 
-    public
     static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, Reader json, boolean paxos) {
         JsonParser parser = svcs.jsonFactory.createParser(json)
         newAttr(svcs, opctx, detail, docUUID, attr, parser, paxos)
     }
 
-    public
     static void newAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, JsonParser parser, boolean paxos) {
         NewAttr cmd = new NewAttr(docUUID: docUUID, attrName: attr)
         cmd.attrValue = parseField(svcs, opctx, detail, docUUID, attr, parser)
-        cmd.isComplete = true;
+        cmd.isComplete = true
         cmd.paxos = paxos
         analyzeNewAttrEvent(svcs, opctx, detail, cmd)
     }
 
     // ---- parsing helper methods
 
-    public static String newChildDoc(
+    static String newChildDoc(
             final CommandExecServices svcs,
             final OperationContext opctx,
             final Detail detail,
             final JsonParser parser, final String parentUUID, final String parentAttr, final boolean threaded) {
-        final String docId = parseIDAttr(svcs, opctx, detail, parser);
+        final String docId = parseIDAttr(svcs, opctx, detail, parser)
         if (threaded) {
             new Thread() {
-                public void run() {
+                void run() {
                     CreateOperations.performNewChildDoc(svcs, opctx, detail, parser, docId, parentUUID, parentAttr)
                 }
             }.start()
@@ -164,10 +143,9 @@ class CreateOperations {
         return docId
     }
 
-    public
     static void performNewChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String docId, String parentUUID, String parentAttr) {
         // parser should be pointing at the idKey field right now
-        NewDoc newDocCmd = new NewDoc();
+        NewDoc newDocCmd = new NewDoc()
         newDocCmd.docUUID = docId
         newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
         newDocCmd.parentAttr = parentAttr
@@ -176,94 +154,91 @@ class CreateOperations {
         analyzeNewDocEvent(svcs, opctx, detail, newDocCmd)
 
         while (true) {
-            JsonToken nextField = parser.nextToken();
+            JsonToken nextField = parser.nextToken()
             if (nextField == JsonToken.END_OBJECT) {
-                break;
+                break
             } else if (nextField == JsonToken.FIELD_NAME) {
-                String fieldName = parser.getCurrentName();
+                String fieldName = parser.getCurrentName()
                 NewAttr newAttrCmd = new NewAttr(docUUID: newDocCmd.docUUID, attrName: fieldName)
-                newAttrCmd.attrValue = parseField(svcs, opctx, detail, newDocCmd.docUUID, fieldName, parser);
-                newAttrCmd.isComplete = true;
+                newAttrCmd.attrValue = parseField(svcs, opctx, detail, newDocCmd.docUUID, fieldName, parser)
+                newAttrCmd.isComplete = true
                 analyzeNewAttrEvent(svcs, opctx, detail, newAttrCmd)
             } else {
-                throw new Exception("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT " + nextField);
+                throw new IllegalArgumentException("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT " + nextField)
             }
         }
 
     }
 
     // extract or generate UUID
-    public
+
     static String parseIDAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser) {
         JsonToken token = parser.nextToken()
         if (token == JsonToken.VALUE_STRING) {
-            String idString = parser.getText();
+            String idString = parser.getText()
             if (svcs.typeSvc.isKnownSuffix(idString)) {
                 return IDUtil.timeUUID() + "-" + idString
             } else {
                 if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
                     return idString
                 } else {
-                    throw new Exception("Unknown type suffix for provided UUID: " + idString)
+                    throw new IllegalArgumentException("Unknown type suffix for provided UUID: " + idString)
                 }
             }
         }
         // TODO: more complicated stuff? DFRef object or something similar?
-        throw new Exception("ID information not provided")
+        throw new IllegalArgumentException("ID information not provided")
     }
 
     // for newDoc with maps rather than JSON tokens
-    public static String checkIDAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String idString) {
+    static String checkIDAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String idString) {
         if (svcs.typeSvc.isKnownSuffix(idString)) {
             return IDUtil.timeUUID() + "-" + idString
         } else {
             if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
                 return idString
             } else {
-                throw new Exception("Unknown type suffix for provided UUID: " + idString)
+                throw new IllegalArgumentException("Unknown type suffix for provided UUID: " + idString)
             }
         }
         // TODO: more complicated stuff? DFRef object or something similar?
-        throw new Exception("ID information not provided")
+        throw new IllegalArgumentException("ID information not provided")
     }
 
-
-    public
     static FieldValue parseField(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String fieldName, JsonParser parser) {
         String fieldValue
-        JsonToken token = parser.nextToken();
+        JsonToken token = parser.nextToken()
 
         if (token == JsonToken.VALUE_NULL) {
             return null
         }
         if (token == JsonToken.VALUE_STRING) {
-            return new FieldValue(type: String.class, value: parser.getText())
+            return new FieldValue(type: String, value: parser.getText())
         }
         if (token == JsonToken.VALUE_TRUE || token == JsonToken.VALUE_FALSE) {
-            return new FieldValue(type: Boolean.class, value: parser.getText())
+            return new FieldValue(type: Boolean, value: parser.getText())
         }
         if (token == JsonToken.VALUE_NUMBER_FLOAT) {
-            return new FieldValue(type: Float.class, value: parser.getText())
+            return new FieldValue(type: Float, value: parser.getText())
         }
         if (token == JsonToken.VALUE_NUMBER_INT) {
-            return new FieldValue(type: Integer.class, value: parser.getText())
+            return new FieldValue(type: Integer, value: parser.getText())
         }
 
         if (token == JsonToken.START_ARRAY) {
             StringBuilder sb = new StringBuilder()
             parseIngestChildArray(svcs, opctx, detail, sb, parser, docUUID, fieldName)
-            return new FieldValue(type: List.class, value: sb.toString())
+            return new FieldValue(type: List, value: sb.toString())
         }
 
         if (token == JsonToken.START_OBJECT) {
             StringBuilder sb = new StringBuilder()
             parseIngestChildObject(svcs, opctx, detail, sb, parser, docUUID, fieldName)
-            return new FieldValue(type: Map.class, value: sb.toString())
+            return new FieldValue(type: Map, value: sb.toString())
         }
 
         // else Exception
     }
-
 
     static void parseIngestChildObject(CommandExecServices svcs, OperationContext opctx, Detail detail, StringBuilder sb, JsonParser jsonParser, String parentUUID, String parentAttr) {
         sb << '{'
@@ -278,7 +253,7 @@ class CreateOperations {
 
                         String childUUID = newChildDoc(svcs, opctx, detail, jsonParser, parentUUID, parentAttr, false)
                         sb << '"' << svcs.idField << '":"' << childUUID << '"}'
-                        return;
+                        return
                     } else {
                         firstField = false
                     }
@@ -416,43 +391,42 @@ class CreateOperations {
                 case DataType.Name.VARCHAR.toString():
                 case "string":
                     val = cmd.attrValue?.value
-                    break;
+                    break
                 case DataType.Name.TIMESTAMP.toString():
                 case "date":
                 case "datetime":
                     val = cmd.attrValue == null ? null : new Date(Long.parseLong(cmd.attrValue.value))
-                    break;
+                    break
                 case DataType.Name.BIGINT.toString():
                 case "long":
                 case "counter":
                     val = cmd.attrValue == null ? null : Long.parseLong(cmd.attrValue.value)
-                    break;
+                    break
                 case DataType.Name.INT.toString():
                 case "integer":
                 case "int":
                     val = cmd.attrValue == null ? null : Integer.parseInt(cmd.attrValue.value)
-                    break;
+                    break
                 case DataType.Name.BOOLEAN.toString():
                 case "boolean":
                     val = cmd.attrValue == null ? null : Boolean.parseBoolean(cmd.attrValue.value)
-                    break;
+                    break
                 case DataType.Name.FLOAT.toString():
                 case "float":
                     val = cmd.attrValue == null ? null : Float.parseFloat(cmd.attrValue.value)
-                    break;
+                    break
                 case DataType.Name.DOUBLE.toString():
                 case "double":
                     val = cmd.attrValue == null ? null : Double.parseDouble(cmd.attrValue.value)
-                    break;
+                    break
                 case DataType.Name.DECIMAL.toString():
                 case "bigdecimal":
                     val = cmd.attrValue == null ? null : new BigDecimal(cmd.attrValue.value)
-                    break;
+                    break
                 case DataType.Name.VARINT.toString():
                 case "bigint":
-                case "bigdecimal":
-                    val = cmd.attrValue == null ? null : new BigInteger(cmd.attrValue.value);
-                    break;
+                    val = cmd.attrValue == null ? null : new BigInteger(cmd.attrValue.value)
+                    break
             }
             UpdFixedCol fixedcol = new UpdFixedCol(docUUID: cmd.docUUID, colName: col, value: val)
             opctx.addCommand(svcs, detail, fixedcol)
@@ -483,7 +457,7 @@ class CreateOperations {
         newRelCmd.execMutationCassandra(svcs, opctx, detail)
     }
 
-    public static String newChildDocMap(
+    static String newChildDocMap(
             final CommandExecServices svcs,
             final OperationContext opctx,
             final Detail detail,
@@ -491,10 +465,10 @@ class CreateOperations {
             final String parentUUID, final String parentAttr, final boolean threaded) {
         final String docUUID = checkIDAttr(svcs, opctx, detail, (String) docMap[svcs.idField])
 
-        if (docUUID == null) throw new Exception("New document map must have id field")
+        if (docUUID == null) throw new IllegalArgumentException("New document map must have id field")
         if (threaded) {
             new Thread() {
-                public void run() {
+                void run() {
                     CreateOperations.performNewChildDocMap(svcs, opctx, detail, docMap.entrySet().iterator(), docUUID, parentUUID, parentAttr)
                 }
             }.start()
@@ -505,10 +479,10 @@ class CreateOperations {
 
     }
 
-    public
+
     static String performNewChildDocMap(CommandExecServices svcs, OperationContext opctx, Detail detail, Iterator<Map.Entry<String, Object>> fields, String docId, String parentUUID, String parentAttr) {
         // parser should be pointing at the idKey field right now
-        NewDoc newDocCmd = new NewDoc();
+        NewDoc newDocCmd = new NewDoc()
         newDocCmd.docUUID = docId
         newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
         newDocCmd.parentAttr = parentAttr
@@ -522,7 +496,7 @@ class CreateOperations {
                 FieldValue fv = serializeAttr(svcs, opctx, detail, field, docId, parentUUID, parentAttr)
                 NewAttr newAttrCmd = new NewAttr(docUUID: docId, attrName: field.key)
                 newAttrCmd.attrValue = fv
-                newAttrCmd.isComplete = true;
+                newAttrCmd.isComplete = true
                 analyzeNewAttrEvent(svcs, opctx, detail, newAttrCmd)
             }
 
@@ -530,7 +504,7 @@ class CreateOperations {
 
     }
 
-    public
+
     static FieldValue serializeAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, Map.Entry<String, Object> field, String docId, String parentUUID, String parentAttr) {
         FieldValue fv = new FieldValue()
 
@@ -558,13 +532,12 @@ class CreateOperations {
 
     }
 
-    public
     static String serializeList(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, List list) {
         StringWriter sw = new StringWriter()
         sw << "["
         boolean first = true
         for (Object o : list) {
-            if (first) first = false; else sw << ",";
+            if (first) first = false else sw << ","
             if (o == null)
                 sw << "null"
             if (o instanceof CharSequence || o instanceof float || o instanceof double || o instanceof BigDecimal || o instanceof int || o instanceof byte || o instanceof long || o instanceof BigDecimal) {
@@ -579,7 +552,6 @@ class CreateOperations {
         return sw.toString()
     }
 
-    public
     static String serializeMap(CommandExecServices svcs, OperationContext opctx, Detail detail, String docId, String curAttr, Map map) {
         StringWriter sw = new StringWriter()
         // determine if this is a new child document, or just a map value
@@ -591,7 +563,7 @@ class CreateOperations {
             boolean first = true
             while (fields.hasNext()) {
                 Map.Entry<String, Object> field = fields.next()
-                if (first) first = false; else sw << ","
+                if (first) first = false else sw << ","
                 sw << '"' << StringEscapeUtils.escapeJson(field.key) << '":'
                 Object o = field.value
                 if (o == null)
@@ -606,6 +578,5 @@ class CreateOperations {
             }
         }
     }
-
 
 }

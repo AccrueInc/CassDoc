@@ -28,6 +28,7 @@ import cwdrg.util.json.JSONUtil
 // 3) after each nextRow, if desired, check if there was a new Partition and get the afterproducts of the previous completed partition
 
 @CompileStatic
+@SuppressWarnings('All')
 abstract class RowProcessor {
     boolean newPartition
     long pageCount = 0
@@ -98,7 +99,7 @@ abstract class CassandraPagedRowProcessor extends RowProcessor {
             }
 
             if (rs.getAvailableWithoutFetching() == fetchNextPageThreshold && !rs.isFullyFetched()) {
-                pageCount++;
+                pageCount++
                 rs.fetchMoreResults()
             }
         }
@@ -124,11 +125,11 @@ class GetDocAttrsRP extends CassandraPagedRowProcessor {
         StringBuilder cql = new StringBuilder(64)
         cql << "SELECT token(e),e,p,d,t,zv"
         if (detail.attrWritetimeMeta != null) {
-            cql << ",writetime(" << detail.attrWritetimeMeta << ")";
+            cql << ",writetime(" << detail.attrWritetimeMeta << ")"
             writetimeCol = true
         }
         if (detail.attrMetaDataMeta || detail.attrMetaIDMeta) {
-            cql << ",z_md";
+            cql << ",z_md"
             attrMetaCol = true
         }
         cql << " FROM " << space << ".p_" << suffix << " WHERE e = ?"
@@ -179,52 +180,52 @@ class QueryToListOfStrArr extends CassandraPagedRowProcessor {
                 case DataType.ascii():
                 case DataType.text():
                 case DataType.varchar():
-                    data[i] = row.getString(i);
-                    break;
+                    data[i] = row.getString(i)
+                    break
 
                 case DataType.timestamp():
-                    data[i] = row.getTimestamp(i)?.time?.toString()
-                    break;
+                    data[i] = row.getTimestamp(i)?.time.toString()
+                    break
 
                 case DataType.cboolean():
-                    data[i] = row.getBool(i)?.toString();
-                    break;
+                    data[i] = row.getBool(i).toString()
+                    break
 
                 case DataType.cint():
-                    data[i] = row.getInt(i)?.toString();
-                    break;
+                    data[i] = row.getInt(i).toString()
+                    break
 
                 case DataType.bigint():
                 case DataType.counter():
-                    data[i] = row.getLong(i)?.toString();
-                    break;
+                    data[i] = row.getLong(i).toString()
+                    break
 
                 case DataType.varint():
-                    data[i] = row.getVarint(i)?.toString();
-                    break;
+                    data[i] = row.getVarint(i)?.toString()
+                    break
 
                 case DataType.cfloat():
-                    data[i] = row.getFloat(i)?.toString();
-                    break;
+                    data[i] = row.getFloat(i).toString()
+                    break
 
                 case DataType.cdouble():
-                    data[i] = row.getDouble(i)?.toString();
-                    break;
+                    data[i] = row.getDouble(i).toString()
+                    break
 
                 case DataType.decimal():
-                    data[i] = row.getDecimal(i)?.toString();
-                    break;
+                    data[i] = row.getDecimal(i)?.toString()
+                    break
 
                 case DataType.timeuuid():
                 case DataType.uuid():
-                    data[i] = row.getUUID(i);
-                    break;
+                    data[i] = row.getUUID(i)
+                    break
 
                 case DataType.blob():
-                    ByteBuffer buffer = row.getBytes(i);
-                    byte[] wrapped = Bytes.getArray(buffer);
+                    ByteBuffer buffer = row.getBytes(i)
+                    byte[] wrapped = Bytes.getArray(buffer)
                     data[i] = Base64.encoder.encodeToString(wrapped)
-                    break;
+                    break
 
                 default:
                     Object colval = row.getObject(i)
@@ -259,52 +260,52 @@ class QueryToListOfObjArr extends CassandraPagedRowProcessor {
                 case DataType.ascii():
                 case DataType.text():
                 case DataType.varchar():
-                    data[i] = row.getString(i);
-                    break;
+                    data[i] = row.getString(i)
+                    break
 
                 case DataType.timestamp():
-                    data[i] = row.getTimestamp(i);
-                    break;
+                    data[i] = row.getTimestamp(i)
+                    break
 
                 case DataType.cboolean():
-                    data[i] = row.getBool(i);
-                    break;
+                    data[i] = row.getBool(i)
+                    break
 
                 case DataType.cint():
-                    data[i] = row.getInt(i);
-                    break;
+                    data[i] = row.getInt(i)
+                    break
 
                 case DataType.bigint():
                 case DataType.counter():
-                    data[i] = row.getLong(i);
-                    break;
+                    data[i] = row.getLong(i)
+                    break
 
                 case DataType.varint():
-                    data[i] = row.getVarint(i);
-                    break;
+                    data[i] = row.getVarint(i)
+                    break
 
                 case DataType.cfloat():
-                    data[i] = row.getFloat(i);
-                    break;
+                    data[i] = row.getFloat(i)
+                    break
 
                 case DataType.cdouble():
-                    data[i] = row.getDouble(i);
-                    break;
+                    data[i] = row.getDouble(i)
+                    break
 
                 case DataType.decimal():
-                    data[i] = row.getDecimal(i);
-                    break;
+                    data[i] = row.getDecimal(i)
+                    break
 
                 case DataType.timeuuid():
                 case DataType.uuid():
-                    data[i] = row.getUUID(i);
-                    break;
+                    data[i] = row.getUUID(i)
+                    break
 
                 case DataType.blob():
-                    ByteBuffer buffer = row.getBytes(i);
-                    byte[] wrapped = Bytes.getArray(buffer);
+                    ByteBuffer buffer = row.getBytes(i)
+                    byte[] wrapped = Bytes.getArray(buffer)
                     data[i] = wrapped
-                    break;
+                    break
 
                 default:
                     Object colval = row.getObject(i)

@@ -31,7 +31,7 @@ class UpdateOperations {
         UpdAttrPAXOS cmd = new UpdAttrPAXOS(docUUID: docUUID, attrName: attr, previousVersion: checkVal)
         cmd.paxosId = ["P", docUUID] as Object[]
         cmd.attrValue = CreateOperations.parseField(svcs, opctx, detail, docUUID, attr, parser)
-        cmd.isComplete = true;
+        cmd.isComplete = true
         opctx.addCommand(svcs, detail, cmd)
         analyzeUpdateAttrEvent(svcs, opctx, detail, cmd)
     }
@@ -40,7 +40,7 @@ class UpdateOperations {
         JsonParser parser = svcs.jsonFactory.createParser(json)
         UpdAttr cmd = new UpdAttr(docUUID: docUUID, attrName: attr)
         cmd.attrValue = CreateOperations.parseField(svcs, opctx, detail, docUUID, attr, parser)
-        cmd.isComplete = true;
+        cmd.isComplete = true
         opctx.addCommand(svcs, detail, cmd)
         analyzeUpdateAttrEvent(svcs, opctx, detail, cmd)
     }
@@ -48,7 +48,7 @@ class UpdateOperations {
     static void updateAttrEntry(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Map.Entry<String, Object> attr) {
         UpdAttr cmd = new UpdAttr(docUUID: docUUID, attrName: attr.key)
         cmd.attrValue = CreateOperations.serializeAttr(svcs, opctx, detail, attr, docUUID, null, null)
-        cmd.isComplete = true;
+        cmd.isComplete = true
         opctx.addCommand(svcs, detail, cmd)
         analyzeUpdateAttrEvent(svcs, opctx, detail, cmd)
     }
@@ -100,49 +100,47 @@ class UpdateOperations {
         CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail, cmd)
     }
 
-
-    public
     static FieldValue parseFieldOverlay(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String fieldName, JsonParser parser, AttrOverlayTracking overlayTracker) {
         String fieldValue
-        JsonToken token = parser.nextToken();
+        JsonToken token = parser.nextToken()
 
         if (token == JsonToken.VALUE_NULL) {
             return null
         }
         if (token == JsonToken.VALUE_STRING) {
-            return new FieldValue(type: String.class, value: parser.getText())
+            return new FieldValue(type: String, value: parser.getText())
         }
         if (token == JsonToken.VALUE_TRUE || token == JsonToken.VALUE_FALSE) {
-            return new FieldValue(type: Boolean.class, value: parser.getText())
+            return new FieldValue(type: Boolean, value: parser.getText())
         }
         if (token == JsonToken.VALUE_NUMBER_FLOAT) {
-            return new FieldValue(type: Float.class, value: parser.getText())
+            return new FieldValue(type: Float, value: parser.getText())
         }
         if (token == JsonToken.VALUE_NUMBER_INT) {
-            return new FieldValue(type: Integer.class, value: parser.getText())
+            return new FieldValue(type: Integer, value: parser.getText())
         }
 
         if (token == JsonToken.START_ARRAY) {
             StringBuilder sb = new StringBuilder()
             parseOverlayChildArray(svcs, opctx, detail, sb, parser, docUUID, fieldName, overlayTracker)
-            return new FieldValue(type: List.class, value: sb.toString())
+            return new FieldValue(type: List, value: sb.toString())
         }
 
         if (token == JsonToken.START_OBJECT) {
             StringBuilder sb = new StringBuilder()
             parseOverlayChildObject(svcs, opctx, detail, sb, parser, docUUID, fieldName, overlayTracker)
-            return new FieldValue(type: Map.class, value: sb.toString())
+            return new FieldValue(type: Map, value: sb.toString())
         }
 
         // else Exception
     }
 
     // extract or generate UUID
-    public
+
     static String[] parseIDAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser) {
         JsonToken token = parser.nextToken()
         if (token == JsonToken.VALUE_STRING) {
-            String idString = parser.getText();
+            String idString = parser.getText()
             if (svcs.typeSvc.isKnownSuffix(idString)) {
                 return [
                         "NEW",
@@ -151,23 +149,21 @@ class UpdateOperations {
                 if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
                     return ["EXTANT", idString] as String[]
                 } else {
-                    throw new Exception("Unknwon type suffix for provided UUID " + idString)
+                    throw new IllegalArgumentException("Unknown type suffix for provided UUID " + idString)
                 }
             }
         }
         // TODO: more complicated stuff? DFRef object or something similar?
-        throw new Exception("ID information not provided")
+        throw new IllegalArgumentException("ID information not provided")
     }
 
-
-    public
     static String overlayChildDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, JsonParser parser, String parentUUID, String parentAttr, AttrOverlayTracking overlayTracker) {
 
-        String[] analyzeID = parseIDAttr(svcs, opctx, detail, parser);
+        String[] analyzeID = parseIDAttr(svcs, opctx, detail, parser)
         if (analyzeID[0] == "NEW") {
             overlayTracker.newIDs.add(analyzeID[1])
             // parser should be pointing at the idKey field right no
-            NewDoc newDocCmd = new NewDoc();
+            NewDoc newDocCmd = new NewDoc()
             newDocCmd.docUUID = analyzeID[1]
             newDocCmd.parentUUID = StringUtils.isBlank(parentUUID) ? null : parentUUID
             newDocCmd.parentAttr = parentAttr
@@ -176,17 +172,17 @@ class UpdateOperations {
             CreateOperations.analyzeNewDocEvent(svcs, opctx, detail, newDocCmd)
 
             while (true) {
-                JsonToken nextField = parser.nextToken();
+                JsonToken nextField = parser.nextToken()
                 if (nextField == JsonToken.END_OBJECT) {
-                    break;
+                    break
                 } else if (nextField == JsonToken.FIELD_NAME) {
-                    String fieldName = parser.getCurrentName();
+                    String fieldName = parser.getCurrentName()
                     NewAttr newAttrCmd = new NewAttr(docUUID: newDocCmd.docUUID, attrName: fieldName)
-                    newAttrCmd.attrValue = parseFieldOverlay(svcs, opctx, detail, newDocCmd.docUUID, fieldName, parser, overlayTracker);
-                    newAttrCmd.isComplete = true;
+                    newAttrCmd.attrValue = parseFieldOverlay(svcs, opctx, detail, newDocCmd.docUUID, fieldName, parser, overlayTracker)
+                    newAttrCmd.isComplete = true
                     CreateOperations.analyzeNewAttrEvent(svcs, opctx, detail, newAttrCmd)
                 } else {
-                    throw new Exception("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT " + nextField);
+                    throw new IllegalArgumentException("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT " + nextField)
                 }
             }
             return newDocCmd.docUUID
@@ -211,20 +207,19 @@ class UpdateOperations {
 
             // extant doc... overlay does not modify extant docs, so we ignore anything inside of it
             while (true) {
-                JsonToken nextField = parser.nextToken();
-                String fieldName = parser.getCurrentName();
+                JsonToken nextField = parser.nextToken()
+                String fieldName = parser.getCurrentName()
                 if (nextField == JsonToken.END_OBJECT) {
-                    break;
+                    break
                 } else if (nextField == JsonToken.FIELD_NAME) {
-                    parseFieldIgnore(svcs, opctx, detail, analyzeID[1], fieldName, parser);
+                    parseFieldIgnore(svcs, opctx, detail, analyzeID[1], fieldName, parser)
                 } else {
-                    throw new Exception("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT " + nextField);
+                    throw new IllegalArgumentException("ILLEGAL TOKEN TYPE AT DOCUMENT ROOT " + nextField)
                 }
             }
             return analyzeID[1]
         }
     }
-
 
     static void parseOverlayChildObject(CommandExecServices svcs, OperationContext opctx, Detail detail, StringBuilder sb, JsonParser jsonParser, String parentUUID, String parentAttr, AttrOverlayTracking overlayTracker) {
         sb << '{'
@@ -239,7 +234,7 @@ class UpdateOperations {
 
                         String childUUID = overlayChildDoc(svcs, opctx, detail, jsonParser, parentUUID, parentAttr, overlayTracker)
                         sb << '"' << svcs.idField << '":"' << childUUID << '"}'
-                        return;
+                        return
                     } else {
                         firstField = false
                     }
@@ -336,7 +331,7 @@ class UpdateOperations {
 
     static void parseFieldIgnore(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String fieldName, JsonParser parser) {
         String fieldValue
-        JsonToken token = parser.nextToken();
+        JsonToken token = parser.nextToken()
 
         if (token == JsonToken.VALUE_NULL) {
             return

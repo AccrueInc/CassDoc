@@ -1,4 +1,4 @@
-package cassdoc.exceptions;
+package cassdoc.exceptions
 
 
 /**
@@ -13,21 +13,21 @@ class PersistenceException extends RuntimeException {
     }
 
     PersistenceException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
     PersistenceException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
     PersistenceException(String message) {
-        super(message);
+        super(message)
     }
 
     PersistenceException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 321976438729576L;
+    private static final long serialVersionUID = 321976438729576L
 
 }

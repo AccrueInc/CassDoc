@@ -51,15 +51,15 @@ class GetDocAttrs extends QueryCmd {
         StringBuilder cql = new StringBuilder(64)
         cql << "SELECT e,p,d,t,zv"
         if (detail.attrWritetimeMeta != null) {
-            cql << ",writetime(" << detail.attrWritetimeMeta << ")";
+            cql << ",writetime(" << detail.attrWritetimeMeta << ")"
             rch.writetimeCol = true
         }
         if (detail.attrTokenMeta) {
-            rch.tokenCol = true;
+            rch.tokenCol = true
             cql << ",token(e)"
         }
         if (detail.attrMetaIDMeta || detail.attrMetaDataMeta) {
-            rch.attrMetaCol = true;
+            rch.attrMetaCol = true
             cql << ",z_md"
         }
         cql << " FROM " << space << ".p_" << suffix << " WHERE e = ?"
@@ -70,7 +70,7 @@ class GetDocAttrs extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql.toString(), cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 
 }
@@ -82,7 +82,7 @@ class GetDocAttrsRCH implements RowCallbackHandler {
     boolean attrMetaCol = false
     List<Object[]> attrs = []
 
-    public void processRow(Row row) throws CQLException {
+    void processRow(Row row) throws CQLException {
         Object[] attr = [
                 row.getString("p"),
                 row.getString("t"),
@@ -109,13 +109,16 @@ class GetAttrCmd extends QueryCmd {
         StringBuilder cql = new StringBuilder(64)
         cql << "SELECT e,p,d,t,zv"
         if (detail.attrWritetimeMeta != null) {
-            rch.writetimeCol = true; cql << ",writetime(" << detail.attrWritetimeMeta << ")"
+            rch.writetimeCol = true
+            cql << ",writetime(" << detail.attrWritetimeMeta << ")"
         }
         if (detail.attrTokenMeta) {
-            rch.tokenCol = true; cql << ",token(e)"
+            rch.tokenCol = true
+            cql << ",token(e)"
         }
         if (detail.attrMetaIDMeta || detail.attrMetaDataMeta) {
-            rch.attrMetaCol = true; cql << ",z_md"
+            rch.attrMetaCol = true
+            cql << ",z_md"
         }
         cql << " FROM " << space << ".p_" << suffix << " WHERE e = ? and p = ?"
         Object[] cqlargs = [docUUID, attrName] as Object[]
@@ -125,7 +128,7 @@ class GetAttrCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql.toString(), cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 }
 
@@ -138,10 +141,10 @@ class GetAttrRCH implements RowCallbackHandler {
     String data
     UUID version
     Long writetime
-    Long token
+    String token
     String attrMetaID
 
-    public void processRow(Row row) throws CQLException {
+    void processRow(Row row) throws CQLException {
         valType = row.getString("t")
         data = row.getString("d")
         version = row.getUUID("zv")
@@ -166,13 +169,16 @@ class GetAttrMetaCmd extends QueryCmd {
         StringBuilder cql = new StringBuilder(64)
         cql << "SELECT e,p,zv"
         if (detail.attrWritetimeMeta != null) {
-            rch.writetimeCol = true; cql << ",writetime(" << detail.attrWritetimeMeta << ")"
+            rch.writetimeCol = true
+            cql << ",writetime(" << detail.attrWritetimeMeta << ")"
         }
         if (detail.attrTokenMeta) {
-            rch.tokenCol = true; cql << ",token(e)"
+            rch.tokenCol = true
+            cql << ",token(e)"
         }
         if (detail.attrMetaIDMeta || detail.attrMetaDataMeta) {
-            rch.attrMetaCol = true; cql << ",z_md"
+            rch.attrMetaCol = true
+            cql << ",z_md"
         }
         cql << " FROM " << space << ".p_" << suffix << " WHERE e = ? and p = ?"
         Object[] cqlargs = [docUUID, attrName] as Object[]
@@ -182,7 +188,7 @@ class GetAttrMetaCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql.toString(), cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 }
 
@@ -193,10 +199,10 @@ class GetAttrMetaRCH implements RowCallbackHandler {
     boolean attrMetaCol = false
     UUID version
     Long writetime
-    Long token
+    String token
     String attrMetaID
 
-    public void processRow(Row row) throws CQLException {
+    void processRow(Row row) throws CQLException {
         version = row.getUUID("zv")
         writetime = writetimeCol ? row.getLong(3) : null
         token = tokenCol ? row.partitionKeyToken.value.toString() : null
@@ -232,7 +238,7 @@ class GetRelsCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql, cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 
     GetRelsRCH queryCassandraDocRelsForType(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
@@ -247,7 +253,7 @@ class GetRelsCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql, cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 
     GetRelsRCH queryCassandraAttrRelsForType(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
@@ -263,14 +269,14 @@ class GetRelsCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql, cqlargs, rch, consistency)
-        return rch;
+        return rch
 
     }
 
 }
 
 class GetRelKeyCmd extends QueryCmd {
-    RelKey relKey;
+    RelKey relKey
 
     /**
      * we're trying to guess how specific a query to submit based on if a relation type, subparts
@@ -405,7 +411,7 @@ class GetRelKeyCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql, cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 
 }
@@ -430,7 +436,7 @@ class GetAttrRelsCmd extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql, cqlargs, rch, consistency)
-        return rch;
+        return rch
 
     }
 
@@ -441,7 +447,7 @@ class GetAttrRelsCmd extends QueryCmd {
 class GetRelsRCH implements RowCallbackHandler {
     List<Rel> rels = []
 
-    public void processRow(Row row) throws CQLException {
+    void processRow(Row row) throws CQLException {
         Rel rel = new Rel(
                 p1: row.getString("p1"),
                 p2: row.getString("p2"),
@@ -485,7 +491,7 @@ class GetDoc extends QueryCmd {
             cql << ",z_md"
         }
         if (detail.docTokenMeta) {
-            rch.tokenCol = true;
+            rch.tokenCol = true
             cql << ",token(e)"
         }
         cql << " FROM " << space << ".e_" << suffix << " WHERE e = ?"
@@ -497,7 +503,7 @@ class GetDoc extends QueryCmd {
                 consistency,
                 null] as Object[])
         svcs.driver.executeQueryCQL(space, cql.toString(), cqlargs, rch, consistency)
-        return rch;
+        return rch
     }
 
 }
@@ -513,7 +519,7 @@ class GetDocRCH implements RowCallbackHandler {
     String token
     Long writetime
 
-    public void processRow(Row row) throws CQLException {
+    void processRow(Row row) throws CQLException {
         a0 = row.getString("a0")
         paxosVer = row.getUUID("zv")
         if (writetimeCol) {

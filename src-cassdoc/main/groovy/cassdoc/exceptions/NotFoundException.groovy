@@ -1,4 +1,4 @@
-package cassdoc.exceptions;
+package cassdoc.exceptions
 
 
 /**
@@ -13,21 +13,21 @@ class NotFoundException extends RuntimeException {
     }
 
     NotFoundException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
     NotFoundException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
     NotFoundException(String message) {
-        super(message);
+        super(message)
     }
 
     NotFoundException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 638979438789573L;
+    private static final long serialVersionUID = 638979438789573L
 
 }

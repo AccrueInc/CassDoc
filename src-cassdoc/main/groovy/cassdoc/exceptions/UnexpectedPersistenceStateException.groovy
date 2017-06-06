@@ -1,5 +1,8 @@
-package cassdoc.exceptions;
+package cassdoc.exceptions
 
+import groovy.transform.CompileStatic
+
+@CompileStatic
 class UnexpectedPersistenceStateException extends RuntimeException {
 
     /**
@@ -12,23 +15,23 @@ class UnexpectedPersistenceStateException extends RuntimeException {
 
 
     UnexpectedPersistenceStateException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
 
     UnexpectedPersistenceStateException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
 
     UnexpectedPersistenceStateException(String message) {
-        super(message);
+        super(message)
     }
 
 
     UnexpectedPersistenceStateException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 3289774963321789573L;
+    private static final long serialVersionUID = 3289774963321789573L
 }

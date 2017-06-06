@@ -1,4 +1,4 @@
-package cassdoc.exceptions;
+package cassdoc.exceptions
 
 
 /**
@@ -13,21 +13,21 @@ class AlreadyExistsException extends RuntimeException {
     }
 
     AlreadyExistsException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(message, cause, enableSuppression, writableStackTrace)
     }
 
     AlreadyExistsException(String message, Throwable cause) {
-        super(message, cause);
+        super(message, cause)
     }
 
     AlreadyExistsException(String message) {
-        super(message);
+        super(message)
     }
 
     AlreadyExistsException(Throwable cause) {
-        super(cause);
+        super(cause)
     }
 
-    private static final long serialVersionUID = 3289794338789733L;
+    private static final long serialVersionUID = 3289794338789733L
 
 }
