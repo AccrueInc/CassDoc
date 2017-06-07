@@ -33,7 +33,7 @@ class CassDocVertex implements Vertex {
   void remove() {
     OperationContext opctx = new OperationContext(space:cassDocGraph.space)
     Detail detail = new Detail()
-    cassDocGraph.cassDocAPI.delDoc(opctx, detail, docId)
+    cassDocGraph.cassDocAPI.delDoc(opctx, detail, docId, false)
   }
 
   @Override
@@ -54,7 +54,7 @@ class CassDocVertex implements Vertex {
         Object val = keyValues[i*2+1]
         StringWriter w = new StringWriter()
         CassDocJsonUtil.specialSerialize(val,w)
-        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString())
+        cassDocGraph.cassDocAPI.newAttr(opctx, detail, relMetaId, key, w.toString(),false, false)
       }
     }
   }
@@ -130,8 +130,6 @@ class CassDocVertex implements Vertex {
   }
 
 
-  // TODO: figure out how rel.ty1/ty2/ty3/ty4 relates to labels. Right now, ty1 == label.
-  // TODO: reverse relations with "-" protocol, fix "up" in engine --> -CH
   @Override
   Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
     Set<String> labels = null
