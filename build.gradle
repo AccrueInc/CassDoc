@@ -39,6 +39,16 @@ sourceSets {
 			//srcDir 'src-cassdoc-tinkerpop3/main/groovy'
 		}
 	}
+    test {
+        groovy {
+            srcDir 'src-cassdoc/test/groovy'
+            srcDir 'src-spring/test/groovy'
+            srcDir 'src-drv/test/groovy'
+            srcDir 'src-cassdoc/test/resources'
+            srcDir 'src-spring/test/resources'
+            srcDir 'src-drv/test/resources'
+        }
+    }
 }
 
 repositories {
@@ -96,6 +106,10 @@ dependencies {
     testCompile group: 'org.spockframework', name: 'spock-spring', version: '1.1-groovy-2.4'
     testCompile group: 'org.springframework', name: 'spring-test', version: '4.3.8.RELEASE'
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: '1.5.3.RELEASE'
+
+    testCompile group: 'io.netty', name: 'netty-all', version: '4.0.44.Final'
+    testCompile group: 'org.cassandraunit', name: 'cassandra-unit', version: '3.1.3.2'
+    testCompile group: 'org.cassandraunit', name: 'cassandra-unit-spring', version: '3.1.3.2'
 
     codenarc group: 'org.codenarc', name: 'CodeNarc', version: '0.27.0'
 }
