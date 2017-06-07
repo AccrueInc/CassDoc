@@ -1,6 +1,6 @@
 package cassdoc.springmvc.controller
 
-import cassdoc.API
+import cassdoc.CassdocAPI
 import cassdoc.Detail
 import cassdoc.OperationContext
 import cwdrg.lg.annotation.Log
@@ -24,7 +24,12 @@ import javax.servlet.http.HttpServletResponse
 class APIController {
 
     @Autowired
-    API api
+    CassdocAPI api
+
+    @RequestMapping(method = RequestMethod.GET)
+    String status() {
+        return '{"webappStatus":"up"}'
+    }
 
     @RequestMapping(value = '/doc/{id}', method = RequestMethod.HEAD)
     boolean docExists(
@@ -37,7 +42,7 @@ class APIController {
     }
 
     @RequestMapping(value = '/doc/{id}/{attr}', method = RequestMethod.HEAD)
-    boolean docExists(
+    boolean attrExists(
             @PathVariable(value = 'id') String uuid,
             @PathVariable(value = 'attr') String attr,
             @RequestParam(value = 'detail', required = false) String customDetailJSON
