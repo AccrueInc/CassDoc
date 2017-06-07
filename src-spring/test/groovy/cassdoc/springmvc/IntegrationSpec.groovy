@@ -34,6 +34,7 @@ class IntegrationSpec extends Specification {
 
         when:
         println "keyspaces: ${wrapper.keyspaces}"
+        println "wooo!"
 
         then:
         true == true
