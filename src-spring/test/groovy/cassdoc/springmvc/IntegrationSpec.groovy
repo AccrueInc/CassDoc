@@ -31,7 +31,6 @@ class IntegrationSpec extends Specification {
 
         then:
         ks.toString().contains("system_")
-
     }
 
     void cleanupSpec() {
