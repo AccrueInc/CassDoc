@@ -31,7 +31,6 @@ class CommandExecServices {
 
     // ---- COMMANDS
 
-
     static void execUpdDocFixedColUNSAFE(CommandExecServices svcs, OperationContext opctx, Detail detail, UpdFixedCol updDocFixedColCmd) {
         String space = opctx.space
         String suffix = IDUtil.idSuffix(updDocFixedColCmd.docUUID)
@@ -55,6 +54,5 @@ class CommandExecServices {
                 TypeConfigurationService.attrTypeCode(newAttrCmd.attrValue?.type)] as Object[]
         svcs.driver.executeDirectUpdate(space, cql, args, detail.writeConsistency, opctx.operationTimestamp)
     }
-
 
 }

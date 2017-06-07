@@ -14,6 +14,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate
 import spock.lang.Specification
 
 // this magic seems to work...
+// this tests to see if the spring boot webapp starts up...
 @EnableAutoConfiguration
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
