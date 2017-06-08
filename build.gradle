@@ -38,12 +38,20 @@ sourceSets {
 			//srcDir 'src-jcr/main/groovy'
 			//srcDir 'src-cassdoc-tinkerpop3/main/groovy'
 		}
+        resources {
+            srcDir 'src-cassdoc/main/resources'
+            srcDir 'src-spring/main/resources'
+            srcDir 'src-drv/main/resources'
+
+        }
 	}
     test {
         groovy {
             srcDir 'src-cassdoc/test/groovy'
             srcDir 'src-spring/test/groovy'
             srcDir 'src-drv/test/groovy'
+        }
+        resources {
             srcDir 'src-cassdoc/test/resources'
             srcDir 'src-spring/test/resources'
             srcDir 'src-drv/test/resources'
@@ -64,7 +72,7 @@ dependencies {
 	compile group: 'org.codehaus.gpars', name: 'gpars', version: '1.2.1'
 
 	compile group: 'com.google.guava', name: 'guava', version: '22.0'
-	compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+	compile group: 'org.slf4j', name: 'slf4j-testapi', version: '1.7.25'
 	
 	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.5'
 	compile group: 'commons-collections', name: 'commons-collections', version: '3.2.2'	

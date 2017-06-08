@@ -1,15 +1,22 @@
 package cassdoc.springmvc
 
-class TestHelper {
+import cassdoc.FixedAttr
 
-    String dropCreateKeyspace(String keyspace, int replicationFactor = 1) {
+class CassandraSchemaUtil {
+
+    static String dropKeyspace(String keyspace) {
         """
-        | DROP KEYSPACE ${keyspace};
+        | DROP KEYSPACE IF EXISTS ${keyspace};
+        """.stripMargin()
+    }
+
+    static String createKeyspace(String keyspace, int replicationFactor = 1) {
+        """
         | CREATE KEYSPACE $keyspace WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '$replicationFactor'}  AND durable_writes = true;
         """.stripMargin()
     }
 
-    String createEntityTable(String keyspace, String entityTypeSuffix, List fixedCols) {
+    static String createEntityTable(String keyspace, String entityTypeSuffix, List<FixedAttr> fixedCols) {
         StringBuilder sb = new StringBuilder()
         sb.append("""
         | CREATE TABLE ${keyspace}.e_${entityTypeSuffix} (
@@ -19,9 +26,7 @@ class TestHelper {
         |   zv uuid,
         """.stripMargin())
 
-        for (List fixedCol : fixedCols) {
-            sb.append fixedCol[0]+" "+fixedCol[1]+",\n"
-        }
+        fixedCols.each { fixedCol -> sb.append "${fixedCol.colname} ${fixedCol.coltype},\n" }
 
         sb.append("""
         |   PRIMARY KEY (e)
@@ -30,7 +35,7 @@ class TestHelper {
         return sb.toString()
     }
 
-    String createAttrTable(String keyspace, String entityTypeSuffix) {
+    static String createAttrTable(String keyspace, String entityTypeSuffix) {
         """
         | CREATE TABLE ${keyspace}.p_${entityTypeSuffix} (
         |   e text,
@@ -44,7 +49,7 @@ class TestHelper {
         """.stripMargin()
     }
 
-    String createRelationTableCql(String keyspace) {
+    static String createRelationTable(String keyspace) {
         """
         | CREATE TABLE ${keyspace}.r (
         |   p1 text,
@@ -67,7 +72,7 @@ class TestHelper {
         """.stripMargin()
     }
 
-    String createIndexTableCql(String keyspace) {
+    static String createIndexTable(String keyspace) {
         """
         | CREATE TABLE ${keyspace}.i (
         |   i1 text,

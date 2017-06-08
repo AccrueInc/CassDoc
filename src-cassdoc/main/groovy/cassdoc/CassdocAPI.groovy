@@ -319,7 +319,7 @@ class CassdocAPI {
     /**
      * Delete document: cascading deletes of subdocuments are controlled by detail. In cassandra this should delete the entire row and it's relations
      *
-     * Synchronous (TODO: asynchronous cascade api)
+     * Synchronous (TODO: asynchronous cascade testapi)
      *
      * @param opctx
      * @param detail
@@ -333,7 +333,7 @@ class CassdocAPI {
     /**
      * Delete document attribute: cascading deletes of the attribute's subdocuments are controlled by detail. In cassandra this deletes a column key within a row
      *
-     * Synchronous (TODO: asynchronous cascade api call)
+     * Synchronous (TODO: asynchronous cascade testapi call)
      *
      * @param opctx
      * @param detail

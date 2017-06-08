@@ -6,11 +6,11 @@ import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
 
-import cassdoc.API
+import cassdoc.CassdocAPI
 import cassdoc.Detail
 import cassdoc.OperationContext
 import cassdoc.Rel
-import cassdoc.testinit.TestServiceInitializer
+import cassdoc.inittest.JavaApiTestInitializer
 import cwdrg.util.json.JSONUtil
 
 /**
@@ -28,12 +28,12 @@ import cwdrg.util.json.JSONUtil
  */
 
 class BasicTests {
-  static API api
+  static CassdocAPI api
 
   @BeforeClass
   static void setup() {
     println "---- BEGIN"
-    api = TestServiceInitializer.initAPI()
+    api = JavaApiTestInitializer.initAPI()
   }
 
   @Test
@@ -197,7 +197,7 @@ class BasicTests {
    * 
    * Once the metadata id is initialized, normal attribute get/set is done to manipulate the metadata fields/attributes.
    * 
-   * I'm not sure I like these "side effect" api calls that look like gets, but I took "get" out to be sure...
+   * I'm not sure I like these "side effect" testapi calls that look like gets, but I took "get" out to be sure...
    * 
    */
   @Test
@@ -346,17 +346,17 @@ class BasicTests {
     //      newid,
     //      '',
     //      ''] as Object[]
-    //    api.svcs.driver.executeDirectUpdate("proto_jsonstore", manprep, args, "LOCAL_QUORUM", null)
+    //    testapi.svcs.driver.executeDirectUpdate("proto_jsonstore", manprep, args, "LOCAL_QUORUM", null)
     //
-    //    index = api.query(opctx, detail, "SELECT token(i1,i2,i3,k1,k2,k3),v1 from ${opctx.space}.i WHERE i1 = 'PROD' and i2 = 'IC' and i3 = 'HV' and k1 = 'AZ889__55' and k2 = '' and k3 = ''")
+    //    index = testapi.query(opctx, detail, "SELECT token(i1,i2,i3,k1,k2,k3),v1 from ${opctx.space}.i WHERE i1 = 'PROD' and i2 = 'IC' and i3 = 'HV' and k1 = 'AZ889__55' and k2 = '' and k3 = ''")
     //
     //    boolean found2 = (index.find{it[1] == newid} != null)
     //    println "FoundManPrep: "+found2
     //
     //
     //    String man = "DELETE FROM proto_jsonstore.i WHERE i1 = 'PROD' and i2 = 'IC' and i3 = 'HV' and k1 = 'AZ889__55' and k2 = '' and k3 = '' and v1 = '$newid' and v2 = '' and v3 = ''"
-    //    api.svcs.driver.executeDirectUpdate("proto_jsonstore", man, null, "LOCAL_QUORUM", null)
-    //    index = api.query(opctx, detail, "SELECT token(i1,i2,i3,k1,k2,k3),v1 from ${opctx.space}.i WHERE i1 = 'PROD' and i2 = 'IC' and i3 = 'HV' and k1 = 'AZ889__55' and k2 = '' and k3 = ''")
+    //    testapi.svcs.driver.executeDirectUpdate("proto_jsonstore", man, null, "LOCAL_QUORUM", null)
+    //    index = testapi.query(opctx, detail, "SELECT token(i1,i2,i3,k1,k2,k3),v1 from ${opctx.space}.i WHERE i1 = 'PROD' and i2 = 'IC' and i3 = 'HV' and k1 = 'AZ889__55' and k2 = '' and k3 = ''")
     //
     //    boolean found3 = (index.find{it[1] == newid} != null)
     //    println "FoundMan: "+found3

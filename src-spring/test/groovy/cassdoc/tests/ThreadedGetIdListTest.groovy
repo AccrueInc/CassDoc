@@ -1,26 +1,23 @@
-package cassdoc.tests;
+package cassdoc.tests
 
-import static org.junit.Assert.*
-
+import cassdoc.CassdocAPI
+import cassdoc.Detail
+import cassdoc.OperationContext
+import cassdoc.inittest.JavaApiTestInitializer
+import cassdoc.operations.SearchOperations
+import cwdrg.util.json.JSONUtil
 import org.junit.AfterClass
 import org.junit.BeforeClass
 import org.junit.Test
 
-import cassdoc.API
-import cassdoc.Detail
-import cassdoc.OperationContext
-import cassdoc.operations.SearchOperations
-import cassdoc.testinit.TestServiceInitializer
-import cwdrg.util.json.JSONUtil
-
 class ThreadedGetIdListTest {
-  static API api
+  static CassdocAPI api
 
 
   @BeforeClass
   static void setup() {
     println "---- BEGIN"
-    api = TestServiceInitializer.initAPI()
+    api = JavaApiTestInitializer.initAPI()
   }
 
   @Test
