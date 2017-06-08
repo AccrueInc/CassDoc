@@ -37,138 +37,6 @@ class BasicTests {
   }
 
   @Test
-  public void testCassIsUp() {
-    Set<String> keyspaces = api.svcs.driver.getKeyspaces()
-    println "keyspaces: "+keyspaces
-    assertTrue(keyspaces?.size() > 0)
-  }
-
-  @Test
-  public void basicDocTests() {
-    OperationContext opctx = new OperationContext()
-    opctx.space = "proto_jsonstore"
-
-    Detail detail = new Detail()
-
-    String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/SimpleDoc.json").getText()
-
-    // create and retrieve and compare
-    String newid = api.newDoc(opctx, detail, doc)
-    println newid
-    String json = api.getDoc(opctx, detail, newid)
-    Map original = JSONUtil.deserializeMap(doc)
-    // need to "match" the id key in the original doc
-    original._id = newid
-    Map retrieved = JSONUtil.deserializeMap(json)
-    Map retrievedMap = api.deserializeDoc(opctx, detail, newid)
-
-    println "Orig: "+original
-    println "Retr: "+retrieved
-    println "RMap: "+retrievedMap
-
-    assertTrue(original == retrieved)
-    assertTrue(original == retrievedMap)
-
-    // remove attr
-    api.delAttr(opctx, detail, newid, "hello", false)
-    original.remove("hello")
-    json = api.getDoc(opctx, detail, newid)
-    retrieved = JSONUtil.deserializeMap(json)
-    assertTrue(original == retrieved)
-
-    // set attrs!
-    api.newAttr(opctx, detail, newid, "newInt", "22", false, false)
-    api.newAttr(opctx, detail, newid, "newString", '"str"', false, false)
-    api.newAttr(opctx, detail, newid, "newNull", 'null', false, false)
-    api.newAttr(opctx, detail, newid, "newFloat", '8.999933', false, false)
-    api.newAttr(opctx, detail, newid, "newArray", '[5,10,15,"20"]', false, false)
-    api.newAttr(opctx, detail, newid, "newComplex", '{"a":"aaaa","b":22,"c":null}', false, false)
-    original.put("newInt", 22)
-    original.put("newNull",null)
-    original.put("newString", "str")
-    original.put("newFloat", 8.999933)
-    original.put("newArray", [5, 10, 15, "20"])
-    original.put("newComplex", ["a":"aaaa","b":22,"c":null])
-    json = api.getDoc(opctx, detail, newid)
-    retrieved = JSONUtil.deserializeMap(json)
-    retrievedMap = api.deserializeDoc(opctx, detail, newid)
-    assertTrue(original == retrieved)
-    assertTrue(original == retrievedMap)
-
-    assertTrue(api.getAttr(opctx, detail, newid, "newInt") == "22")
-    assertTrue(api.getAttr(opctx, detail, newid, "newString") == '"str"')
-    assertTrue(api.getAttr(opctx, detail, newid, "newNull") == "null")
-    assertTrue(api.getAttr(opctx, detail, newid, "newFloat") == "8.999933")
-    assertTrue(api.getAttr(opctx, detail, newid, "newArray") == '[5,10,15,"20"]')
-    assertTrue(api.getAttr(opctx, detail, newid, "newComplex") == '{"a":"aaaa","b":22,"c":null}')
-
-    // test the "simple" apis which do less parsing and no recursive pulls
-
-    assertTrue(api.getSimpleAttr(opctx, detail, newid, "newInt") == "22")
-    assertTrue(api.getSimpleAttr(opctx, detail, newid, "newString") == '"str"')
-    assertTrue(api.getSimpleAttr(opctx, detail, newid, "newNull") == "null")
-    assertTrue(api.getSimpleAttr(opctx, detail, newid, "newFloat") == "8.999933")
-    assertTrue(api.getSimpleAttr(opctx, detail, newid, "newArray") == '[5,10,15,"20"]')
-    assertTrue(api.getSimpleAttr(opctx, detail, newid, "newComplex") == '{"a":"aaaa","b":22,"c":null}')
-
-
-    json = api.getSimpleDoc(opctx, detail, newid)
-    retrieved = JSONUtil.deserializeMap(json)
-    assertTrue(original == retrieved)
-  }
-
-  @Test
-  public void childDocTests() {
-    OperationContext opctx = new OperationContext()
-    opctx.space = "proto_jsonstore"
-
-    Detail detail = new Detail()
-    detail.pullChildDocs = true  // recursive pull all subdocs
-
-    String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/DocWithSubDocs.json").getText()
-    // create and retrieve and compare
-    String newid = api.newDoc(opctx, detail, doc)
-    println newid
-    String json = api.getDoc(opctx, detail, newid)
-    Map original = JSONUtil.deserializeMap(doc)
-    Map retrieved = JSONUtil.deserializeMap(json)
-    Map retrMap = api.deserializeDoc(opctx, detail, newid)
-    // since _id's are changed/created as the docs are, for comparison purposes we strip the _id fields
-    Utils.stripKeys(original,"_id")
-    Utils.stripKeys(retrieved,"_id")
-    Utils.stripKeys(retrMap,"_id")
-    println ("orig: "+original)
-    println ("retr: "+retrieved)
-    println ("rmap: "+retrMap)
-    assertTrue(original == retrieved)
-    assertTrue(original == retrMap)
-  }
-
-  @Test
-  public void jsonPathTests() {
-    OperationContext opctx = new OperationContext()
-    opctx.space = "proto_jsonstore"
-
-    Detail detail = new Detail()
-    detail.pullChildDocs = true  // recursive pull all subdocs
-
-    String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/DocWithSubDocs.json").getText()
-    // create and retrieve and compare
-    String newid = api.newDoc(opctx, detail, doc)
-    println newid
-
-    String pathexpr = '$.arrVal[1]'
-    String result = api.getDocJsonPath(opctx, detail, newid, pathexpr)
-    assertTrue(result == 'matey')
-
-    result = api.getAttrJsonPath(opctx, detail, newid, "arrVal", '$[2]')
-    assertTrue(result == 'arrrr')
-
-    // TODO: more jsonpaths?
-
-  }
-
-  @Test
   public void testFixedAttributes() {
     OperationContext opctx = new OperationContext()
     opctx.space = "proto_jsonstore"
@@ -223,85 +91,6 @@ class BasicTests {
     String relmeta = api.relMetadataUUID(opctx, detail, rels[0].relKey)
     String relmeta2 = api.relMetadataUUID(opctx, detail, rels[0].relKey)
     assertTrue(relmeta == relmeta2)
-  }
-
-  @Test
-  public void testDetail() {
-    OperationContext opctx = new OperationContext()
-    opctx.space = "proto_jsonstore"
-    Detail detail = new Detail()
-
-    String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/DocWithSubDocs.json").getText()
-    String newid = api.newDoc(opctx, detail, doc)
-    Map original = JSONUtil.deserializeMap(doc)
-    original._id = newid
-
-    // attribute subset pull
-    Detail subsetDTL = new Detail()
-    subsetDTL.pullChildDocs = true
-    subsetDTL.attrSubset = ["nullVal", "hello", "iVal"] as Set
-    String json = api.getDoc(opctx, subsetDTL, newid)
-    println "subset: "+json
-
-    Map subsetOrig = [:]
-    subsetOrig._id = newid
-    subsetOrig.nullVal = original.nullVal
-    subsetOrig.hello = original.hello
-    subsetOrig.iVal = original.iVal
-    assertTrue(subsetOrig == JSONUtil.deserializeMap(json))
-
-    // attr exclude
-    Detail exclDTL = new Detail()
-    exclDTL.pullChildDocs = true
-    exclDTL.attrExclude = [
-      '$%^&*@#(&*#$(){}[]--09*(*()62347813420<>,.,<~`/?',
-      "JustASubDoc",
-      "hello",
-      '&^%$HeteroArrayOfSubdocs',
-      "fVal"] as Set
-    json = api.getDoc(opctx, exclDTL, newid)
-    println "exclude: "+json
-
-    Map excl = JSONUtil.deserializeMap(doc)
-    excl._id = newid
-    excl.remove('$%^&*@#(&*#$(){}[]--09*(*()62347813420<>,.,<~`/?')
-    excl.remove('JustASubDoc')
-    excl.remove('hello')
-    excl.remove('&^%$HeteroArrayOfSubdocs')
-    excl.remove('fVal')
-    assertTrue(excl == JSONUtil.deserializeMap(json))
-
-    exclDTL.attrExclude = [
-      'SingleSubDoc',
-      "fVal"] as Set
-    json = api.getDoc(opctx, exclDTL, newid)
-    println "exclude-2: "+json
-    Map excl2 = JSONUtil.deserializeMap(json)
-    assertTrue(!excl2.JustASubDoc.containsKey("SingleSubDoc"))
-
-    // a detail where special detail is applied to a single attribute (JustASubDoc)
-    // such that only that attribute's subdocs are pulled
-    Detail attrSpecialDTL = new Detail()
-    Detail attrsubDTL = new Detail()
-    attrsubDTL.pullChildDocs = true
-    attrSpecialDTL.attrDetail = [:]
-    attrSpecialDTL.attrDetail.JustASubDoc = attrsubDTL
-    json = api.getDoc(opctx, attrSpecialDTL, newid)
-    Map spcl = JSONUtil.deserializeMap(json)
-    assertTrue(!spcl['&^%$HeteroArrayOfSubdocs'][0].containsKey("firstDoc"))
-    assertTrue(spcl.JustASubDoc.SingleSubDoc == "yeppers")
-
-    // detail that only applies to subdocuments of a specific type/collection
-    Detail typeSpecificDTL = new Detail()
-    typeSpecificDTL.pullChildDocs = true
-    typeSpecificDTL.childDocSuffixDetail = [:]
-    typeSpecificDTL.childDocSuffixDetail["PROD"] = new Detail()
-    typeSpecificDTL.childDocSuffixDetail.PROD.docIDTimestampMeta = true
-    json = api.getDoc(opctx, typeSpecificDTL, newid)
-    Map typSpec = JSONUtil.deserializeMap(json)
-    // assert that the JOB-specific detail did not pull the d
-    println "TypeSpecific: "+json
-
   }
 
   @Test
@@ -366,9 +155,6 @@ class BasicTests {
 
   }
 
-
-
-
   // TODO: detail level
 
   // TODO: conditional update / paxos
@@ -376,9 +162,6 @@ class BasicTests {
   // TODO: batch mode processing, sync vs async
 
   // TODO: index tests
-
-
-
 
   @AfterClass
   static void teardown() {

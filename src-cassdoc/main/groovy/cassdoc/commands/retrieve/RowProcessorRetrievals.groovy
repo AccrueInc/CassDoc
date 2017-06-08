@@ -28,7 +28,6 @@ import cwdrg.util.json.JSONUtil
 // 3) after each nextRow, if desired, check if there was a new Partition and get the afterproducts of the previous completed partition
 
 @CompileStatic
-@SuppressWarnings('All')
 abstract class RowProcessor {
     boolean newPartition
     long pageCount = 0
@@ -176,57 +175,45 @@ class QueryToListOfStrArr extends CassandraPagedRowProcessor {
         for (int i = 0; i < rowSize; i++) {
             DataType dt = row.columnDefinitions.getType(i)
             switch (dt) {
-
                 case DataType.ascii():
                 case DataType.text():
                 case DataType.varchar():
                     data[i] = row.getString(i)
                     break
-
                 case DataType.timestamp():
-                    data[i] = row.getTimestamp(i)?.time.toString()
+                    data[i] = row.getTimestamp(i)?.time?.toString()
                     break
-
                 case DataType.cboolean():
-                    data[i] = row.getBool(i).toString()
+                    data[i] = row.getBool(i)?.toString()
                     break
-
                 case DataType.cint():
-                    data[i] = row.getInt(i).toString()
+                    data[i] = row.getInt(i)?.toString()
                     break
-
                 case DataType.bigint():
                 case DataType.counter():
-                    data[i] = row.getLong(i).toString()
+                    data[i] = row.getLong(i)?.toString()
                     break
-
                 case DataType.varint():
                     data[i] = row.getVarint(i)?.toString()
                     break
-
                 case DataType.cfloat():
-                    data[i] = row.getFloat(i).toString()
+                    data[i] = row.getFloat(i)?.toString()
                     break
-
                 case DataType.cdouble():
-                    data[i] = row.getDouble(i).toString()
+                    data[i] = row.getDouble(i)?.toString()
                     break
-
                 case DataType.decimal():
                     data[i] = row.getDecimal(i)?.toString()
                     break
-
                 case DataType.timeuuid():
                 case DataType.uuid():
                     data[i] = row.getUUID(i)
                     break
-
                 case DataType.blob():
                     ByteBuffer buffer = row.getBytes(i)
                     byte[] wrapped = Bytes.getArray(buffer)
                     data[i] = Base64.encoder.encodeToString(wrapped)
                     break
-
                 default:
                     Object colval = row.getObject(i)
                     data[i] = colval == null ? null : JSONUtil.serialize(colval)

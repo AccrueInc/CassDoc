@@ -79,7 +79,6 @@ class Detail {
         return attrDtl
     }
 
-
     Detail resolveChildDocDetail(String childDocUUID, String attr) {
         // no attr detail necessary, since we have already done so in the attribute iteration
         if (pullChildDocs) {
@@ -119,6 +118,5 @@ class Detail {
     String resolveWriteConsistency(Detail detail, OperationContext opctx) {
         StringUtils.isEmpty(detail?.writeConsistency) ? opctx.writeConsistency : detail.writeConsistency
     }
-
 
 }
