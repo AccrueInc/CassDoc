@@ -41,7 +41,6 @@ class CassdocAPI {
     @Autowired
     CommandExecServices svcs
 
-
     boolean docExists(OperationContext opctx, Detail detail, String uuid) {
         // token would work too, at least on cass 3.5
         String typeSuffix = IDUtil.idSuffix(uuid)
@@ -73,7 +72,7 @@ class CassdocAPI {
         StringWriter writer = new StringWriter()
         getSimpleAttr(opctx, detail, docUUID, attr, writer)
         String toStr = writer
-        log.dbg("OPGetAttrSimple_return" + toStr, null)
+        log.dbg('OPGetAttrSimple_return: ' + toStr, null)
         return toStr
     }
 
@@ -319,7 +318,7 @@ class CassdocAPI {
     /**
      * Delete document: cascading deletes of subdocuments are controlled by detail. In cassandra this should delete the entire row and it's relations
      *
-     * Synchronous (TODO: asynchronous cascade api)
+     * Synchronous (TODO: asynchronous cascade testapi)
      *
      * @param opctx
      * @param detail
@@ -327,13 +326,15 @@ class CassdocAPI {
      */
     void delDoc(OperationContext opctx, Detail detail, String docUUID) {
         DeleteOperations.deleteDoc(svcs, opctx, detail, docUUID)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        }
     }
 
     /**
      * Delete document attribute: cascading deletes of the attribute's subdocuments are controlled by detail. In cassandra this deletes a column key within a row
      *
-     * Synchronous (TODO: asynchronous cascade api call)
+     * Synchronous (TODO: asynchronous cascade testapi call)
      *
      * @param opctx
      * @param detail
@@ -342,7 +343,9 @@ class CassdocAPI {
      */
     void delAttr(OperationContext opctx, Detail detail, String docUUID, String attr) {
         DeleteOperations.deleteAttr(svcs, opctx, detail, docUUID, attr, false)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        }
     }
 
     // ---- Streaming Parse Write Operations
@@ -361,7 +364,9 @@ class CassdocAPI {
      */
     String newDocFromMap(OperationContext opctx, Detail detail, Map<String, Object> mapDoc) {
         String newid = CreateOperations.newMap(svcs, opctx, detail, mapDoc, false)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        }
         return newid
     }
 
@@ -377,7 +382,9 @@ class CassdocAPI {
      */
     String newDoc(OperationContext opctx, Detail detail, String json) {
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, false)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        }
         return newid
     }
 
@@ -393,7 +400,9 @@ class CassdocAPI {
      */
     String newDoc(OperationContext opctx, Detail detail, Reader json) {
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, false)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        }
         return newid
     }
 
@@ -412,7 +421,9 @@ class CassdocAPI {
      */
     String newDocAsync(OperationContext opctx, Detail detail, Reader json) {
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, true)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        }
         return newid
     }
 
@@ -428,7 +439,9 @@ class CassdocAPI {
      */
     void newDocList(OperationContext opctx, Detail detail, Reader jsonListReader, Writer jsonIDList) {
         CreateOperations.newDocStream(svcs, opctx, detail, jsonListReader, jsonIDList)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
 
     }
 
@@ -446,7 +459,9 @@ class CassdocAPI {
      */
     void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos) {
         CreateOperations.newAttr(svcs, opctx, detail, docUUID, attr, json, paxos)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
     }
 
     // ---- Some Update operations
@@ -470,7 +485,9 @@ class CassdocAPI {
     void updateAttrPAXOS(OperationContext opctx, Detail detail, String docUUID, String attr, String json, UUID checkVal) {
         opctx.paxosGatekeeperUpdateID = ["P", docUUID] as String[]
         UpdateOperations.updateAttrPAXOS(svcs, opctx, detail, docUUID, attr, json, checkVal)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
     }
 
     /**
@@ -484,7 +501,9 @@ class CassdocAPI {
      */
     void updateAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
         UpdateOperations.updateAttr(svcs, opctx, detail, docUUID, attr, json)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
     }
 
     /**
@@ -500,7 +519,9 @@ class CassdocAPI {
      */
     void updateAttrEntry(OperationContext opctx, Detail detail, String docUUID, Map.Entry<String, Object> attr) {
         UpdateOperations.updateAttrEntry(svcs, opctx, detail, docUUID, attr)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
     }
 
     /**
@@ -520,9 +541,11 @@ class CassdocAPI {
      */
     Set<String> updateAttrOverlay(OperationContext opctx, Detail detail, String docUUID, String attr, String json) {
         UpdateOperations.updateAttrOverlay(svcs, opctx, detail, docUUID, attr, json)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
         // TODO: Set<String>? is that the new ids created in the process?
-        return null
+        return [] as Set
     }
 
     List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args) {
@@ -653,12 +676,16 @@ class CassdocAPI {
      */
     void addRel(OperationContext opctx, Detail detail, Rel rel) {
         CreateOperations.addRel(svcs, opctx, detail, rel)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
     }
 
     void deleteRel(OperationContext opctx, Detail detail, RelKey rel) {
         DeleteOperations.delRel(svcs, opctx, detail, rel)
-        if (opctx.executionMode == "batch") opctx.DO(svcs, detail) // TODO: figure out this vs streaming data operations
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
     }
 
     List<Rel> deserializeDocRels(OperationContext opctx, Detail detail, String docUUID) {

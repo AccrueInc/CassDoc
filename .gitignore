@@ -1,4 +1,5 @@
 bin
+/classes/**
 /.gradle/**
 /build/**
 /bin/**
