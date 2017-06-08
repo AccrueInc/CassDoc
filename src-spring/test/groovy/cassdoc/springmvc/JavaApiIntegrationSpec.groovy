@@ -17,10 +17,12 @@ import spock.lang.Specification
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
         classes = [ APIController, CassdocAPI, CommandExecServices, TypeConfigurationService, IndexConfigurationService, DriverWrapper]
 )
-class IntegrationSpec extends Specification {
+class JavaApiIntegrationSpec extends Specification {
 
     void setupSpec() {
-        EmbeddedCassandraServerHelper.startEmbeddedCassandra();
+
+        EmbeddedCassandraServerHelper.startEmbeddedCassandra()
+
     }
 
     void 'check cassandra status'() {
@@ -37,10 +39,9 @@ class IntegrationSpec extends Specification {
     void cleanupSpec() {
         //EmbeddedCassandraServerHelper.stopEmbeddedCassandra()
     }
-
 }
 
-// unneeded annotations (did not work, PIA, or didn't encounter the same errors), but for reference:
+// unneeded annotations (did not work, PITA, or didn't encounter the same errors), but for reference:
 //@CassandraDataSet(value = 'cql/setup.cql', keyspace = 'integration_test')
 //@EmbeddedCassandra //configuration = "cu-cassandra.yaml", clusterName = "Test Cluster", host = "127.0.0.1", port = 9142)
 // may need: https://stackoverflow.com/questions/33840156/how-can-i-start-an-embedded-cassandra-server-before-loading-the-spring-context
