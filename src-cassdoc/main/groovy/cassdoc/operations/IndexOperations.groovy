@@ -24,7 +24,7 @@ class IndexOperations {
 
 
     static void cleanupDocIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, List<Rel> docRels) {
-        DocType docType = svcs.typeSvc.getTypeForID(docUUID)
+        DocType docType = svcs.collections[opctx.space].first.getTypeForID(docUUID)
 
         Set<ManualIndex> processedIndexes = [] as Set
         for (Rel rel : docRels) {
@@ -52,7 +52,7 @@ class IndexOperations {
     }
 
     static void cleanupDocAttrIndexes(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attrName, List<Rel> attrRels) {
-        DocType docType = svcs.typeSvc.getTypeForID(docUUID)
+        DocType docType = svcs.collections[opctx.space].first.getTypeForID(docUUID)
 
         log.dbg("docUUID: " + docUUID + " docType: " + docType?.suffix + " attrName: " + attrName, null)
         Set<ManualIndex> attrIndexes = docType.attrIndexMap[attrName]
@@ -87,7 +87,7 @@ class IndexOperations {
 
         // fixed attr cols (basically these are indexes)
         String suffix = IDUtil.idSuffix(cmd.docUUID)
-        DocType docType = svcs.typeSvc.getTypeForSuffix(suffix)
+        DocType docType = svcs.collections[opctx.space].first.getTypeForSuffix(suffix)
         String col = docType.fixedAttrMap[cmd.attrName]?.colname
         if (col != null) {
             UpdFixedCol fixedcol = new UpdFixedCol(docUUID: cmd.docUUID, colName: col, value: cmd.attrValue?.value)

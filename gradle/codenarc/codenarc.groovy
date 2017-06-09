@@ -353,7 +353,7 @@ ruleset {
     UnnecessaryNullCheckBeforeInstanceOf
     //UnnecessaryObjectReferences
     UnnecessaryOverridingMethod
-    UnnecessaryPackageReference
+    //UnnecessaryPackageReference // had to nuke for annotation def
     UnnecessaryParenthesesForMethodCallWithClosure
     UnnecessaryPublicModifier
     UnnecessarySafeNavigationOperator

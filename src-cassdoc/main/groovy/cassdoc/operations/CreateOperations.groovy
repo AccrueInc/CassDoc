@@ -176,10 +176,10 @@ class CreateOperations {
         JsonToken token = parser.nextToken()
         if (token == JsonToken.VALUE_STRING) {
             String idString = parser.getText()
-            if (svcs.typeSvc.isKnownSuffix(idString)) {
+            if (svcs.collections[opctx.space].first.isKnownSuffix(idString)) {
                 return IDUtil.timeUUID() + "-" + idString
             } else {
-                if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
+                if (svcs.collections[opctx.space].first.isKnownSuffix(IDUtil.idSuffix(idString))) {
                     return idString
                 } else {
                     throw new IllegalArgumentException("Unknown type suffix for provided UUID: " + idString)
@@ -192,10 +192,10 @@ class CreateOperations {
 
     // for newDoc with maps rather than JSON tokens
     static String checkIDAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String idString) {
-        if (svcs.typeSvc.isKnownSuffix(idString)) {
+        if (svcs.collections[opctx.space].first.isKnownSuffix(idString)) {
             return IDUtil.timeUUID() + "-" + idString
         } else {
-            if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
+            if (svcs.collections[opctx.space].first.isKnownSuffix(IDUtil.idSuffix(idString))) {
                 return idString
             } else {
                 throw new IllegalArgumentException("Unknown type suffix for provided UUID: " + idString)
@@ -380,7 +380,7 @@ class CreateOperations {
 
         // fixed attr: should this be in event???
         String suffix = IDUtil.idSuffix(cmd.docUUID)
-        FixedAttr attrdef = svcs.typeSvc.getTypeForSuffix(suffix).fixedAttrMap[cmd.attrName]
+        FixedAttr attrdef = svcs.collections[opctx.space].first.getTypeForSuffix(suffix).fixedAttrMap[cmd.attrName]
         String col = attrdef?.colname
         if (col != null) {
             Object val = null

@@ -1,7 +1,7 @@
 package cassdoc.inittest
 
 import cassdoc.*
-import cassdoc.springmvc.CassandraSchemaUtil
+import cassdoc.CassandraSchemaUtil
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.Option
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider
