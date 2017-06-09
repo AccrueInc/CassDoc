@@ -47,7 +47,7 @@ class SearchOperations {
     // one row == one entity/doc id, should be pretty simple
     static void scanETable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, List<String> fixedCols, String startToken, String stopToken, RowCallbackHandler rch) {
         String space = opctx.space
-        String suffix = svcs.typeSvc.getSuffixForType(objectType)
+        String suffix = svcs.collections[opctx.space].first.getSuffixForType(objectType)
         startToken = startToken ?: detail.searchStartToken
         stopToken = stopToken ?: detail.searchStopToken
 
@@ -108,7 +108,7 @@ class SearchOperations {
     // PTabelBaseRCH has both per-row and processDoc event methods
     static void scanPTable(CommandExecServices svcs, OperationContext opctx, Detail detail, String objectType, String startToken, String stopToken, PTableBaseRCH rch) {
         String space = opctx.space
-        String suffix = svcs.typeSvc.getSuffixForType(objectType)
+        String suffix = svcs.collections[opctx.space].first.getSuffixForType(objectType)
         startToken = startToken ?: detail.searchStartToken
         stopToken = stopToken ?: detail.searchStopToken
 

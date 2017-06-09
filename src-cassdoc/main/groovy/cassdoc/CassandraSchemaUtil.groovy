@@ -1,8 +1,34 @@
-package cassdoc.springmvc
-
-import cassdoc.FixedAttr
+package cassdoc
 
 class CassandraSchemaUtil {
+
+    static String createSchemaKeyspace(int replicationFactor = 1) {
+        """
+        | CREATE KEYSPACE IF NOT EXISTS cassdoc_system_schema replication = {'class': 'SimpleStrategy', 'replication_factor': '$replicationFactor'}  AND durable_writes = true;
+        """.stripMargin()
+    }
+
+    static String createSchemaTypesTable() {
+        """
+        | CREATE TABLE cassdoc_system_schema.types (
+        |   ks text,
+        |   nm text,
+        |   json text,
+        |   PRIMARY KEY ((ks),nm)
+        | );
+        """.stripMargin()
+    }
+
+    static String createSchemaIndexesTable() {
+        """
+        | CREATE TABLE cassdoc_system_schema.indexes (
+        |   ks text,
+        |   nm text,
+        |   json text,
+        |   PRIMARY KEY ((ks),nm)
+        | );
+        """.stripMargin()
+    }
 
     static String dropKeyspace(String keyspace) {
         """
@@ -66,7 +92,7 @@ class CassandraSchemaUtil {
         |   c4 text,
         |   d text,
         |   link text,
-        |   z_md text,  
+        |   z_md text,
         |   PRIMARY KEY ((p1),ty1,ty2,ty3,ty4,p2,p3,p4,c1,c2,c3,c4)
         | );
         """.stripMargin()
@@ -85,10 +111,14 @@ class CassandraSchemaUtil {
         |   v2 text,
         |   v3 text,
         |   id text,
-        |   d text,  
+        |   d text,
         |   PRIMARY KEY ((i1,i2,i3,k1,k2,k3),v1,v2,v3)
         | );
         """.stripMargin()
+    }
+
+    static String insertSchemaType() {
+        "INSERT INTO cassdoc_system_schema.types (ks, nm, json) VALUES (?, ?, ?);"
     }
 
 }
