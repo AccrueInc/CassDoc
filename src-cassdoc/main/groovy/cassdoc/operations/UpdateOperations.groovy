@@ -141,12 +141,12 @@ class UpdateOperations {
         JsonToken token = parser.nextToken()
         if (token == JsonToken.VALUE_STRING) {
             String idString = parser.getText()
-            if (svcs.typeSvc.isKnownSuffix(idString)) {
+            if (svcs.collections[opctx.space].first.isKnownSuffix(idString)) {
                 return [
                         "NEW",
                         IDUtil.timeUUID() + "-" + idString] as String[]
             } else {
-                if (svcs.typeSvc.isKnownSuffix(IDUtil.idSuffix(idString))) {
+                if (svcs.collections[opctx.space].first.isKnownSuffix(IDUtil.idSuffix(idString))) {
                     return ["EXTANT", idString] as String[]
                 } else {
                     throw new IllegalArgumentException("Unknown type suffix for provided UUID " + idString)

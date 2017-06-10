@@ -98,7 +98,7 @@ class DeleteOperations {
     static void analyzeDeleteAttrEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, DelAttr cmd, List<Rel> attrRels, boolean clear) {
         IndexOperations.cleanupDocAttrIndexes(svcs, opctx, detail, cmd.docUUID, cmd.attrName, attrRels)
 
-        DocType docType = svcs.typeSvc.getTypeForID(cmd.docUUID)
+        DocType docType = svcs.collections[opctx.space].first.getTypeForID(cmd.docUUID)
         FixedAttr fixed = docType.fixedAttrMap[cmd.attrName]
 
         if (fixed != null) {

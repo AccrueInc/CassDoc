@@ -1,5 +1,6 @@
 package cassdoc
 
+import cassdoc.config.CassDocConfig
 import groovy.transform.CompileStatic
 
 import org.apache.commons.lang3.StringEscapeUtils
@@ -24,22 +25,20 @@ import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 import org.springframework.stereotype.Component
 
-/**
- * This is the primary API class. It has API methods for both JSON interactions and Map/List/Map.Entry interactions.
- *
- * @author cowardlydragon
- *
- */
 @Log
 @CompileStatic
-@SuppressWarnings(['MethodCount', 'ParameterCount'])
 @Component
 class CassdocAPI {
 
-    // TODO: cross-space registry (id : space)
+    // TODO: cross-space registry (id : space) <-- huh?
+
+    @Autowired
+    CassDocConfig config
 
     @Autowired
     CommandExecServices svcs
+
+    // ---- existence checks
 
     boolean docExists(OperationContext opctx, Detail detail, String uuid) {
         // token would work too, at least on cass 3.5
@@ -363,6 +362,8 @@ class CassdocAPI {
      * @return
      */
     String newDocFromMap(OperationContext opctx, Detail detail, Map<String, Object> mapDoc) {
+        syncCollectionSchema(opctx.space)
+        syncCollectionType(opctx.space, mapDoc['_id'])
         String newid = CreateOperations.newMap(svcs, opctx, detail, mapDoc, false)
         if (opctx.executionMode == 'batch') {
             opctx.DO(svcs, detail)
@@ -381,6 +382,7 @@ class CassdocAPI {
      * @return
      */
     String newDoc(OperationContext opctx, Detail detail, String json) {
+        syncCollectionSchema(opctx.space)
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, false)
         if (opctx.executionMode == 'batch') {
             opctx.DO(svcs, detail)
@@ -703,7 +705,7 @@ class CassdocAPI {
      * @return
      */
     Iterator<Map> searchIndex(OperationContext opctx, Detail detail, String indexName, List searchCriteria, List<SearchFilter> filters) {
-        Index idx = svcs.idxSvc.getIndex(indexName)
+        Index idx = svcs.collections[opctx.space].second.getIndex(indexName)
         Iterator<Map> iterator = idx.searchIndex(svcs, opctx, detail, searchCriteria)
         return iterator
     }
