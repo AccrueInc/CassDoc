@@ -97,7 +97,7 @@ class RequestParameterJSONArgumentResolver implements WebArgumentResolver
         }
 
     }
-    
+
     ObjectMapper getObjectMapper() {
         return objectMapper
     }
