@@ -36,30 +36,6 @@ class BasicTests {
     api = JavaApiTestInitializer.initAPI()
   }
 
-  @Test
-  public void testFixedAttributes() {
-    OperationContext opctx = new OperationContext()
-    opctx.space = "proto_jsonstore"
-
-    Detail detail = new Detail()
-
-    String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/DocWithFixedAttrs.json").getText()
-
-    // create and retrieve and compare
-    String newid = api.newDoc(opctx, detail, doc)
-    println newid
-    Map original = JSONUtil.deserializeMap(doc)
-
-    List checkGtin = api.query(opctx, detail, "SELECT token(e),gtin FROM proto_jsonstore.e_prod where e = '$newid'")
-    assertTrue(original["dbpedia:GTIN"] == checkGtin[0][1])
-
-    checkGtin = api.query(opctx, detail, "SELECT token(e),submit_date FROM proto_jsonstore.e_prod where e = '$newid'")
-    assertTrue(original["product:submitdate"] == Long.parseLong(checkGtin[0][1]))
-
-    // TODO: test other fixed column types
-
-  }
-
   /** 
    * test that the metadata get/init calls work. 
    * 

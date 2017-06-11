@@ -124,7 +124,8 @@ class JavaApiTestInitializer {
 
     static CommandExecServices initCES() {
         JsonPathJacksonInitializer.initJsonPathToJackson()
-        return new CommandExecServices(driver: initDrv(), typeSvc: initTypeSvc()) //, retrievals: new CassandraRetrievalCommands(), mutations: new CassandraMutationCommands())
+        return new CommandExecServices(driver: initDrv(), collections:['java_api_test': new Tuple2<>(initTypeSvc(),null)])
+        //, retrievals: new CassandraRetrievalCommands(), mutations: new CassandraMutationCommands())
     }
 
     static CassdocAPI initAPI() {

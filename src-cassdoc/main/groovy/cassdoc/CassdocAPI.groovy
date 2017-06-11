@@ -283,6 +283,14 @@ class CassdocAPI {
         return JsonPath.parse(json).read(pathexpr).toString()
     }
 
+    void getDocJsonPath(OperationContext opctx, Detail detail, String docUUID, String jsonPath, Writer w) {
+        StringWriter writer = new StringWriter()
+        RetrievalOperations.getSingleDoc(svcs, opctx, detail, docUUID, writer, true)
+        String json = writer
+        JsonPath pathexpr = JsonPath.compile(jsonPath)
+        w << JsonPath.parse(json).read(pathexpr).toString()
+    }
+
     /**
      * execute the provided jsonpath expression against the json value of the attribute
      *
@@ -305,12 +313,12 @@ class CassdocAPI {
     }
 
     // TODO: jsonpath for getAttr
-    void getAttrJsonPath(OperationContext opctx, Detail detail, String docUUID, String attr, String jsonpath, Writer w) {
+    void getAttrJsonPath(OperationContext opctx, Detail detail, String docUUID, String attr, String jsonPath, Writer w) {
         // TODO fully streaming version
         StringWriter writer = new StringWriter()
         RetrievalOperations.getAttr(svcs, opctx, detail, docUUID, attr, writer)
         String json = writer
-        JsonPath pathexpr = JsonPath.compile(jsonpath)
+        JsonPath pathexpr = JsonPath.compile(jsonPath)
         w << JsonPath.parse(json).read(pathexpr).toString()
     }
 
@@ -362,8 +370,6 @@ class CassdocAPI {
      * @return
      */
     String newDocFromMap(OperationContext opctx, Detail detail, Map<String, Object> mapDoc) {
-        syncCollectionSchema(opctx.space)
-        syncCollectionType(opctx.space, mapDoc['_id'])
         String newid = CreateOperations.newMap(svcs, opctx, detail, mapDoc, false)
         if (opctx.executionMode == 'batch') {
             opctx.DO(svcs, detail)
@@ -382,7 +388,6 @@ class CassdocAPI {
      * @return
      */
     String newDoc(OperationContext opctx, Detail detail, String json) {
-        syncCollectionSchema(opctx.space)
         String newid = CreateOperations.newDoc(svcs, opctx, detail, json, false)
         if (opctx.executionMode == 'batch') {
             opctx.DO(svcs, detail)
@@ -461,6 +466,25 @@ class CassdocAPI {
      */
     void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, String json, boolean paxos) {
         CreateOperations.newAttr(svcs, opctx, detail, docUUID, attr, json, paxos)
+        if (opctx.executionMode == 'batch') {
+            opctx.DO(svcs, detail)
+        } // TODO: figure out this vs streaming data operations
+    }
+
+    /**
+     * Add a new attribute to a document, verifying that the attribute does not already exist.
+     *
+     * Synchronous TODO: async
+     *
+     * @param opctx
+     * @param detail
+     * @param docUUID
+     * @param attr
+     * @param json
+     * @param paxos - if true, IF NOT EXIST paxos conditional is applied to upsert statement
+     */
+    void newAttr(OperationContext opctx, Detail detail, String docUUID, String attr, Reader reader, boolean paxos) {
+        CreateOperations.newAttr(svcs, opctx, detail, docUUID, attr, reader, paxos)
         if (opctx.executionMode == 'batch') {
             opctx.DO(svcs, detail)
         } // TODO: figure out this vs streaming data operations

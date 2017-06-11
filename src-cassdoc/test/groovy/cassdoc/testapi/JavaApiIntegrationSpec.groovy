@@ -3,6 +3,7 @@ package cassdoc.testapi
 import cassdoc.CassdocAPI
 import cassdoc.Detail
 import cassdoc.OperationContext
+import cassdoc.Rel
 import cassdoc.inittest.JavaApiTestInitializer
 import cassdoc.tests.Utils
 import cwdrg.util.json.JSONUtil
@@ -26,7 +27,11 @@ class JavaApiIntegrationSpec extends Specification {
     void setupSpec() {
         EmbeddedCassandraServerHelper.startEmbeddedCassandra()
         api = JavaApiTestInitializer.initAPI()
-        JavaApiTestInitializer.initCassandraSchema(keyspace, api.svcs.driver, api.svcs.typeSvc)
+        //JavaApiTestInitializer.initCassandraSchema(keyspace, api.svcs.driver, api.svcs.typeSvc)
+        api.svcs.createSystemSchema()
+        api.svcs.createNewCollectionSchema(keyspace)
+        api.svcs.createNewDoctypeSchema(api.svcs.collections[keyspace].first.getTypeForSuffix('PROD'))
+        api.svcs.createNewDoctypeSchema(api.svcs.collections[keyspace].first.getTypeForSuffix('JOB'))
     }
 
     void 'check cassandra status'() {
@@ -202,7 +207,53 @@ class JavaApiIntegrationSpec extends Specification {
 
         then:
         typSpec != null
+    }
 
+    void 'test fixed attributes'() {
+        when: 'we set a fixed attribute parameter on a doc and direct-query the entity table for that value'
+        String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/DocWithFixedAttrs.json").getText()
+        String newid = api.newDoc(opctx, detail, doc)
+        Map original = JSONUtil.deserializeMap(doc)
+        List checkGtin = api.query(opctx, detail, "SELECT token(e),gtin FROM ${keyspace}.e_prod where e = '$newid'")
+
+        then: 'the returned value for GTIN matches the attribute value we set'
+        assertTrue(original["dbpedia:GTIN"] == checkGtin[0][1])
+
+        when: 'we query for the fixed submission date'
+        checkGtin = api.query(opctx, detail, "SELECT token(e),submit_date FROM proto_jsonstore.e_prod where e = '$newid'")
+
+        then: 'the submission dates match'
+        assertTrue(original["product:submitdate"] == Long.parseLong(checkGtin[0][1]))
+
+        // TODO: more column datatypes
+    }
+
+    void 'test metadata relations are set for a subdocument'()
+    {
+        when: 'we persist json with a known type subdocument'
+        String doc = this.class.classLoader.getResourceAsStream("cassdoc/tests/DocWithOneSubDoc.json").getText()
+        String newid = api.newDoc(opctx, detail, doc)
+        Map original = JSONUtil.deserializeMap(doc)
+        original._id = newid
+
+        String docmeta = api.docMetadataUUID(opctx, detail, newid)
+        String attrmeta = api.attrMetadataUUID(opctx, detail, newid, "fVal")
+        String docmeta2 = api.docMetadataUUID(opctx, detail, newid)
+        String attrmeta2 = api.attrMetadataUUID(opctx, detail, newid, "fVal")
+
+        then:
+        // what are we testing here???
+        docmeta == docmeta2
+        attrmeta == attrmeta2
+
+        when:
+        List<Rel> rels = api.deserializeDocRels(opctx, detail, newid)
+        String relmeta = api.relMetadataUUID(opctx, detail, rels[0].relKey)
+        String relmeta2 = api.relMetadataUUID(opctx, detail, rels[0].relKey)
+
+        then:
+        // what are we testing here???
+        relmeta == relmeta2
     }
 
     void cleanupSpec() {
