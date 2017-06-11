@@ -53,7 +53,7 @@ http://blog.springsource.org/2011/02/21/spring-3-1-m1-mvc-namespace-enhancements
 
 @CompileStatic
 class RequestParameterJSONArgumentResolver implements WebArgumentResolver {
-    private ObjectMapper objectMapper
+    ObjectMapper objectMapper
 
     RequestParameterJSONArgumentResolver() { objectMapper = new ObjectMapper() }
 
@@ -96,14 +96,5 @@ class RequestParameterJSONArgumentResolver implements WebArgumentResolver {
         catch (JsonProcessingException ex) {
             throw new HttpMessageNotReadableException("For http parameter " + httpParamName + ", could not read JSON: " + ex.getMessage(), ex)
         }
-
-    }
-
-    ObjectMapper getObjectMapper() {
-        return objectMapper
-    }
-
-    void setObjectMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper
     }
 }
