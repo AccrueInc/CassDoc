@@ -31,7 +31,7 @@ class CommandExecServices {
     @Autowired
     DriverWrapper driver
 
-    // ---- schema maintenance
+    // ---- schema admin
 
     void loadSystemSchema() {
         OperationContext opctx = new OperationContext(space: 'cassdoc_system_schema')
@@ -91,10 +91,11 @@ class CommandExecServices {
         log.inf("... done with CASSDOC COLLECTION SCHEMA CREATE $collectionName", null)
     }
 
-    void createNewSimpleDoctypeSchema(String collectionName, String typeCode) {
+    void createNewDoctypeSchema(String collectionName, DocType type) {
+        String typeCode = type?.suffix
         log.inf("CASSDOC DOCTYPE SCHEMA CREATE $typeCode in collection $collectionName", null)
         driver.executeDirectUpdate(collectionName, CassandraSchemaUtil.createAttrTable(collectionName, typeCode), null, 'QUORUM', null)
-        driver.executeDirectUpdate(collectionName, CassandraSchemaUtil.createEntityTable(collectionName, typeCode, []), null, 'QUORUM', null)
+        driver.executeDirectUpdate(collectionName, CassandraSchemaUtil.createEntityTable(collectionName, typeCode, type.fixedAttrList), null, 'QUORUM', null)
         driver.executeDirectUpdate(
                 collectionName,
                 CassandraSchemaUtil.insertSchemaType(),
@@ -107,10 +108,6 @@ class CommandExecServices {
                     collections[collectionName].second)
         }
         log.inf("... done with CASSDOC DOCTYPE SCHEMA CREATE $typeCode in collection $collectionName", null)
-    }
-
-    void createNewComplexDoctypeSchema(String collectionName, DocType docType) {
-        // TODO ... indexes, fixed cols, etc.
     }
 
     // revisit: https://stackoverflow.com/questions/8297705/how-to-implement-thread-safe-lazy-initialization
@@ -132,7 +129,6 @@ class CommandExecServices {
                     collections = [:]
                 }
                 loadSystemSchema()
-                // TODO: /meta endpoint restapi, api service
             }
         }
         if (!collections.containsKey(collectionName)) {
@@ -148,7 +144,7 @@ class CommandExecServices {
         DocType type = collections[collectionName].first.getTypeForSuffix(typeCode)
         if (type == null) {
             if (config.autoCreateNewDocTypes) {
-                createNewSimpleDoctypeSchema(collectionName, typeCode)
+                createNewDoctypeSchema(collectionName, new DocType(uri: 'cassdoc.'+typeCode, suffix: typeCode))
             } else {
                 throw log.err('', new IllegalArgumentException("Unknown cassdoc doc type $typeCode for $collectionName"))
             }
@@ -180,7 +176,7 @@ class CommandExecServices {
         String suffix = IDUtil.idSuffix(updDocFixedColCmd.docUUID)
         String colName = updDocFixedColCmd.colName
         String cql = "UPDATE ${space}.e_${suffix} SET ${colName} = ? WHERE e = ?"
-        Object args = [
+        Object[] args = [
                 updDocFixedColCmd.value,
                 updDocFixedColCmd.docUUID] as Object[]
         svcs.driver.executeDirectUpdate(space, cql, args, detail.writeConsistency, opctx.operationTimestamp)
