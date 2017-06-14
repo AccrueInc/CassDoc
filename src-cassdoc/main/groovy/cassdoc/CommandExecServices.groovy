@@ -2,6 +2,7 @@ package cassdoc
 
 import cassdoc.commands.retrieve.QueryToListOfStrArr
 import cassdoc.config.CassDocConfig
+import cwdrg.lg.annotation.Log
 import cwdrg.util.json.JSONUtil
 import groovy.transform.CompileStatic
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component
 
 @CompileStatic
 @Component
+@Log
 class CommandExecServices {
 
     String idField = "_id"
