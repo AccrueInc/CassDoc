@@ -63,7 +63,7 @@ abstract class MutationCmd extends Cmd {
                 St st = new St(keyspace: space, cql: cql, cqlargs: cqlargs, stmt: svcs.driver.prepare(space, cql, cqlargs, detail.writeConsistency, clearCmd ? opctx.operationClearTimestamp : opctx.operationTimestamp))
                 return st
             } catch (Exception e) {
-                throw log.err("", new RuntimeException("ERROR in statement prep $cql " + JSONUtil.serialize(cqlargs)))
+                throw log.err("", new RuntimeException("ERROR in statement prepareCtx $cql " + JSONUtil.serialize(cqlargs)))
             }
         }
     }

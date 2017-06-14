@@ -1,7 +1,6 @@
 package cassdoc.inittest
 
 import cassdoc.*
-import cassdoc.CassandraSchemaUtil
 import com.jayway.jsonpath.Configuration
 import com.jayway.jsonpath.Option
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider

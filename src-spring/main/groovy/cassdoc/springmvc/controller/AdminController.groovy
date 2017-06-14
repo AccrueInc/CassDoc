@@ -21,16 +21,18 @@ class AdminController {
     @Autowired
     CassdocAPI api
 
-    @RequestMapping(value = '/cassdoc_system_schema', method = RequestMethod.POST)
-    void createSystemSchema()
+    @RequestMapping(value = 'cassdoc_system_schema', method = RequestMethod.POST)
+    String createSystemSchema()
     {
         if (!api.svcs.driver.keyspaces.contains('cassdoc_system_schema')) {
             api.svcs.createSystemSchema()
+            return '{"system_schema_created":true}'
         }
+        return '{"system_schema_created":false}'
     }
 
-    @RequestMapping(value = '/{collection}', method = RequestMethod.POST)
-    void createCollection(
+    @RequestMapping(value = '{collection}', method = RequestMethod.POST)
+    String createCollection(
             @PathVariable(value = 'collection') String collection
     ) {
         if (!api.svcs.driver.keyspaces.contains(collection)) {
@@ -38,19 +40,21 @@ class AdminController {
         }
         api.svcs.collections = [:]
         api.svcs.loadSystemSchema()
+        return """{"collection_created":"$collection"}"""
     }
 
-    @RequestMapping(value = '/{collection}/doctype', method = RequestMethod.POST)
-    void createDocType(
+    @RequestMapping(value = '{collection}/doctype', method = RequestMethod.POST)
+    String createDocType(
             @PathVariable(value = 'collection') String collection,
             @RequestBody DocType docType
     ) {
         api.svcs.createNewDoctypeSchema(collection, docType)
         api.svcs.collections = [:]
         api.svcs.loadSystemSchema()
+        return """{"doctype_created":"/$collection/${docType.suffix}"}"""
     }
 
-    @RequestMapping(value = '/{collection}/{typeCode}', method = RequestMethod.GET)
+    @RequestMapping(value = '{collection}/{typeCode}', method = RequestMethod.GET)
     DocType getDocType(
             @PathVariable(value = 'collection') String collection,
             @PathVariable(value = 'typeCode') String typeCode
@@ -58,7 +62,7 @@ class AdminController {
         api.svcs.collections[collection].first.getTypeForSuffix(typeCode)
     }
 
-    @RequestMapping(value = '/{collection}', method = RequestMethod.GET)
+    @RequestMapping(value = '{collection}', method = RequestMethod.GET)
     List<DocType> listDocType(
             @PathVariable(value = 'collection') String collection
     ) {
