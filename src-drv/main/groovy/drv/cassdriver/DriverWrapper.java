@@ -64,7 +64,7 @@ public class DriverWrapper
 
   private Session                       clusterSession;
 
-  private boolean                       autoStart;
+  private boolean                       autoStart                                 = false;
 
   private volatile boolean              destroyed                                 = false;
 

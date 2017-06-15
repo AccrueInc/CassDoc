@@ -10,20 +10,39 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
 
 
 @Log
 @RestController
 @CompileStatic
-@RequestMapping(value = '/admin')
 class AdminController {
 
     @Autowired
     CassdocAPI api
 
-    @RequestMapping(value = 'cassdoc_system_schema', method = RequestMethod.POST)
-    String createSystemSchema()
-    {
+    @Autowired
+    RequestMappingHandlerMapping handlerMappings
+
+    @RequestMapping(value = '/admin/collections', method = RequestMethod.GET)
+    List<String> listCollections() {
+        api.svcs.collections.keySet() as List<String>
+    }
+
+    @RequestMapping(value = '/admin/{collection}', method = RequestMethod.GET)
+    List<DocType> listDocType(
+            @PathVariable(value = 'collection') String collection
+    ) {
+        api.svcs.collections[collection].first.getTypeList()
+    }
+
+    @RequestMapping(value = '/admin/mappings', method = RequestMethod.GET)
+    Set mappings() {
+        handlerMappings?.handlerMethods.keySet()
+    }
+
+    @RequestMapping(value = '/admin/cassdoc_system_schema', method = RequestMethod.POST)
+    String createSystemSchema() {
         if (!api.svcs.driver.keyspaces.contains('cassdoc_system_schema')) {
             api.svcs.createSystemSchema()
             return '{"system_schema_created":true}'
@@ -31,7 +50,7 @@ class AdminController {
         return '{"system_schema_created":false}'
     }
 
-    @RequestMapping(value = '{collection}', method = RequestMethod.POST)
+    @RequestMapping(value = '/admin/collection/{collection}', method = RequestMethod.POST)
     String createCollection(
             @PathVariable(value = 'collection') String collection
     ) {
@@ -43,7 +62,7 @@ class AdminController {
         return """{"collection_created":"$collection"}"""
     }
 
-    @RequestMapping(value = '{collection}/doctype', method = RequestMethod.POST)
+    @RequestMapping(value = '/admin/collection/{collection}/doctype', method = RequestMethod.POST)
     String createDocType(
             @PathVariable(value = 'collection') String collection,
             @RequestBody DocType docType
@@ -54,24 +73,12 @@ class AdminController {
         return """{"doctype_created":"/$collection/${docType.suffix}"}"""
     }
 
-    @RequestMapping(value = '{collection}/{typeCode}', method = RequestMethod.GET)
+    @RequestMapping(value = '/admin/{collection}/{typeCode}', method = RequestMethod.GET)
     DocType getDocType(
             @PathVariable(value = 'collection') String collection,
             @PathVariable(value = 'typeCode') String typeCode
     ) {
         api.svcs.collections[collection].first.getTypeForSuffix(typeCode)
-    }
-
-    @RequestMapping(value = '{collection}', method = RequestMethod.GET)
-    List<DocType> listDocType(
-            @PathVariable(value = 'collection') String collection
-    ) {
-        api.svcs.collections[collection].first.getTypeList()
-    }
-
-    @RequestMapping(method = RequestMethod.GET)
-    List<String> listCollections() {
-        api.svcs.collections.keySet() as List<String>
     }
 
 
