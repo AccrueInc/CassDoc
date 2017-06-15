@@ -2,13 +2,11 @@ package cassdoc.springmvc
 
 import cassdoc.CassdocAPI
 import cassdoc.CommandExecServices
-import cassdoc.DocType
 import cassdoc.IndexConfigurationService
 import cassdoc.TypeConfigurationService
 import cassdoc.config.CassDocConfig
-import cassdoc.inittest.JavaApiTestInitializer
 import cassdoc.inittest.Types
-import cassdoc.springmvc.controller.APIController
+import cassdoc.springmvc.controller.ApiController
 import cassdoc.springmvc.controller.AdminController
 import cassdoc.springmvc.service.PrepareCtx
 import drv.cassdriver.DriverWrapper
@@ -20,9 +18,6 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpEntity
-import org.springframework.test.context.ContextConfiguration
-import org.springframework.web.client.RestTemplate
-import spock.lang.Shared
 import spock.lang.Specification
 import spock.lang.Stepwise
 
@@ -33,18 +28,16 @@ import spock.lang.Stepwise
 //@ContextConfiguration
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-        classes = [ APIController, AdminController, CassdocAPI, CommandExecServices, PrepareCtx, TypeConfigurationService, IndexConfigurationService, DriverWrapper, CassDocConfig]
+        classes = [ ApiController, AdminController, CassdocAPI, CommandExecServices, PrepareCtx, TypeConfigurationService, IndexConfigurationService, DriverWrapper, CassDocConfig]
 )
 class HelloWorldIntegrationSpec extends Specification {
 
     @LocalServerPort
     String port
 
-    @Autowired
-    ApplicationContext applicationContext
-
-    @Autowired
-    TestRestTemplate restTemplate
+    @Autowired CassdocAPI cassdocAPI
+    @Autowired ApplicationContext applicationContext
+    @Autowired TestRestTemplate restTemplate
 
     static String keyspace = 'functional_test'
 
@@ -57,10 +50,26 @@ class HelloWorldIntegrationSpec extends Specification {
         applicationContext != null
     }
 
+    void 'list springmvc mappings'() {
+        when:
+        String response = restTemplate.getForObject("http://localhost:$port/admin/mappings", String)
+        println '----------_MAPPINGS_----------'
+        println response
+
+        then:
+        response != null
+}
+
     void 'setup schema'() {
         when:
         println 'setup schema'
         String response
+
+        cassdocAPI.svcs.driver.autoStart = true
+        cassdocAPI.svcs.driver.clusterContactNodes = '127.0.0.1'
+        cassdocAPI.svcs.driver.clusterPort = 9142 // embedded uses this port
+        cassdocAPI.svcs.driver.initDataSources()
+
         response = restTemplate.postForObject("http://localhost:$port/admin/cassdoc_system_schema",null,  String)
         println response
         response = restTemplate.postForObject("http://localhost:$port/admin/$keyspace", null, String)

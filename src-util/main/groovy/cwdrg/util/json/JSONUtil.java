@@ -79,6 +79,7 @@ public final class JSONUtil
 
   public static Object deserialize(String json, Class<?> clazz)
   {
+    if (StringUtils.isBlank(json)) { return null; }
     try {
       return objectMapper.readValue(json, clazz);
     } catch (JsonParseException jpe) {
@@ -93,6 +94,7 @@ public final class JSONUtil
 
   public static Object deserialize(String json, TypeReference<?> typeref)
   {
+    if (StringUtils.isBlank(json)) { return null; }
     try {
       return objectMapper.readValue(json, typeref);
     } catch (JsonParseException jpe) {
@@ -107,7 +109,7 @@ public final class JSONUtil
 
   public static List<String> deserializeList(String json)
   {
-    if (json == null) { return null; }
+    if (StringUtils.isBlank(json)) { return null; }
     List<String> strs = (List<String>) JSONUtil.deserialize(json, new TypeReference<List<Object>>()
     {
     });
@@ -117,7 +119,7 @@ public final class JSONUtil
 
   public static List<String> deserializeStringList(String json)
   {
-    if (json == null) { return null; }
+    if (StringUtils.isBlank(json)) { return null; }
     List<String> strs = (List<String>) JSONUtil.deserialize(json, new TypeReference<List<String>>()
     {
     });
@@ -127,7 +129,7 @@ public final class JSONUtil
 
   public static Set<String> deserializeStringSet(String json)
   {
-    if (json == null) { return null; }
+    if (StringUtils.isBlank(json)) { return null; }
     Set<String> strs = (Set<String>) JSONUtil.deserialize(json, new TypeReference<Set<String>>()
     {
     });
@@ -138,7 +140,6 @@ public final class JSONUtil
   public static Map<String, Object> deserializeMap(String json)
   {
     if (StringUtils.isBlank(json)) { return Collections.emptyMap(); }
-
     return (Map<String, Object>) deserialize(json, new TypeReference<Map<String, Object>>()
     {
     });

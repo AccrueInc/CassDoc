@@ -4,7 +4,7 @@ class CassandraSchemaUtil {
 
     static String createSchemaKeyspace(int replicationFactor = 1) {
         """
-        | CREATE KEYSPACE IF NOT EXISTS cassdoc_system_schema replication = {'class': 'SimpleStrategy', 'replication_factor': '$replicationFactor'}  AND durable_writes = true;
+        | CREATE KEYSPACE IF NOT EXISTS cassdoc_system_schema WITH REPLICATION = {'class': 'SimpleStrategy', 'replication_factor': '$replicationFactor'}  AND durable_writes = true;
         """.stripMargin()
     }
 
