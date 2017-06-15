@@ -1,5 +1,6 @@
 package cassdoc
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import cwdrg.lg.annotation.Log
 import groovy.transform.CompileStatic
 
@@ -18,7 +19,7 @@ class FixedAttr {
     Object jsonExtractor
     String prepStmt_UPDATE_ATTR
     String prepStmt_UPDATE_ATTR_PAXOS
-    transient DocType docType
+    @JsonIgnore DocType docType
 }
 
 @CompileStatic
@@ -69,7 +70,7 @@ class ManualIndex {
     Map indexConfig   // index-type specific configuration infomation
     List<String> indexCodes = [] // i1,i2,i3
     List<String> keyAttrs = [] // attributes that form the k1 / k2 / k3 fields
-    transient DocType docType
+    @JsonIgnore DocType docType
 }
 
 @CompileStatic
