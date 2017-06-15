@@ -26,7 +26,7 @@ class AdminController {
 
     @RequestMapping(value = '/admin/_collections_', method = RequestMethod.GET)
     List<String> listCollections() {
-        log.dbg('GET /admin/_collections_ --> listCollections()',null)
+        log.inf('GET /admin/_collections_ --> listCollections()',null)
         api.svcs.collections?.keySet() as List<String>
     }
 
@@ -34,7 +34,7 @@ class AdminController {
     List<DocType> listDocType(
             @PathVariable(value = 'collection') String collection
     ) {
-        log.dbg("GET /admin/$collection --> listDocType()",null)
+        log.inf("GET /admin/$collection --> listDocType()",null)
         api.svcs.collections[collection].first.getTypeList()
     }
 
@@ -46,7 +46,7 @@ class AdminController {
 
     @RequestMapping(value = '/admin/cassdoc_system_schema', method = RequestMethod.POST)
     String createSystemSchema() {
-        log.dbg('POST /admin/cassdoc_system_schema --> createSystemSchema()',null)
+        log.inf('POST /admin/cassdoc_system_schema --> createSystemSchema()',null)
         if (!api.svcs.driver.keyspaces.contains('cassdoc_system_schema')) {
             api.svcs.createSystemSchema()
             return '{"system_schema_created":true}'
@@ -58,7 +58,7 @@ class AdminController {
     String createCollection(
             @PathVariable(value = 'collection') String collection
     ) {
-        log.dbg("POST /admin/$collection --> createCollection()",null)
+        log.inf("POST /admin/$collection --> createCollection()",null)
         if (!api.svcs.driver.keyspaces.contains(collection)) {
             api.svcs.createNewCollectionSchema(collection)
         }
@@ -72,7 +72,7 @@ class AdminController {
             @PathVariable(value = 'collection') String collection,
             @RequestBody DocType docType
     ) {
-        log.dbg("POST /admin/$collection/doctype (${docType.suffix} --> createDocType()",null)
+        log.inf("POST /admin/$collection/doctype (${docType.suffix} --> createDocType()",null)
         api.svcs.createNewDoctypeSchema(collection, docType)
         api.svcs.collections = [:]
         api.svcs.loadSystemSchema()
@@ -84,7 +84,7 @@ class AdminController {
             @PathVariable(value = 'collection') String collection,
             @PathVariable(value = 'typeCode') String typeCode
     ) {
-        log.dbg("GET /admin/$collection/$typeCode  --> getDocType()",null)
+        log.inf("GET /admin/$collection/$typeCode  --> getDocType()",null)
         api.svcs.collections[collection].first.getTypeForSuffix(typeCode)
     }
 
