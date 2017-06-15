@@ -24,25 +24,29 @@ class AdminController {
     @Autowired
     RequestMappingHandlerMapping handlerMappings
 
-    @RequestMapping(value = '/admin/collections', method = RequestMethod.GET)
+    @RequestMapping(value = '/admin/_collections_', method = RequestMethod.GET)
     List<String> listCollections() {
-        api.svcs.collections.keySet() as List<String>
+        log.inf('GET /admin/_collections_ --> listCollections()',null)
+        api.svcs.collections?.keySet() as List<String>
     }
 
     @RequestMapping(value = '/admin/{collection}', method = RequestMethod.GET)
     List<DocType> listDocType(
             @PathVariable(value = 'collection') String collection
     ) {
+        log.inf("GET /admin/$collection --> listDocType()",null)
         api.svcs.collections[collection].first.getTypeList()
     }
 
-    @RequestMapping(value = '/admin/mappings', method = RequestMethod.GET)
+    @RequestMapping(value = '/admin/_mappings_', method = RequestMethod.GET)
     Set mappings() {
+        log.dbg('GET /admin/_mappings_ --> mappings()',null)
         handlerMappings?.handlerMethods.keySet()
     }
 
     @RequestMapping(value = '/admin/cassdoc_system_schema', method = RequestMethod.POST)
     String createSystemSchema() {
+        log.inf('POST /admin/cassdoc_system_schema --> createSystemSchema()',null)
         if (!api.svcs.driver.keyspaces.contains('cassdoc_system_schema')) {
             api.svcs.createSystemSchema()
             return '{"system_schema_created":true}'
@@ -50,10 +54,11 @@ class AdminController {
         return '{"system_schema_created":false}'
     }
 
-    @RequestMapping(value = '/admin/collection/{collection}', method = RequestMethod.POST)
+    @RequestMapping(value = '/admin/{collection}', method = RequestMethod.POST)
     String createCollection(
             @PathVariable(value = 'collection') String collection
     ) {
+        log.inf("POST /admin/$collection --> createCollection()",null)
         if (!api.svcs.driver.keyspaces.contains(collection)) {
             api.svcs.createNewCollectionSchema(collection)
         }
@@ -62,11 +67,12 @@ class AdminController {
         return """{"collection_created":"$collection"}"""
     }
 
-    @RequestMapping(value = '/admin/collection/{collection}/doctype', method = RequestMethod.POST)
+    @RequestMapping(value = '/admin/{collection}/doctype', method = RequestMethod.POST)
     String createDocType(
             @PathVariable(value = 'collection') String collection,
             @RequestBody DocType docType
     ) {
+        log.inf("POST /admin/$collection/doctype (${docType.suffix} --> createDocType()",null)
         api.svcs.createNewDoctypeSchema(collection, docType)
         api.svcs.collections = [:]
         api.svcs.loadSystemSchema()
@@ -78,8 +84,8 @@ class AdminController {
             @PathVariable(value = 'collection') String collection,
             @PathVariable(value = 'typeCode') String typeCode
     ) {
+        log.inf("GET /admin/$collection/$typeCode  --> getDocType()",null)
         api.svcs.collections[collection].first.getTypeForSuffix(typeCode)
     }
-
 
 }
