@@ -38,6 +38,9 @@ class CommandExecServices {
     void loadSystemSchema() {
         OperationContext opctx = new OperationContext(space: 'cassdoc_system_schema')
         Detail dtl = new Detail()
+        if (collections == null) {
+            collections = [:]
+        }
         List<Object[]> schemas = query(opctx, dtl, 'SELECT ks, nm, json FROM cassdoc_system_schema.types', null)
         String curKS
         List<DocType> curList

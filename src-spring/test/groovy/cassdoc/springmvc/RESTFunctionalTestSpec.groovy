@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpEntity
+import org.springframework.http.HttpMethod
 import spock.lang.Specification
 import spock.lang.Stepwise
 
@@ -97,10 +98,11 @@ class RESTFunctionalTestSpec extends Specification {
     void 'create doc and retrieve it'() {
         when:
         String proddoc = this.class.classLoader.getResourceAsStream('cassdoc/testdata/DocWithFixedAttrs.json').getText()
-        String response = restTemplate.postForEntity("http://localhost:$port/doc/$keyspace", new HttpEntity<String>(proddoc), String).body
-        println response
+        String response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
+        println 'DOCID: '+response
         String docid = response
-        response = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/$docid", String).body
+        response = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
+        println 'LOOKUP: '+response
 
         then:
         response.contains(docid)

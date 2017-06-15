@@ -35,13 +35,12 @@ class ApiController {
     // method parameters to result in ambiguous mapping errors in the integration test. Works if we no longer
     // use those annotations and user the HttpRequest.getParameter
 
-
     @RequestMapping(value = '/up', method = RequestMethod.GET)
     String status() {
         return '{"webappStatus":"up"}'
     }
 
-    @RequestMapping(value = '/doc/exists/{collection}/{id}/', method = RequestMethod.HEAD)
+    @RequestMapping(value = '/doc/{collection}/{id}/', method = RequestMethod.HEAD)
     boolean docExists(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -51,7 +50,7 @@ class ApiController {
         api.docExists(ctxDtl.ctx, ctxDtl.dtl, uuid)
     }
 
-    @RequestMapping(value = '/doc/exists/{collection}/{id}/{attr}/', method = RequestMethod.HEAD)
+    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.HEAD)
     boolean attrExists(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -62,7 +61,7 @@ class ApiController {
         api.attrExists(ctxDtl.ctx, ctxDtl.dtl, uuid, attr)
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/', method = RequestMethod.GET)
+    @RequestMapping(value = '/doc/{collection}/{id}', method = RequestMethod.GET)
     void retrieveDoc(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -89,7 +88,7 @@ class ApiController {
         writer.flush()
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/{attr}/', method = RequestMethod.GET)
+    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.GET)
     void getAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -117,7 +116,7 @@ class ApiController {
         writer.flush()
     }
 
-    @RequestMapping(value = '/doc/{collection}/', method = RequestMethod.PUT)
+    @RequestMapping(value = ['/doc/{collection}','/doc/{collection}/'], method = RequestMethod.PUT)
     String newDoc(
             @PathVariable(value = 'collection', required = true) String collection,
             // CEM: request params aren't working (at least not in spring boot test), might be the httpreq injection
@@ -135,7 +134,7 @@ class ApiController {
         api.newDoc(ctxDtl.ctx, ctxDtl.dtl, reader)
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/{attr}/', method = RequestMethod.PUT)
+    @RequestMapping(value = ['/doc/{collection}/{id}/{attr}','/doc/{collection}/{id}/{attr}/'], method = RequestMethod.PUT)
     String newAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -154,7 +153,7 @@ class ApiController {
         api.newAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, reader, false)
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/{attr}/', method = RequestMethod.POST)
+    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.POST)
     void updateAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -174,7 +173,7 @@ class ApiController {
         api.updateAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, json)
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/{attr}/', method = RequestMethod.PATCH)
+    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.PATCH)
     void overlayAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -194,7 +193,7 @@ class ApiController {
         api.updateAttrOverlay(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, json)
     }
 
-    @RequestMapping(value = '/docs/{collection}/', method = RequestMethod.PUT)
+    @RequestMapping(value = '/docs/{collection}', method = RequestMethod.PUT)
     String newDocs(
             @PathVariable(value = 'collection', required = true) String collection,
             //@RequestParam(value = 'async', required = false) Boolean async = false,
@@ -219,7 +218,7 @@ class ApiController {
         writer.flush()
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/', method = RequestMethod.DELETE)
+    @RequestMapping(value = '/doc/{collection}/{id}', method = RequestMethod.DELETE)
     void delDoc(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -229,7 +228,7 @@ class ApiController {
         api.delDoc(ctxDtl.ctx, ctxDtl.dtl, uuid)
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/{attr}/', method = RequestMethod.DELETE)
+    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.DELETE)
     void delAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
