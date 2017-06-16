@@ -25,7 +25,7 @@ class CommandExecServices {
 
     JsonFactory jsonFactory = new JsonFactory()
 
-    Map<String, Tuple2<TypeConfigurationService, IndexConfigurationService>> collections
+    Map<String, Tuple2<TypeConfigurationService, IndexConfigurationService>> collections = [:]
 
     @Autowired
     CassDocConfig config
@@ -41,12 +41,12 @@ class CommandExecServices {
         if (collections == null) {
             collections = [:]
         }
-        List<Object[]> schemas = query(opctx, dtl, 'SELECT ks, nm, json FROM cassdoc_system_schema.types', null)
+        List<Object[]> schemas = query(opctx, dtl, 'SELECT token(ks), ks, nm, json FROM cassdoc_system_schema.types')
         String curKS
         List<DocType> curList
         for (Object[] collectionSchema : schemas) {
             // todo: nullchecks
-            String ks = collectionSchema[0]
+            String ks = collectionSchema[1]
             if (!collections.containsKey(ks)) {
                 collections[ks] = new Tuple2<>(new TypeConfigurationService(), new IndexConfigurationService())
             }
@@ -58,9 +58,10 @@ class CommandExecServices {
                 curKS = ks
                 curList = []
             }
-            String nm = collectionSchema[1]
-            String json = collectionSchema[2]
-            curList[nm] << (DocType) JSONUtil.deserialize(json, DocType)
+            String nm = collectionSchema[2]
+            String json = collectionSchema[3]
+            log.inf("$ks : $nm : $json", null)
+            curList << (DocType) JSONUtil.deserialize(json, DocType)
         }
         TypeConfigurationService types = collections[curKS].first
         types.setTypeList(curList)

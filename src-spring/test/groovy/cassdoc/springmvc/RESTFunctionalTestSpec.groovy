@@ -6,8 +6,8 @@ import cassdoc.IndexConfigurationService
 import cassdoc.TypeConfigurationService
 import cassdoc.config.CassDocConfig
 import cassdoc.inittest.Types
-import cassdoc.springmvc.controller.ApiController
 import cassdoc.springmvc.controller.AdminController
+import cassdoc.springmvc.controller.ApiController
 import cassdoc.springmvc.service.PrepareCtx
 import drv.cassdriver.DriverWrapper
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper
@@ -19,6 +19,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpMethod
+import org.springframework.http.ResponseEntity
 import spock.lang.Specification
 import spock.lang.Stepwise
 
@@ -36,21 +37,24 @@ class RESTFunctionalTestSpec extends Specification {
     @LocalServerPort
     String port
 
-    @Autowired
-    CassdocAPI cassdocAPI
-    @Autowired
-    ApplicationContext applicationContext
-    @Autowired
-    TestRestTemplate restTemplate
+    @Autowired ApplicationContext applicationContext
+    @Autowired TestRestTemplate restTemplate
+
+    static CassdocAPI cassdocAPI
 
     static String keyspace = 'functional_test'
 
     void setupSpec() {
         EmbeddedCassandraServerHelper.startEmbeddedCassandra()
+        setLogLevel(CommandExecServices.name,"INFO")
+
     }
 
     void 'springmvc server starts up'() {
-        expect:
+        when:
+        cassdocAPI = applicationContext.getBean('cassdocAPI')
+
+        then:
         applicationContext != null
     }
 
@@ -86,27 +90,37 @@ class RESTFunctionalTestSpec extends Specification {
         println response
         response = restTemplate.postForObject("http://localhost:$port/admin/$keyspace", null, String)
         println response
-        response = restTemplate.postForObject("http://localhost:$port/admin/$keyspace/docType", Types.product(), String)
+        response = restTemplate.postForObject("http://localhost:$port/admin/$keyspace/doctype", Types.product(), String)
         println response
-        response = restTemplate.postForObject("http://localhost:$port/admin/$keyspace/docType", Types.job(), String)
+        response = restTemplate.postForObject("http://localhost:$port/admin/$keyspace/doctype", Types.job(), String)
         println response
+        cassdocAPI.svcs.collections.keySet().each {
+            println "$it : "
+            cassdocAPI.svcs.collections[it].first.typeList.each{println "    "+it.suffix}
+        }
 
         then:
+        cassdocAPI.svcs.collections != null
         noExceptionThrown()
     }
 
     void 'create doc and retrieve it'() {
         when:
         String proddoc = this.class.classLoader.getResourceAsStream('cassdoc/testdata/DocWithFixedAttrs.json').getText()
-        String response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
-        println 'DOCID: '+response
-        String docid = response
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
+        println 'DOCID: '+response.body
+        String docid = response.body
         response = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
         println 'LOOKUP: '+response
 
         then:
+        cassdocAPI.svcs.collections != [:]
         response.contains(docid)
         response.contains('8898988898')
     }
 
+    static void setLogLevel(String loggername, String lvl) {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(loggername == null ? "ROOT" : loggername)
+        logger.setLevel(ch.qos.logback.classic.Level.toLevel(lvl, ch.qos.logback.classic.Level.DEBUG))
+    }
 }
