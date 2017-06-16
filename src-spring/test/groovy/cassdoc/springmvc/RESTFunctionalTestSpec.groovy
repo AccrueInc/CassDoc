@@ -110,13 +110,12 @@ class RESTFunctionalTestSpec extends Specification {
         ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
         println 'DOCID: '+response.body
         String docid = response.body
-        response = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
+        String json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
         println 'LOOKUP: '+response
 
         then:
-        cassdocAPI.svcs.collections != [:]
-        response.contains(docid)
-        response.contains('8898988898')
+        json.contains(docid)
+        json.contains('8898988898')
     }
 
     static void setLogLevel(String loggername, String lvl) {
