@@ -35,7 +35,7 @@ class AdminController {
             @PathVariable(value = 'collection') String collection
     ) {
         log.inf("GET /admin/$collection --> listDocType()",null)
-        api.svcs.collections[collection].first.getTypeList()
+        api.svcs.collections[collection]?.first?.typeList
     }
 
     @RequestMapping(value = '/admin/_mappings_', method = RequestMethod.GET)
