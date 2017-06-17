@@ -184,14 +184,14 @@ class QueryToListOfStrArr extends CassandraPagedRowProcessor {
                     data[i] = row.getTimestamp(i)?.time?.toString()
                     break
                 case DataType.cboolean():
-                    data[i] = row.getBool(i)?.toString()
+                    data[i] = row.getBool(i).toString()
                     break
                 case DataType.cint():
-                    data[i] = row.getInt(i)?.toString()
+                    data[i] = row.getInt(i).toString()
                     break
                 case DataType.bigint():
                 case DataType.counter():
-                    data[i] = row.getLong(i)?.toString()
+                    data[i] = row.getLong(i).toString()
                     break
                 case DataType.varint():
                     data[i] = row.getVarint(i)?.toString()

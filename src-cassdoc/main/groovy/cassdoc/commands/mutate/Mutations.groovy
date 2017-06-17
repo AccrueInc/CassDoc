@@ -1,5 +1,6 @@
 package cassdoc.commands.mutate
 
+import com.datastax.driver.core.LocalDate
 import groovy.transform.CompileStatic
 
 import org.apache.commons.lang3.StringUtils
@@ -214,6 +215,7 @@ class UpdFixedCol extends MutationCmd {
         space = opctx.space
         String suffix = IDUtil.idSuffix(docUUID)
         cql = "INSERT INTO ${space}.e_${suffix} (e, $colName, zv) VALUES (?, ?, ?)"
+        if (value instanceof Date) { value = LocalDate.fromMillisSinceEpoch(((Date)value).time) }
         cqlargs = [
                 docUUID,
                 value,
@@ -303,6 +305,7 @@ class UpdDocFixedColPAXOS extends MutationCmd {
     Object execMutationCassandra(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
         space = opctx.space
         String suffix = IDUtil.idSuffix(docUUID)
+        if (value instanceof Date) { value = LocalDate.fromMillisSinceEpoch(((Date)value).time) }
         cql = "INSERT INTO ${space}.e_${suffix} (e, $colName, zv) VALUES (?, ?, ?) IF zv = ?"
         cqlargs = [
                 docUUID,

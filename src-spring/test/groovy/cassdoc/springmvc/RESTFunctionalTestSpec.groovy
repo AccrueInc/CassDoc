@@ -2,6 +2,7 @@ package cassdoc.springmvc
 
 import cassdoc.CassdocAPI
 import cassdoc.CommandExecServices
+import cassdoc.DocType
 import cassdoc.IndexConfigurationService
 import cassdoc.TypeConfigurationService
 import cassdoc.config.CassDocConfig
@@ -87,13 +88,10 @@ class RESTFunctionalTestSpec extends Specification {
     void 'setup schema'() {
         when:
         println 'setup schema'
-        String response
-
         cassdocAPI.svcs.driver.autoStart = true
         cassdocAPI.svcs.driver.clusterContactNodes = '127.0.0.1'
         cassdocAPI.svcs.driver.clusterPort = 9142 // embedded uses this port
         cassdocAPI.svcs.driver.initDataSources()
-
         restTemplate.postForObject("http://localhost:$port/admin/cassdoc_system_schema", null, String)
         restTemplate.postForObject("http://localhost:$port/admin/$keyspace", null, String)
         restTemplate.postForObject("http://localhost:$port/admin/$keyspace/doctype", Types.product(), String)
@@ -102,9 +100,15 @@ class RESTFunctionalTestSpec extends Specification {
             println "$it : "
             cassdocAPI.svcs.collections[it].first.typeList.each{println "    "+it.suffix}
         }
+        DocType job = restTemplate.getForObject("http://localhost:$port/admin/$keyspace/JOB",DocType)
+        DocType prod = restTemplate.getForObject("http://localhost:$port/admin/$keyspace/PROD",DocType)
+        println restTemplate.getForObject("http://localhost:$port/admin/_schema_",String)
 
         then:
-        cassdocAPI.svcs.collections != null
+        job != null
+        prod != null
+        job.fixedAttrList.size() == 2
+        prod.fixedAttrList.size() == 5
         noExceptionThrown()
     }
 

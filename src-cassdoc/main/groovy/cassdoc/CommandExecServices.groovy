@@ -105,7 +105,7 @@ class CommandExecServices {
         driver.executeDirectUpdate(
                 collectionName,
                 CassandraSchemaUtil.insertSchemaType(),
-                [collectionName, typeCode, JSONUtil.toJSON(new DocType(uri: 'cassdoc.' + typeCode, suffix: typeCode))] as Object[],
+                [collectionName, typeCode, JSONUtil.toJSON(type)] as Object[],
                 'QUORUM',
                 null)
         if (collections != null) {
