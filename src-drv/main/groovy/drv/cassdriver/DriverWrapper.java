@@ -1,6 +1,8 @@
 package drv.cassdriver;
 
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -146,7 +148,6 @@ public class DriverWrapper {
         if (autoStart && !initialized) {
             synchronized (initLock) {
                 checkNotShutDown();
-
                 if (!initialized) {
                     try {
                         doInitDataSources();
@@ -230,6 +231,7 @@ public class DriverWrapper {
         Session session = getSession();
 
         for (CharSequence cqlcs : cqls) {
+            log.dbg(log.d() ? "UPDATE CQL: {} {} {}\n{}" : "", null, keyspace, consistency, null, cqlcs);
             SimpleStatement simplestmt = new SimpleStatement(cqlcs.toString());
             simplestmt.setConsistencyLevel(ConsistencyLevel.valueOf(consistency));
 
@@ -246,6 +248,7 @@ public class DriverWrapper {
     public Statement prepare(final String keyspace, final String cql, final Object[] prepArgsIn, final String consistency, Long usingTimestamp) {
         if (prepArgsIn != null && prepArgsIn.length != 0) {
             typeConvertPrepArgs(prepArgsIn);
+            log.dbg(log.d() ? "PREPARE: {} {} {}\n" + JSONUtil.toJSON(prepArgsIn) + "\n{}" : "", null, keyspace, consistency, usingTimestamp, cql);
             PreparedStatement prepStmt = cachedPrepare(cql);
             prepStmt.setConsistencyLevel(ConsistencyLevel.valueOf(consistency));
             // TODO: ?detect the metadata/types? use prepArgTypes?
@@ -301,6 +304,8 @@ public class DriverWrapper {
         batchstmt.setStmt(batch);
         batchstmt.setKeyspace(keyspace);
         batchstmt.setCql(batchcql.toString());
+        log.dbg(log.d() ? "EXEC ASYNC BATCH: {} {} {} \n{}" : "", null, keyspace, consistency, usingTimestamp, batchcql);
+
         return executeStatementAsync(session, batchstmt);
     }
 
@@ -312,7 +317,7 @@ public class DriverWrapper {
 
 
     public void executeDirectUpdate(final String keyspace, final String cql, final Object[] prepArgsIn, final String consistency, Long usingTimestamp) {
-        log.dbg(log.d() ? "execDirectUpdate: {} {} " + JSONUtil.serialize(prepArgsIn) + " {} {}" : "", null, keyspace, cql, consistency, usingTimestamp);
+        log.dbg(log.d() ? "EXEC UPDATE: {} {} " + JSONUtil.serialize(prepArgsIn) + " {} {}" : "", null, keyspace, cql, consistency, usingTimestamp);
         Session session = getSession();
 
         Statement prepstmt = prepare(keyspace, cql, prepArgsIn, consistency, usingTimestamp);
@@ -402,6 +407,9 @@ public class DriverWrapper {
             if (obj instanceof byte[] || obj instanceof Byte[]) {
                 obj = ByteBuffer.wrap((byte[]) obj);
             }
+            if (obj instanceof java.util.Date) {
+                obj = Instant.ofEpochMilli(((Date)obj).getTime()).atZone(ZoneId.systemDefault()).toLocalDate();
+            }
             args[i] = obj;
         }
     }
@@ -413,6 +421,8 @@ public class DriverWrapper {
         // pass a facade of a RS to the rch?
 
         ResultSet cassRS = null; // NOSONAR this is not closeable
+
+        log.dbg(log.d() ? "EXEC QUERY: {} {} {} \n{}" : "", null, keyspace, consistency, null, cql);
 
         St stmt = new St();
         stmt.setKeyspace(keyspace);

@@ -37,6 +37,7 @@ class ApiController {
 
     @RequestMapping(value = '/up', method = RequestMethod.GET)
     String status() {
+        log.inf('GET /up --> status()', null)
         return '{"webappStatus":"up"}'
     }
 
@@ -46,7 +47,8 @@ class ApiController {
             @PathVariable(value = 'id', required = true) String uuid,
             @RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON
     ) {
-        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
+        log.inf("HEAD /doc/$collection/$uuid --> docExists()", null)
+        CtxDtl ctxDtl = prepareCtx.readOnlyCtxDtl(collection, customDetailJSON)
         api.docExists(ctxDtl.ctx, ctxDtl.dtl, uuid)
     }
 
@@ -57,7 +59,8 @@ class ApiController {
             @PathVariable(value = 'attr', required = true) String attr,
             @RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON
     ) {
-        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
+        log.inf("HEAD /doc/$collection/$uuid/$attr --> attrExists()", null)
+        CtxDtl ctxDtl = prepareCtx.readOnlyCtxDtl(collection, customDetailJSON)
         api.attrExists(ctxDtl.ctx, ctxDtl.dtl, uuid, attr)
     }
 
@@ -71,17 +74,18 @@ class ApiController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        log.inf("GET /doc/$collection/$uuid --> retrieveDoc()", null)
         Boolean simple = request.getParameter('simple')?.equalsIgnoreCase('true')
         String jsonPath = request.getParameter('jsonpath')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.readOnlyCtxDtl(collection, customDetailJSON)
         ServletOutputStream outstream = response.outputStream
         Writer writer = new OutputStreamWriter(outstream)
         if (simple) {
             api.getSimpleDoc(ctxDtl.ctx, ctxDtl.dtl, uuid, writer)
         } else if (jsonPath != null) {
-            api.getDocJsonPath(ctxDtl.ctx,ctxDtl.dtl,uuid,jsonPath, writer)
+            api.getDocJsonPath(ctxDtl.ctx, ctxDtl.dtl, uuid, jsonPath, writer)
         } else {
             api.getDoc(ctxDtl.ctx, ctxDtl.dtl, uuid, writer)
         }
@@ -99,24 +103,25 @@ class ApiController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        log.inf("GET /doc/$collection/$uuid/$attr --> retrieveAttr()", null)
         Boolean simple = request.getParameter('simple')?.equalsIgnoreCase('true')
         String jsonPath = request.getParameter('jsonpath')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.readOnlyCtxDtl(collection, customDetailJSON)
         ServletOutputStream outstream = response.outputStream
         Writer writer = new OutputStreamWriter(outstream)
         if (simple) {
             api.getSimpleAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, writer)
         } else if (jsonPath != null) {
-            api.getAttrJsonPath(ctxDtl.ctx,ctxDtl.dtl,uuid,attr, jsonPath, writer)
+            api.getAttrJsonPath(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, jsonPath, writer)
         } else {
             api.getAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, writer)
         }
         writer.flush()
     }
 
-    @RequestMapping(value = ['/doc/{collection}','/doc/{collection}/'], method = RequestMethod.PUT)
+    @RequestMapping(value = ['/doc/{collection}', '/doc/{collection}/'], method = RequestMethod.PUT)
     String newDoc(
             @PathVariable(value = 'collection', required = true) String collection,
             // CEM: request params aren't working (at least not in spring boot test), might be the httpreq injection
@@ -124,17 +129,18 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) String customDetailJSON,
             HttpServletRequest request
     ) {
+        log.inf("PUT /doc/$collection --> newDoc()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl= prepareCtx.docExists(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.writeOnlyCtxDtl(collection, customDetailJSON)
         ServletInputStream instream = request.inputStream
         Reader reader = new InputStreamReader(instream)
         // TODO: figure out async use cases
         api.newDoc(ctxDtl.ctx, ctxDtl.dtl, reader)
     }
 
-    @RequestMapping(value = ['/doc/{collection}/{id}/{attr}','/doc/{collection}/{id}/{attr}/'], method = RequestMethod.PUT)
+    @RequestMapping(value = ['/doc/{collection}/{id}/{attr}', '/doc/{collection}/{id}/{attr}/'], method = RequestMethod.PUT)
     String newAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -143,10 +149,11 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON,
             HttpServletRequest request
     ) {
+        log.inf("PUT /doc/$collection/$attr --> newAttr()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl= prepareCtx.docExists(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
         ServletInputStream instream = request.inputStream
         Reader reader = new InputStreamReader(instream)
         // TODO: figure out async use cases
@@ -163,10 +170,11 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON,
             HttpServletRequest request
     ) {
+        log.inf("POST /doc/$collection/$attr --> updateAttr()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl= prepareCtx.docExists(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
         ServletInputStream instream = request.inputStream
         Reader reader = new InputStreamReader(instream)
         String json = IOUtils.toString(reader)
@@ -183,10 +191,11 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON,
             HttpServletRequest request
     ) {
+        log.inf("PATCH /doc/$collection/$attr --> overlayAttr()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl= prepareCtx.docExists(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
         ServletInputStream instream = request.inputStream
         Reader reader = new InputStreamReader(instream)
         String json = IOUtils.toString(reader)
@@ -202,10 +211,11 @@ class ApiController {
             HttpServletRequest request,
             HttpServletResponse response
     ) {
+        log.inf("PUT /docs/$collection --> newDocs()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
-        Detail customDetailJSON = (Detail)JSONUtil.deserialize(request.getParameter('detail'),Detail)
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
-        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
+        CtxDtl ctxDtl = prepareCtx.writeOnlyCtxDtl(collection, customDetailJSON)
 
         ServletInputStream instream = request.inputStream
         Reader reader = new InputStreamReader(instream)
@@ -220,24 +230,34 @@ class ApiController {
     }
 
     @RequestMapping(value = '/doc/{collection}/{id}', method = RequestMethod.DELETE)
-    void delDoc(
+    String delDoc(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
-            @RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        CtxDtl ctxDtl= prepareCtx.docExists(collection, customDetailJSON)
+        log.inf("DELETE /doc/$collection/$uuid --> delDoc()", null)
+        Boolean retrieveDoomedDoc = request.getParameter('getBeforeDelete')?.equalsIgnoreCase('true')
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
+
+        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
         api.delDoc(ctxDtl.ctx, ctxDtl.dtl, uuid)
     }
 
     @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.DELETE)
-    void delAttr(
+    String delAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
             @PathVariable(value = 'attr', required = true) String attr,
-            @RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON
+            HttpServletRequest request,
+            HttpServletResponse response
     ) {
-        CtxDtl ctxDtl= prepareCtx.docExists(collection, customDetailJSON)
+        log.inf("DELETE /doc/$collection/$uuid/$attr --> delAttr()", null)
+        Boolean retrieveDoomedAttr = request.getParameter('getBeforeDelete')?.equalsIgnoreCase('true')
+        Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
+
+        CtxDtl ctxDtl = prepareCtx.ctxAndDtl(collection, customDetailJSON)
         api.delAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr)
     }
-    
+
 }

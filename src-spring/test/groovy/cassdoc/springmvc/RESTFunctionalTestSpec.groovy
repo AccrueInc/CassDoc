@@ -129,7 +129,7 @@ class RESTFunctionalTestSpec extends Specification {
         String json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
         println 'LOOKUP: '+json
         // new attribute
-        String aNewAttribute = '{"a":1,"b":4.5,"c":true,"d":"ddd,"e":{"aa":11,"bb":"BBBB"}}'
+        String aNewAttribute = '{"a":1,"b":4.5,"c":true,"d":"ddd","e":{"aa":11,"bb":"BBBB"}}'
         response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.PUT, new HttpEntity<String>(aNewAttribute), String)
         String attrjson = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
         // update that attribute
@@ -141,6 +141,23 @@ class RESTFunctionalTestSpec extends Specification {
         json.contains('8898988898')
         attrjson.contains('BBBB')
         attrUpdated.contains('99.01')
+
+        when:
+        restTemplate.delete("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute")
+        attrUpdated = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
+
+        then:
+        attrUpdated == 'null'
+
+        when:
+        setLogLevel(DriverWrapper.name,"DEBUG")
+        restTemplate.delete("http://localhost:$port/doc/$keyspace/$docid")
+        json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
+        setLogLevel(DriverWrapper.name,"INFO")
+
+        then:
+        json == 'null'
+
     }
 
     static void setLogLevel(String loggername, String lvl) {

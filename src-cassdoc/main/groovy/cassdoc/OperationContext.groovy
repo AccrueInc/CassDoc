@@ -89,7 +89,6 @@ class OperationContext {
 
     void setExecutionModeToBatch() { executionMode = "batch" }
 
-
     void DO(CommandExecServices svcs, Detail detail) {
         // TODO: optimize: batches, elimination of unneeded smaller ops if there is an overarching DELETE
         // TODO: PAXOS ops are gateway-checked, then other attendant updates to rel and idx tables can be done, subents, etc

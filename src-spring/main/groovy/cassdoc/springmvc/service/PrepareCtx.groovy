@@ -8,7 +8,27 @@ import org.springframework.stereotype.Component
 @CompileStatic
 @Component
 class PrepareCtx {
-    CtxDtl docExists(String collection, Detail customDetail) { ctxAndDtl(collection, customDetail) }
+
+    CtxDtl readOnlyCtxDtl(String collection, Detail customDetail) {
+        if (customDetail != null) {
+            if (customDetail.writeConsistency != null) {
+                throw new IllegalArgumentException('writeConsistency set for a read-only API')
+            }
+            if (customDetail.writeTimestampMicros != null) {
+                throw new IllegalArgumentException('writeTimestampMicros set for a read-only API')
+            }
+        }
+        ctxAndDtl(collection, customDetail)
+    }
+
+    CtxDtl writeOnlyCtxDtl(String collection, Detail customDetail) {
+        if (customDetail != null) {
+            if (customDetail.readConsistency != null) {
+                throw new IllegalArgumentException('readConsistency set for a write-only API')
+            }
+        }
+        ctxAndDtl(collection, customDetail)
+    }
 
     CtxDtl ctxAndDtl(String collection, Detail customDetail) {
         OperationContext ctx = new OperationContext(space: collection)
