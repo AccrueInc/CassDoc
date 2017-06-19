@@ -102,13 +102,21 @@ class RESTFunctionalTestSpec extends Specification {
         }
         DocType job = restTemplate.getForObject("http://localhost:$port/admin/$keyspace/JOB",DocType)
         DocType prod = restTemplate.getForObject("http://localhost:$port/admin/$keyspace/PROD",DocType)
-        println restTemplate.getForObject("http://localhost:$port/admin/_schema_",String)
+        String schema = restTemplate.getForObject("http://localhost:$port/admin/_schema_/$keyspace",String)
 
         then:
         job != null
         prod != null
         job.fixedAttrList.size() == 2
         prod.fixedAttrList.size() == 5
+        schema.contains("CREATE KEYSPACE $keyspace")
+        schema.contains("CREATE TABLE ${keyspace}.e_prod")
+        schema.contains("condition text")
+        schema.contains("submit_date date")
+        schema.contains("CREATE TABLE ${keyspace}.p_prod")
+        schema.contains("CREATE TABLE ${keyspace}.e_job")
+        schema.contains("provider text")
+        schema.contains("CREATE TABLE ${keyspace}.p_job")
         noExceptionThrown()
     }
 
@@ -120,10 +128,19 @@ class RESTFunctionalTestSpec extends Specification {
         String docid = response.body
         String json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
         println 'LOOKUP: '+json
+        // new attribute
+        String aNewAttribute = '{"a":1,"b":4.5,"c":true,"d":"ddd,"e":{"aa":11,"bb":"BBBB"}}'
+        response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.PUT, new HttpEntity<String>(aNewAttribute), String)
+        String attrjson = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
+        // update that attribute
+        response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.POST, new HttpEntity<String>("99.01"), String)
+        String attrUpdated = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
 
         then:
         json.contains(docid)
         json.contains('8898988898')
+        attrjson.contains('BBBB')
+        attrUpdated.contains('99.01')
     }
 
     static void setLogLevel(String loggername, String lvl) {

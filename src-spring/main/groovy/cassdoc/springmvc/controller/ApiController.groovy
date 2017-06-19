@@ -150,6 +150,7 @@ class ApiController {
         ServletInputStream instream = request.inputStream
         Reader reader = new InputStreamReader(instream)
         // TODO: figure out async use cases
+        // TODO: paxos
         api.newAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, reader, false)
     }
 
