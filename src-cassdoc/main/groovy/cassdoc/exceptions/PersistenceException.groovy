@@ -1,5 +1,8 @@
 package cassdoc.exceptions
 
+import groovy.transform.CompileStatic
+
+import javax.ws.rs.InternalServerErrorException
 
 /**
  * General error in persistence occurred
@@ -7,27 +10,8 @@ package cassdoc.exceptions
  * @author a999166
  */
 
-class PersistenceException extends RuntimeException {
-
-    PersistenceException() {
-    }
-
-    PersistenceException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace)
-    }
-
-    PersistenceException(String message, Throwable cause) {
-        super(message, cause)
-    }
-
-    PersistenceException(String message) {
-        super(message)
-    }
-
-    PersistenceException(Throwable cause) {
-        super(cause)
-    }
-
+@CompileStatic
+class PersistenceException extends InternalServerErrorException {
     private static final long serialVersionUID = 321976438729576L
 
 }

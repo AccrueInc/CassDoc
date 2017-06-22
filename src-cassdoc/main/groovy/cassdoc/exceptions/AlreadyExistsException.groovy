@@ -1,5 +1,8 @@
 package cassdoc.exceptions
 
+import groovy.transform.CompileStatic
+
+import javax.ws.rs.BadRequestException
 
 /**
  * For when CQL detects something already exists and that wasn't expected (create, etc).
@@ -7,27 +10,8 @@ package cassdoc.exceptions
  * @author a999166
  */
 
-class AlreadyExistsException extends RuntimeException {
-
-    AlreadyExistsException() {
-    }
-
-    AlreadyExistsException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace)
-    }
-
-    AlreadyExistsException(String message, Throwable cause) {
-        super(message, cause)
-    }
-
-    AlreadyExistsException(String message) {
-        super(message)
-    }
-
-    AlreadyExistsException(Throwable cause) {
-        super(cause)
-    }
-
+@CompileStatic
+class AlreadyExistsException extends BadRequestException {
     private static final long serialVersionUID = 3289794338789733L
 
 }
