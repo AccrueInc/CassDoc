@@ -1,5 +1,8 @@
 package cassdoc.exceptions
 
+import groovy.transform.CompileStatic
+
+import javax.ws.rs.BadRequestException
 
 /**
  * Whenever type information for provided data doesn't line up with metadata and behavioral configurations...
@@ -7,27 +10,8 @@ package cassdoc.exceptions
  * @author a999166
  */
 
-class InvalidTypeException extends RuntimeException {
-
-    InvalidTypeException() {
-    }
-
-    InvalidTypeException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace)
-    }
-
-    InvalidTypeException(String message, Throwable cause) {
-        super(message, cause)
-    }
-
-    InvalidTypeException(String message) {
-        super(message)
-    }
-
-    InvalidTypeException(Throwable cause) {
-        super(cause)
-    }
-
+@CompileStatic
+class InvalidTypeException extends BadRequestException {
     private static final long serialVersionUID = 658979438789573L
 
 }

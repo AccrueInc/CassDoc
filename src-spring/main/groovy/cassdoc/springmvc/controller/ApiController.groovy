@@ -121,7 +121,7 @@ class ApiController {
         writer.flush()
     }
 
-    @RequestMapping(value = ['/doc/{collection}', '/doc/{collection}/'], method = RequestMethod.PUT)
+    @RequestMapping(value = ['/doc/{collection}', '/doc/{collection}/'], method = RequestMethod.POST)
     String newDoc(
             @PathVariable(value = 'collection', required = true) String collection,
             // CEM: request params aren't working (at least not in spring boot test), might be the httpreq injection
@@ -140,7 +140,7 @@ class ApiController {
         api.newDoc(ctxDtl.ctx, ctxDtl.dtl, reader)
     }
 
-    @RequestMapping(value = ['/doc/{collection}/{id}/{attr}', '/doc/{collection}/{id}/{attr}/'], method = RequestMethod.PUT)
+    @RequestMapping(value = ['/doc/{collection}/{id}/{attr}', '/doc/{collection}/{id}/{attr}/'], method = RequestMethod.POST)
     String newAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -161,7 +161,7 @@ class ApiController {
         api.newAttr(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, reader, false)
     }
 
-    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.POST)
+    @RequestMapping(value = '/doc/{collection}/{id}/{attr}', method = RequestMethod.PUT)
     void updateAttr(
             @PathVariable(value = 'collection', required = true) String collection,
             @PathVariable(value = 'id', required = true) String uuid,
@@ -203,7 +203,7 @@ class ApiController {
         api.updateAttrOverlay(ctxDtl.ctx, ctxDtl.dtl, uuid, attr, json)
     }
 
-    @RequestMapping(value = '/docs/{collection}', method = RequestMethod.PUT)
+    @RequestMapping(value = '/docs/{collection}', method = RequestMethod.POST)
     String newDocs(
             @PathVariable(value = 'collection', required = true) String collection,
             //@RequestParam(value = 'async', required = false) Boolean async = false,

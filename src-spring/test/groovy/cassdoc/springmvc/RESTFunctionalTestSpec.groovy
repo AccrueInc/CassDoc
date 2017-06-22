@@ -6,6 +6,7 @@ import cassdoc.DocType
 import cassdoc.IndexConfigurationService
 import cassdoc.TypeConfigurationService
 import cassdoc.config.CassDocConfig
+
 import cassdoc.inittest.Types
 import cassdoc.springmvc.controller.AdminController
 import cassdoc.springmvc.controller.ApiController
