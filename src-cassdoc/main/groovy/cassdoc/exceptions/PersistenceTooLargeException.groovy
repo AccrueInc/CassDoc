@@ -14,4 +14,18 @@ import javax.ws.rs.InternalServerErrorException
 class PersistenceTooLargeException extends InternalServerErrorException {
     private static final long serialVersionUID = 321976438729576L
 
+    PersistenceTooLargeException() {
+    }
+
+    PersistenceTooLargeException(String message) {
+        super(message)
+    }
+
+    PersistenceTooLargeException(Throwable cause) {
+        super(cause)
+    }
+
+    PersistenceTooLargeException(String message, Throwable cause) {
+        super(message, cause)
+    }
 }

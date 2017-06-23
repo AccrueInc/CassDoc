@@ -1,5 +1,6 @@
 package cassdoc.operations
 
+import cassdoc.exceptions.InvalidTypeException
 import groovy.transform.CompileStatic
 
 import java.util.concurrent.BlockingQueue
@@ -29,7 +30,6 @@ import cassdoc.commands.retrieve.GetDocRCH
 import cassdoc.commands.retrieve.GetRelKeyCmd
 import cassdoc.commands.retrieve.GetRelsCmd
 import cassdoc.commands.retrieve.GetRelsRCH
-import cassdoc.exceptions.RetrievalException
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
@@ -167,7 +167,7 @@ class RetrievalOperations {
                         // obj type but no start object? check for empty string or null
                     }
                 } else {
-                    throw log.err(opctx, null, new RetrievalException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
+                    throw log.err(opctx, null, new InvalidTypeException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
                 }
 
                 if (keyname != null) {
@@ -308,7 +308,7 @@ class RetrievalOperations {
                         // obj type but no start object? check for empty string or null
                     }
                 } else {
-                    throw log.err(opctx, null, new RetrievalException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
+                    throw log.err(opctx, null, new InvalidTypeException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
                 }
                 if (attrDetail.attrWritetimeMeta != null) {
                     writer << ',"' << StringEscapeUtils.escapeJson((String) attr[0]) << AttrNames.META_WT_PRE << detail.attrWritetimeMeta << ']":' << attr[4]
@@ -799,7 +799,7 @@ class RetrievalOperations {
                                     // obj type but no start object? check for empty string or null
                                 }
                             } else {
-                                throw log.err(opctx, null, new RetrievalException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
+                                throw log.err(opctx, null, new InvalidTypeException("GETDOC_BADTYPE: DocUUID $docUUID has unknown attr type code ${attr[1]} for attr ${attr[0]}"))
                             }
                             attrQ.put(new AbstractMap.SimpleEntry<String, Object>((String) attr[0], value))
 

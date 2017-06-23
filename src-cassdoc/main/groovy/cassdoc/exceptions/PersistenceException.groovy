@@ -14,4 +14,18 @@ import javax.ws.rs.InternalServerErrorException
 class PersistenceException extends InternalServerErrorException {
     private static final long serialVersionUID = 321976438729576L
 
+    PersistenceException() {
+    }
+
+    PersistenceException(String message) {
+        super(message)
+    }
+
+    PersistenceException(Throwable cause) {
+        super(cause)
+    }
+
+    PersistenceException(String message, Throwable cause) {
+        super(message, cause)
+    }
 }

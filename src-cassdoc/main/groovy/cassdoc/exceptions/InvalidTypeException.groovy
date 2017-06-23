@@ -14,4 +14,18 @@ import javax.ws.rs.BadRequestException
 class InvalidTypeException extends BadRequestException {
     private static final long serialVersionUID = 658979438789573L
 
+    InvalidTypeException() {
+    }
+
+    InvalidTypeException(String message) {
+        super(message)
+    }
+
+    InvalidTypeException(Throwable cause) {
+        super(cause)
+    }
+
+    InvalidTypeException(String message, Throwable cause) {
+        super(message, cause)
+    }
 }

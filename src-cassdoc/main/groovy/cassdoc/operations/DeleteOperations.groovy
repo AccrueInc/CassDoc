@@ -44,7 +44,6 @@ class DeleteOperations {
 
     }
 
-
     static void deleteAttr(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, String attr, boolean clear) {
         GetAttrRelsCmd getRels = new GetAttrRelsCmd(p1: docUUID, ty1s: [
                 RelTypes.SYS_INDEX,
@@ -65,7 +64,6 @@ class DeleteOperations {
             }
         }
 
-
     }
 
     static void analyzeDeleteDocEvent(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, List<Rel> docRels) {
@@ -80,7 +78,6 @@ class DeleteOperations {
 
         DelDoc_P delDocP = new DelDoc_P(docUUID: docUUID)
         opctx.addCommand(svcs, detail, delDocP)
-
 
         for (Rel childRel : docRels) {
             if (childRel.ty1 == RelTypes.TO_CHILD) {
@@ -124,13 +121,11 @@ class DeleteOperations {
         // TODO: clear parent rels to this UUID... or update? ... need to think about this.
         // TODO: clear bidirectional rels
 
-
     }
 
     static void delRel(CommandExecServices svcs, OperationContext opctx, Detail detail, RelKey rel) {
         DelRel delRel = new DelRel(relKey: rel)
         opctx.addCommand(svcs, detail, delRel)
     }
-
 
 }

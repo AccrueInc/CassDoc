@@ -13,6 +13,7 @@ import cassdoc.springmvc.controller.ApiController
 import cassdoc.springmvc.service.PrepareCtx
 import cwdrg.lg.annotation.Log
 import drv.cassdriver.DriverWrapper
+import io.netty.handler.codec.http.HttpResponse
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -86,6 +87,19 @@ class RESTFunctionalTestSpec extends Specification {
         1==1
     }
 
+    Map<String,HttpMethod> verbs = ['get':HttpMethod.GET,'put':HttpMethod.PUT,'post':HttpMethod.POST,'delete':HttpMethod.DELETE,'patch':HttpMethod.PATCH,'head':HttpMethod.HEAD]
+    String call(String verb, String relUrl, String reqBody) {
+        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
+        response.body
+    }
+
+    String code(String verb, String relUrl, String reqBody) {
+        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
+        response.statusCode
+    }
+
     void 'setup schema'() {
         when:
         println 'setup schema'
@@ -124,14 +138,15 @@ class RESTFunctionalTestSpec extends Specification {
     void 'create doc and retrieve it'() {
         when:
         String proddoc = this.class.classLoader.getResourceAsStream('cassdoc/testdata/DocWithFixedAttrs.json').getText()
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
-        println 'DOCID: '+response.body
-        String docid = response.body
+        //ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
+        //println 'DOCID: '+response.body
+        //String docid = response.body
+        String docid = call('post',"/doc/$keyspace",proddoc)
         String json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
         println 'LOOKUP: '+json
         // new attribute
         String aNewAttribute = '{"a":1,"b":4.5,"c":true,"d":"ddd","e":{"aa":11,"bb":"BBBB"}}'
-        response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.PUT, new HttpEntity<String>(aNewAttribute), String)
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.PUT, new HttpEntity<String>(aNewAttribute), String)
         String attrjson = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
         // update that attribute
         response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.POST, new HttpEntity<String>("99.01"), String)
