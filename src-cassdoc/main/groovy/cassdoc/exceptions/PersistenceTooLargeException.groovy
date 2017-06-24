@@ -2,8 +2,6 @@ package cassdoc.exceptions
 
 import groovy.transform.CompileStatic
 
-import javax.ws.rs.InternalServerErrorException
-
 /**
  * General error in persistence occurred
  *
@@ -11,7 +9,7 @@ import javax.ws.rs.InternalServerErrorException
  */
 
 @CompileStatic
-class PersistenceTooLargeException extends InternalServerErrorException {
+class PersistenceTooLargeException extends PersistenceException {
     private static final long serialVersionUID = 321976438729576L
 
     PersistenceTooLargeException() {

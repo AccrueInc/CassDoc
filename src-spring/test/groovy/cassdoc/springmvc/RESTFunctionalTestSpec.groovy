@@ -10,6 +10,7 @@ import cassdoc.config.CassDocConfig
 import cassdoc.inittest.Types
 import cassdoc.springmvc.controller.AdminController
 import cassdoc.springmvc.controller.ApiController
+import cassdoc.springmvc.controller.RestExceptionHandler
 import cassdoc.springmvc.service.PrepareCtx
 import cwdrg.lg.annotation.Log
 import drv.cassdriver.DriverWrapper
@@ -35,7 +36,7 @@ import spock.lang.Stepwise
 //@ContextConfiguration
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT,
-        classes = [ApiController, AdminController, CassdocAPI, CommandExecServices, PrepareCtx, TypeConfigurationService, IndexConfigurationService, DriverWrapper, CassDocConfig]
+        classes = [ApiController, AdminController, CassdocAPI, CommandExecServices, PrepareCtx, TypeConfigurationService, IndexConfigurationService, DriverWrapper, CassDocConfig, RestExceptionHandler]
 )
 class RESTFunctionalTestSpec extends Specification {
 
@@ -93,11 +94,15 @@ class RESTFunctionalTestSpec extends Specification {
         ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
         response.body
     }
-
     String code(String verb, String relUrl, String reqBody) {
         HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
         ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
         response.statusCode
+    }
+    List<String> both(String verb, String relUrl, String reqBody) {
+        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
+        [response.body,response.statusCode]
     }
 
     void 'setup schema'() {
@@ -138,41 +143,43 @@ class RESTFunctionalTestSpec extends Specification {
     void 'create doc and retrieve it'() {
         when:
         String proddoc = this.class.classLoader.getResourceAsStream('cassdoc/testdata/DocWithFixedAttrs.json').getText()
-        //ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace", HttpMethod.PUT, new HttpEntity<String>(proddoc), String)
-        //println 'DOCID: '+response.body
-        //String docid = response.body
-        String docid = call('post',"/doc/$keyspace",proddoc)
-        String json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
+        String docid = call('post',"/doc/$keyspace", proddoc)
+        println docid
+        String json = call('get',"/doc/$keyspace/${docid}", '')
         println 'LOOKUP: '+json
         // new attribute
         String aNewAttribute = '{"a":1,"b":4.5,"c":true,"d":"ddd","e":{"aa":11,"bb":"BBBB"}}'
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.PUT, new HttpEntity<String>(aNewAttribute), String)
-        String attrjson = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
+        String status = code('POST', "/doc/$keyspace/$docid/ANewAttribute", aNewAttribute)
+        println "code: $status"
+        String attrjson = call('GET',"/doc/$keyspace/${docid}/ANewAttribute", null)
+        println "GET attr: $attrjson"
         // update that attribute
-        response = restTemplate.exchange("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute", HttpMethod.POST, new HttpEntity<String>("99.01"), String)
-        String attrUpdated = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
+        println "code: "+ code('PUT', "/doc/$keyspace/$docid/ANewAttribute","99.01")
+        String attrUpdated = call('GET', "/doc/$keyspace/${docid}/ANewAttribute", '')
 
         then:
         json.contains(docid)
         json.contains('8898988898')
+
         attrjson.contains('BBBB')
         attrUpdated.contains('99.01')
 
         when:
-        restTemplate.delete("http://localhost:$port/doc/$keyspace/$docid/ANewAttribute")
-        attrUpdated = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}/ANewAttribute", String).body
+        code('delete', "/doc/$keyspace/$docid/ANewAttribute",'')
+        attrUpdated = call('get', "/doc/$keyspace/${docid}/ANewAttribute", '')
 
         then:
         attrUpdated == 'null'
 
         when:
-        setLogLevel(DriverWrapper.name,"DEBUG")
-        restTemplate.delete("http://localhost:$port/doc/$keyspace/$docid")
-        json = restTemplate.getForEntity("http://localhost:$port/doc/$keyspace/${docid}", String).body
-        setLogLevel(DriverWrapper.name,"INFO")
+        println "delcode "+code('delete', "/doc/$keyspace/$docid", '')
+        String notfound
+        (json, notfound) = both('get', "/doc/$keyspace/${docid}", '')
+        println "error: $json"
 
         then:
-        json == 'null'
+        notfound == '404' // ControllerAdvice not working FIX: needed exception handler in the classes list
+        json == 'error: Not Found'
 
     }
 

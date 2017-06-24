@@ -2,8 +2,6 @@ package cassdoc.exceptions
 
 import groovy.transform.CompileStatic
 
-import javax.ws.rs.BadRequestException
-
 /**
  * For when CQL detects something already exists and that wasn't expected (create, etc).
  *
@@ -11,7 +9,7 @@ import javax.ws.rs.BadRequestException
  */
 
 @CompileStatic
-class DuplicateResourceException extends BadRequestException {
+class DuplicateResourceException extends RuntimeException {
     private static final long serialVersionUID = 3289794338789733L
 
     DuplicateResourceException() {

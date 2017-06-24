@@ -129,7 +129,7 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) String customDetailJSON,
             HttpServletRequest request
     ) {
-        log.inf("PUT /doc/$collection --> newDoc()", null)
+        log.inf("POST /doc/$collection --> newDoc()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
         Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
@@ -149,7 +149,7 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON,
             HttpServletRequest request
     ) {
-        log.inf("PUT /doc/$collection/$attr --> newAttr()", null)
+        log.inf("POST /doc/$collection/$attr --> newAttr()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
         Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
@@ -170,7 +170,7 @@ class ApiController {
             //@RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON,
             HttpServletRequest request
     ) {
-        log.inf("POST /doc/$collection/$attr --> updateAttr()", null)
+        log.inf("PUT /doc/$collection/$attr --> updateAttr()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
         Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 
@@ -205,13 +205,13 @@ class ApiController {
 
     @RequestMapping(value = '/docs/{collection}', method = RequestMethod.POST)
     String newDocs(
-            @PathVariable(value = 'collection', required = true) String collection,
+            @PathVariable(value = 'collectmsondraion', required = true) String collection,
             //@RequestParam(value = 'async', required = false) Boolean async = false,
             //@RequestParamJSON(value = 'detail', required = false) Detail customDetailJSON,
             HttpServletRequest request,
             HttpServletResponse response
     ) {
-        log.inf("PUT /docs/$collection --> newDocs()", null)
+        log.inf("POST /docs/$collection --> newDocs()", null)
         Boolean async = request.getParameter('async')?.equalsIgnoreCase('true')
         Detail customDetailJSON = (Detail) JSONUtil.deserialize(request.getParameter('detail'), Detail)
 

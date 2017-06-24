@@ -43,13 +43,13 @@ class CassdocAPI {
     boolean docExists(OperationContext opctx, Detail detail, String uuid) {
         // token would work too, at least on cass 3.5
         String typeSuffix = IDUtil.idSuffix(uuid)
-        List<Object[]> rows = query(opctx, detail, "SELECT zv from ${opctx.space}.e_${typeSuffix} WHERE e = ?", uuid)
+        List<Object[]> rows = query(opctx, detail, "SELECT token(e),zv from ${opctx.space}.e_${typeSuffix} WHERE e = ?", uuid)
         return (rows.size() > 0)
     }
 
     boolean attrExists(OperationContext opctx, Detail detail, String uuid, String attr) {
         String typeSuffix = IDUtil.idSuffix(uuid)
-        List<Object[]> rows = query(opctx, detail, "SELECT zv from ${opctx.space}.p_${typeSuffix} WHERE e = ? and p = ?", uuid, attr)
+        List<Object[]> rows = query(opctx, detail, "SELECT token(e),zv from ${opctx.space}.p_${typeSuffix} WHERE e = ? and p = ?", uuid, attr)
         return (rows.size() > 0)
     }
 
@@ -575,19 +575,7 @@ class CassdocAPI {
     }
 
     List<Object[]> query(OperationContext opctx, Detail detail, String cql, Object[] args) {
-        QueryToListOfStrArr cmd = new QueryToListOfStrArr(query: cql)
-        if (args != null)
-            cmd.initiateQuery(svcs, opctx, detail, args)
-        else
-            cmd.initiateQuery(svcs, opctx, detail)
-        List queryresult = []
-        Object[] data = null
-        while (true) {
-            data = cmd.nextRow()
-            if (data == null) break
-            queryresult.add(data)
-        }
-        return queryresult
+        RetrievalOperations.query(svcs, opctx, detail, cql, args)
     }
 
     String getDocMetadata(OperationContext opctx, Detail detail, String docUUID) {

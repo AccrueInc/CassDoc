@@ -248,7 +248,7 @@ public class DriverWrapper {
     public Statement prepare(final String keyspace, final String cql, final Object[] prepArgsIn, final String consistency, Long usingTimestamp) {
         if (prepArgsIn != null && prepArgsIn.length != 0) {
             typeConvertPrepArgs(prepArgsIn);
-            log.dbg(log.d() ? "PREPARE: {} {} {}\n" + JSONUtil.toJSON(prepArgsIn) + "\n{}" : "", null, keyspace, consistency, usingTimestamp, cql);
+            log.dbg(log.d() ? "PREPARE: {} {} {}\n" + JSONUtil.toJSON(prepArgsIn) + "\n{}" : "", log.t() ? new RuntimeException("STACKTRACE") : null, keyspace, consistency, usingTimestamp, cql);
             PreparedStatement prepStmt = cachedPrepare(cql);
             prepStmt.setConsistencyLevel(ConsistencyLevel.valueOf(consistency));
             // TODO: ?detect the metadata/types? use prepArgTypes?

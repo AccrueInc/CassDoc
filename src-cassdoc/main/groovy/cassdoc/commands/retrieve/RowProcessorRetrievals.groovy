@@ -160,19 +160,19 @@ class GetDocAttrsRP extends CassandraPagedRowProcessor {
 @CompileStatic
 class QueryToListOfStrArr extends CassandraPagedRowProcessor {
     String query
-    private int rowSize = -1
+    private int rowWidth = -1
 
     void initiateQuery(CommandExecServices svcs, OperationContext opctx, Detail detail, Object... args) {
         String consistency = QueryCmd.resolveConsistency(detail, opctx)
 
         String space = opctx.space
         rs = svcs.driver.initiateQuery(space, query, args, consistency, detail?.fetchPageSize ?: 30000, detail?.fetchNextPageThreshold ?: 3000)
-        rowSize = rs.getColumnDefinitions().size()
+        rowWidth = rs.getColumnDefinitions().size()
     }
 
     Object[] processRow(Row row) {
-        Object[] data = new Object[rowSize]
-        for (int i = 0; i < rowSize; i++) {
+        Object[] data = new Object[rowWidth]
+        for (int i = 0; i < rowWidth; i++) {
             DataType dt = row.columnDefinitions.getType(i)
             switch (dt) {
                 case DataType.ascii():
@@ -181,33 +181,33 @@ class QueryToListOfStrArr extends CassandraPagedRowProcessor {
                     data[i] = row.getString(i)
                     break
                 case DataType.timestamp():
-                    data[i] = row.getTimestamp(i)?.time?.toString()
+                    data[i] = row.getTimestamp(i)?.time as String
                     break
                 case DataType.cboolean():
-                    data[i] = row.getBool(i).toString()
+                    data[i] = row.getBool(i) as String
                     break
                 case DataType.cint():
-                    data[i] = row.getInt(i).toString()
+                    data[i] = row.getInt(i) as String
                     break
                 case DataType.bigint():
                 case DataType.counter():
-                    data[i] = row.getLong(i).toString()
+                    data[i] = row.getLong(i) as String
                     break
                 case DataType.varint():
-                    data[i] = row.getVarint(i)?.toString()
+                    data[i] = row.getVarint(i) as String
                     break
                 case DataType.cfloat():
-                    data[i] = row.getFloat(i)?.toString()
+                    data[i] = row.getFloat(i) as String
                     break
                 case DataType.cdouble():
-                    data[i] = row.getDouble(i)?.toString()
+                    data[i] = row.getDouble(i) as String
                     break
                 case DataType.decimal():
-                    data[i] = row.getDecimal(i)?.toString()
+                    data[i] = row.getDecimal(i) as String
                     break
                 case DataType.timeuuid():
                 case DataType.uuid():
-                    data[i] = row.getUUID(i)
+                    data[i] = row.getUUID(i).toString()
                     break
                 case DataType.blob():
                     ByteBuffer buffer = row.getBytes(i)

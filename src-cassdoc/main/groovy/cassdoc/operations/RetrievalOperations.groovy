@@ -1,6 +1,8 @@
 package cassdoc.operations
 
+import cassdoc.commands.retrieve.QueryToListOfStrArr
 import cassdoc.exceptions.InvalidTypeException
+import cassdoc.exceptions.ResourceNotFoundException
 import groovy.transform.CompileStatic
 
 import java.util.concurrent.BlockingQueue
@@ -212,6 +214,11 @@ class RetrievalOperations {
     }
 
     static void getSingleDoc(CommandExecServices svcs, OperationContext opctx, Detail detail, String docUUID, Writer writer, boolean root) {
+        if (root) {
+            if (!query(svcs, opctx, detail, "SELECT token(e), zv from ${opctx.space}.e_${IDUtil.idSuffix(docUUID)} WHERE e = ?", docUUID)) {
+                throw new ResourceNotFoundException(docUUID)
+            }
+        }
         writer << '{"' << AttrNames.SYS_DOCID << '":"' << docUUID << '"'
         if (detail.docIDTimestampMeta) {
             writer << ',"' << AttrNames.META_IDTIME << '":' << IDUtil.extractUnixTimeFromEaioTimeUUID(docUUID)
@@ -888,6 +895,22 @@ class RetrievalOperations {
         GetRelsCmd rels = new GetRelsCmd(p1: docUUID)
         GetRelsRCH relRCH = rels.queryCassandraDocRels(svcs, opctx, detail)
         return relRCH.rels
+    }
+
+    static List<Object[]> query(CommandExecServices svcs, OperationContext opctx, Detail detail, String cql, Object[] args) {
+        QueryToListOfStrArr cmd = new QueryToListOfStrArr(query: cql)
+        if (args != null)
+            cmd.initiateQuery(svcs, opctx, detail, args)
+        else
+            cmd.initiateQuery(svcs, opctx, detail)
+        List queryresult = []
+        Object[] data = null
+        while (true) {
+            data = cmd.nextRow()
+            if (data == null) break
+            queryresult.add(data)
+        }
+        return queryresult
     }
 
 }
