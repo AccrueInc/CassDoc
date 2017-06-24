@@ -78,7 +78,7 @@ class JavaApiIntegrationSpec extends Specification {
         retrieved = JSONUtil.deserializeMap(json)
         retrievedMap = api.deserializeDoc(opctx, detail, newid)
 
-        then: 're-retrieval still matches the original and both methods of getting these simple attrs works'
+        then: 're-retrieval still matches the original and respCode methods of getting these simple attrs works'
         original == retrieved
         original == retrievedMap
         // potentially recursive attribute retrieval (won't recurse here though)

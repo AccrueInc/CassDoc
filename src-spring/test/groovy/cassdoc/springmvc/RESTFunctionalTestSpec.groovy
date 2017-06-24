@@ -2,6 +2,7 @@ package cassdoc.springmvc
 
 import cassdoc.CassdocAPI
 import cassdoc.CommandExecServices
+import cassdoc.Detail
 import cassdoc.DocType
 import cassdoc.IndexConfigurationService
 import cassdoc.TypeConfigurationService
@@ -12,9 +13,9 @@ import cassdoc.springmvc.controller.AdminController
 import cassdoc.springmvc.controller.ApiController
 import cassdoc.springmvc.controller.RestExceptionHandler
 import cassdoc.springmvc.service.PrepareCtx
+import com.fasterxml.jackson.databind.ObjectMapper
 import cwdrg.lg.annotation.Log
 import drv.cassdriver.DriverWrapper
-import io.netty.handler.codec.http.HttpResponse
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -49,6 +50,7 @@ class RESTFunctionalTestSpec extends Specification {
     static CassdocAPI cassdocAPI
 
     static String keyspace = 'functional_test'
+    static String sharedDocId = null
 
     void setupSpec() {
         println "setting log levels"
@@ -86,23 +88,6 @@ class RESTFunctionalTestSpec extends Specification {
         // this isn't working for some readon
         //response != null
         1==1
-    }
-
-    Map<String,HttpMethod> verbs = ['get':HttpMethod.GET,'put':HttpMethod.PUT,'post':HttpMethod.POST,'delete':HttpMethod.DELETE,'patch':HttpMethod.PATCH,'head':HttpMethod.HEAD]
-    String call(String verb, String relUrl, String reqBody) {
-        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
-        response.body
-    }
-    String code(String verb, String relUrl, String reqBody) {
-        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
-        response.statusCode
-    }
-    List<String> both(String verb, String relUrl, String reqBody) {
-        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
-        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String)
-        [response.body,response.statusCode]
     }
 
     void 'setup schema'() {
@@ -143,19 +128,19 @@ class RESTFunctionalTestSpec extends Specification {
     void 'create doc and retrieve it'() {
         when:
         String proddoc = this.class.classLoader.getResourceAsStream('cassdoc/testdata/DocWithFixedAttrs.json').getText()
-        String docid = call('post',"/doc/$keyspace", proddoc)
+        String docid = resp('post',"/doc/$keyspace", proddoc)
         println docid
-        String json = call('get',"/doc/$keyspace/${docid}", '')
+        String json = resp('get',"/doc/$keyspace/${docid}", '')
         println 'LOOKUP: '+json
         // new attribute
         String aNewAttribute = '{"a":1,"b":4.5,"c":true,"d":"ddd","e":{"aa":11,"bb":"BBBB"}}'
         String status = code('POST', "/doc/$keyspace/$docid/ANewAttribute", aNewAttribute)
         println "code: $status"
-        String attrjson = call('GET',"/doc/$keyspace/${docid}/ANewAttribute", null)
+        String attrjson = resp('GET',"/doc/$keyspace/${docid}/ANewAttribute", null)
         println "GET attr: $attrjson"
         // update that attribute
         println "code: "+ code('PUT', "/doc/$keyspace/$docid/ANewAttribute","99.01")
-        String attrUpdated = call('GET', "/doc/$keyspace/${docid}/ANewAttribute", '')
+        String attrUpdated = resp('GET', "/doc/$keyspace/${docid}/ANewAttribute", '')
 
         then:
         json.contains(docid)
@@ -166,7 +151,7 @@ class RESTFunctionalTestSpec extends Specification {
 
         when:
         code('delete', "/doc/$keyspace/$docid/ANewAttribute",'')
-        attrUpdated = call('get', "/doc/$keyspace/${docid}/ANewAttribute", '')
+        attrUpdated = resp('get', "/doc/$keyspace/${docid}/ANewAttribute", '')
 
         then:
         attrUpdated == 'null'
@@ -174,17 +159,74 @@ class RESTFunctionalTestSpec extends Specification {
         when:
         println "delcode "+code('delete', "/doc/$keyspace/$docid", '')
         String notfound
-        (json, notfound) = both('get', "/doc/$keyspace/${docid}", '')
+        (json, notfound) = respCode('get', "/doc/$keyspace/${docid}", '')
         println "error: $json"
 
         then:
         notfound == '404' // ControllerAdvice not working FIX: needed exception handler in the classes list
-        json == 'error: Not Found'
-
+        json.contains('Not Found')
     }
+
+    void 'test read detail levels'() {
+        when: 'serialized details with attribute subsets and exclusions'
+        Detail readDetailSubset = new Detail(readConsistency: 'ONE', attrSubset: ['fVal','mapVal'] as Set)
+        Detail readDetailExclude = new Detail(readConsistency: 'QUORUM', attrExclude: ['sku','gtin'] as Set)
+        String proddoc = this.class.classLoader.getResourceAsStream('cassdoc/testdata/DocWithFixedAttrs.json').getText()
+        String docid = resp('POST', "/doc/$keyspace", proddoc)
+
+        String subsetDoc = resp('GET', "/doc/$keyspace/$docid?detail={detail}",'',readDetailSubset)
+        println "SUBSET $subsetDoc"
+        String excludeDoc = resp('GET', "/doc/$keyspace/$docid?detail={detail}",'',readDetailExclude)
+        println "EXCLUDE $excludeDoc"
+
+        then:
+        subsetDoc.contains('3.00065')
+        !subsetDoc.contains('notagtin')
+        excludeDoc.contains('3.00065')
+        !excludeDoc.contains('notagtin')
+
+        when: 'manually constructed detail levels'
+        String manualSubset = '{"attrSubset":["fVal","mapVal"]}'
+        String manualExclude = '{"attrExclude":["sku","gtin"]}'
+        subsetDoc = resp('GET', "/doc/$keyspace/$docid?detail={detail}",'',manualSubset)
+        println "SUBSET $subsetDoc"
+        excludeDoc = resp('GET', "/doc/$keyspace/$docid?detail={detail}",'',manualExclude)
+        println "EXCLUDE $excludeDoc"
+
+        then:
+        subsetDoc.contains('3.00065')
+        !subsetDoc.contains('notagtin')
+        excludeDoc.contains('3.00065')
+        !excludeDoc.contains('notagtin')
+    }
+
+    static ObjectMapper mapper = new ObjectMapper()
 
     static void setLogLevel(String loggername, String lvl) {
         ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(loggername == null ? "ROOT" : loggername)
         logger.setLevel(ch.qos.logback.classic.Level.toLevel(lvl, ch.qos.logback.classic.Level.DEBUG))
     }
+
+    Map<String,HttpMethod> verbs = ['get':HttpMethod.GET,'put':HttpMethod.PUT,'post':HttpMethod.POST,'delete':HttpMethod.DELETE,'patch':HttpMethod.PATCH,'head':HttpMethod.HEAD]
+
+    String resp(String verb, String relUrl, String reqBody, Object... httpParamVals) {
+        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String, json(httpParamVals))
+        response.body
+    }
+    String code(String verb, String relUrl, String reqBody, Object... httpParamVals) {
+        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String, json(httpParamVals))
+        response.statusCode
+    }
+    List<String> respCode(String verb, String relUrl, String reqBody, Object... httpParamVals) {
+        HttpMethod method = verbs[verbs.keySet().find{it.equalsIgnoreCase(verb)}]
+        ResponseEntity<String> response = restTemplate.exchange("http://localhost:$port"+relUrl,method,new HttpEntity<String>(reqBody ?: ''), String, json(httpParamVals))
+        [response.body,response.statusCode]
+    }
+    static Object[] json(Object[] args)
+    {
+        args.collect { it instanceof String ? it : mapper.writeValueAsString(it) }
+    }
+
 }

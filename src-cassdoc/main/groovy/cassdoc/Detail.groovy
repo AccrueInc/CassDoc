@@ -1,50 +1,54 @@
 package cassdoc
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import groovy.transform.CompileStatic
 
 import org.apache.commons.lang3.StringUtils
 
 
 @CompileStatic
+@JsonInclude(JsonInclude.Include.NON_NULL)
 class Detail {
     String readConsistency = null
     String writeConsistency = null
     Long writeTimestampMicros = null
     Long timeoutMillis = null
     // TODO: deletion cascade modes
+    // TODO: attr name regex filters
+
 
     Set<String> attrSubset = null
     Set<String> attrExclude = null
     Map<String, Detail> attrDetail = null
 
-    boolean pullChildDocs = false
+    Boolean pullChildDocs  = null
     Detail childDocDetail = null
     Map<String, Detail> childDocSuffixDetail = null
 
     // meta attributes
-    boolean docIDTimestampMeta = false // y
-    boolean docIDDateMeta = false // y
+    Boolean docIDTimestampMeta  = null // y
+    Boolean docIDDateMeta  = null // y
     String docWritetimeMeta = null // y
     String attrWritetimeMeta = null // y
-    boolean docWritetimeDateMeta = false // y
-    boolean attrWritetimeDateMeta = false //y
-    boolean docPaxosMeta = false  // y
-    boolean attrPaxosMeta = false // y
-    boolean docPaxosTimestampMeta = false  // y
-    boolean attrPaxosTimestampMeta = false // y
-    boolean docPaxosDateMeta = false  // y
-    boolean attrPaxosDateMeta = false // y
-    boolean docMetaIDMeta = false // y
-    boolean docMetaDataMeta = false // y
-    boolean attrMetaIDMeta = false  // y
-    boolean attrMetaDataMeta = false // y
-    //boolean relMetaIDMeta = false // TODO
-    //boolean relMetaDataMeta = false // TODO
-    boolean parentMeta = false // y
-    boolean docChildrenMeta = false // y
-    boolean docRelationsMeta = false // y
-    boolean docTokenMeta = false // y
-    boolean attrTokenMeta = false // y
+    Boolean docWritetimeDateMeta  = null // y
+    Boolean attrWritetimeDateMeta  = null //y
+    Boolean docPaxosMeta  = null  // y
+    Boolean attrPaxosMeta  = null // y
+    Boolean docPaxosTimestampMeta  = null  // y
+    Boolean attrPaxosTimestampMeta  = null // y
+    Boolean docPaxosDateMeta  = null  // y
+    Boolean attrPaxosDateMeta  = null // y
+    Boolean docMetaIDMeta  = null // y
+    Boolean docMetaDataMeta  = null // y
+    Boolean attrMetaIDMeta  = null  // y
+    Boolean attrMetaDataMeta  = null // y
+    //Boolean relMetaIDMeta  = null // TODO
+    //Boolean relMetaDataMeta  = null // TODO
+    Boolean parentMeta  = null // y
+    Boolean docChildrenMeta  = null // y
+    Boolean docRelationsMeta  = null // y
+    Boolean docTokenMeta  = null // y
+    Boolean attrTokenMeta  = null // y
 
     // TODO: relation retrieval settings
 
